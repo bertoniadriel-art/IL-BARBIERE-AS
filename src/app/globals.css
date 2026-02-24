@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .neon-border {
+    @apply border border-neon-cyan shadow-[0_0_5px_theme(colors.neon.cyan)];
+  }
+  
+  .neon-text {
+    @apply text-neon-cyan drop-shadow-[0_0_5px_theme(colors.neon.cyan)];
+  }
+
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+  }
+}
