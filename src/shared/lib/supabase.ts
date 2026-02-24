@@ -6,16 +6,28 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 // Safeguard for demo/review: preventing crash if variables are placeholders or missing
 const isValidUrl = (url: string) => {
     try {
-        return url.startsWith('http') && !url.includes('YOUR_SUPABASE_URL');
+        if (!url) return false;
+        const trimmedUrl = url.trim();
+        return trimmedUrl.startsWith('http') && !trimmedUrl.includes('YOUR_SUPABASE_URL');
     } catch {
         return false;
     }
 };
 
-export const supabase = isValidUrl(supabaseUrl)
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : (null as any); // Fallback to null to avoid fatal crash on boot
+const isConfigured = isValidUrl(supabaseUrl) && supabaseAnonKey && !supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY');
+
+export const supabase = isConfigured
+    ? createClient(supabaseUrl.trim(), supabaseAnonKey.trim())
+    : (null as any);
 
 if (!supabase) {
-    console.warn("⚠️ ALERTA: Supabase no está configurado correctamente. Usando modo offline para revisión.");
+    if (typeof window !== 'undefined') {
+        console.warn("⚠️ MODO OFFLINE: Supabase no está configurado. Revisa tus variables de entorno.");
+    } else {
+        console.warn("⚠️ [SERVER] Supabase no configurado.");
+    }
+} else {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+        console.log("✅ Supabase conectado correctamente.");
+    }
 }
