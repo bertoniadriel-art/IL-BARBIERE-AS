@@ -78,7 +78,7 @@ export function ServiceSelector() {
 
                         <div className="flex items-start justify-between mb-8 relative z-10">
                             <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-neon-cyan/10 transition-colors duration-500 border border-white/5 group-hover:border-neon-cyan/30">
-                                <img src="/assets/logo/logo.png" alt="OS" className="w-8 h-8 object-contain" />
+                                <img src="/assets/logo/logo-official.jpg" alt="OS" className="w-8 h-8 object-contain" />
                             </div>
                             <div className="text-right">
                                 <span className="text-2xl font-black tracking-tighter text-white">${service.price}</span>
