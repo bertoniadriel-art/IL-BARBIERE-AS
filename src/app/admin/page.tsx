@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ScannerModule } from "@/features/admin/components/ScannerModule";
+import dynamic from "next/dynamic";
+const ScannerModule = dynamic(() => import("@/features/admin/components/ScannerModule").then(mod => mod.ScannerModule), { ssr: false });
 import { CalendarView } from "@/features/admin/components/CalendarView";
 import { AdminLayout } from "@/features/admin/components/AdminLayout";
 import { LoginForm } from "@/features/admin/components/LoginForm";
