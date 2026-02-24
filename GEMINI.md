@@ -24,5 +24,10 @@
 - **Fix**: Migración al cliente estándar de Supabase (`@supabase/supabase-js`) para el servicio de autenticación.
 - **Blindaje**: Preferir el cliente nativo y centralizado en `shared/lib/supabase` para evitar discrepancias entre sub-librerías de helpers. Eliminar middleware innecesario en arquitecturas de página única (Single Page OS) para reducir puntos de fallo.
 
+### [2026-02-24]: Fallo de Build en Vercel (SSR/Hydration)
+- **Error**: El uso de `html5-qrcode` en `ScannerModule.tsx` sin envoltorio dinámico causó fallos en el pre-renderizado de Vercel. Las librerías que acceden a APIs del navegador (cámara, canvas) rompen el build de producción si se importan estáticamente en el App Router.
+- **Fix**: Uso de `next/dynamic` con `{ ssr: false }` para cargar el componente del escáner solo en el cliente.
+- **Blindaje**: SIEMPRE usar imports dinámicos para librerías de hardware o browser-only (QR, Scanners, Maps). No basta con el `useEffect`, la importación misma debe ser diferida.
+
 ---
 *Este archivo es el cerebro de la fábrica. Cada error documentado la hace más fuerte.*
