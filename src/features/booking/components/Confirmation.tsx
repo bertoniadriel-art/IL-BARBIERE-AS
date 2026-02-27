@@ -8,7 +8,7 @@ import { supabase } from "@/shared/lib/supabase";
 import { format } from "date-fns";
 
 export function Confirmation() {
-    const { barberId, serviceId, date, time, reset, setStep } = useBookingStore();
+    const { barberId, barberName, serviceId, date, time, reset, setStep } = useBookingStore();
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,11 +17,6 @@ export function Confirmation() {
 
     // Format date for display and WhatsApp
     const formattedDate = date ? format(new Date(date + 'T12:00:00'), 'dd-MM-yyyy') : "";
-
-    const barberNames = {
-        "santi-id": "Santi Ducca",
-        "fede-id": "Fede Diaz"
-    };
 
     const serviceNames = {
         "s1": "Corte de Pelo",
@@ -37,10 +32,10 @@ export function Confirmation() {
         const qrHash = Math.random().toString(36).substring(2, 8).toUpperCase();
 
         // Save to Supabase (The Vault)
-        if (supabase) {
+        if (supabase && barberId) {
             const { error } = await supabase.from("appointments").insert({
-                barber_id: barberId === "santi-id" ? "f2f2f2f2-f2f2-f2f2-f2f2-f2f2f2f2f2f2" : "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1",
-                service_id: "00000000-0000-0000-0000-000000000001", // Placeholder or dynamic if possible
+                barber_id: barberId,
+                service_id: "00000000-0000-0000-0000-000000000001", // TODO: map real service_id from DB
                 client_name: name,
                 client_phone: phone,
                 appointment_date: date,
@@ -64,11 +59,14 @@ export function Confirmation() {
             `✂️ *Servicio:* ${serviceNames[serviceId as keyof typeof serviceNames]}\n` +
             `📅 *Fecha:* ${formattedDate}\n` +
             `⏰ *Hora:* ${time} HS\n` +
-            `💈 *Barbero:* ${barberNames[barberId as keyof typeof barberNames]}\n` +
+            `💈 *Barbero:* ${barberName || "Sin asignar"}\n` +
             `🎟️ *Código:* ${qrHash}\n\n` +
             `_Confirmado vía IL BARBIERE OS_`;
 
-        const waPhone = barberId === "santi-id" ? "3402503244" : "3402417023";
+        let waPhone = "3402417023";
+        if (barberName === "Santi Ducca") {
+            waPhone = "3402503244";
+        }
         window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`, "_blank");
     };
 
