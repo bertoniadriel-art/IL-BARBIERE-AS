@@ -169,7 +169,7 @@ export function Confirmation() {
                     </div>
                     <div className="space-y-1 text-right">
                         <p className="text-[10px] text-white/30 uppercase tracking-widest uppercase">Barbero</p>
-                        <p className="text-sm font-black italic uppercase">{barberNames[barberId as keyof typeof barberNames]}</p>
+                        <p className="text-sm font-black italic uppercase">{barberName || "Sin asignar"}</p>
                     </div>
                 </div>
             </div>
