@@ -8,12 +8,14 @@ import { supabase } from "@/shared/lib/supabase";
 import { format } from "date-fns";
 
 export function Confirmation() {
-    const { barberId, barberName, serviceId, date, time, reset, setStep } = useBookingStore();
+    const { barberId, barberName, serviceId, date, time, isFixedWeekly, reset, setStep, setFixedWeekly } = useBookingStore();
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [qrValue, setQrValue] = useState("");
+    const [paymentCompleted, setPaymentCompleted] = useState(false);
+    const [hasCopied, setHasCopied] = useState(false);
 
     // Format date for display and WhatsApp
     const formattedDate = date ? format(new Date(date + 'T12:00:00'), 'dd-MM-yyyy') : "";
@@ -25,11 +27,38 @@ export function Confirmation() {
         "s4": "Corte Niños"
     };
 
+    // Precios base de referencia para calcular final_price (10% off si es turno fijo)
+    const servicePrices: Record<string, number> = {
+        s1: 12000,
+        s2: 8000,
+        s3: 15000,
+        s4: 10000, // Corte para chicos
+    };
+
+    const paymentAlias = barberName === "Santi Ducca" ? "santi.ducca" : "fedediaz.14";
+
+    const handleCopyAlias = async () => {
+        try {
+            await navigator.clipboard.writeText(paymentAlias);
+            setHasCopied(true);
+            setTimeout(() => setHasCopied(false), 2000);
+        } catch (error) {
+            console.error("Error copying alias to clipboard:", error);
+        }
+    };
+
     const handleConfirm = async () => {
         if (!name || !phone) return;
         setIsSubmitting(true);
 
         const qrHash = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        // Calcular precio final con posible descuento por turno fijo
+        const basePrice = serviceId ? servicePrices[serviceId] ?? null : null;
+        const finalPrice =
+            basePrice != null
+                ? Math.round((isFixedWeekly ? basePrice * 0.9 : basePrice))
+                : null;
 
         // Save to Supabase (The Vault)
         if (supabase && barberId) {
@@ -41,7 +70,10 @@ export function Confirmation() {
                 appointment_date: date,
                 appointment_time: time,
                 qr_hash: qrHash,
-                status: "pending"
+                status: "pending",
+                is_fixed_weekly: isFixedWeekly,
+                final_price: finalPrice,
+                deposit_paid: false,
             });
 
             if (error) {
@@ -77,8 +109,14 @@ export function Confirmation() {
                     <div className="w-20 h-20 bg-neon-cyan/20 rounded-full flex items-center justify-center mb-6 shadow-neon-glow">
                         <CheckCircle className="w-10 h-10 text-neon-cyan" />
                     </div>
-                    <h2 className="text-4xl font-extrabold tracking-tighter mb-2">¡LISTO!</h2>
-                    <p className="text-white/60 mb-6 uppercase tracking-widest text-[10px] font-black">Turno confirmado y enviado a WhatsApp</p>
+                    <h2 className="text-4xl font-extrabold tracking-tighter mb-2">
+                        {paymentCompleted ? "¡TURNO REGISTRADO!" : "¡PENDIENTE DE SEÑA!"}
+                    </h2>
+                    <p className="text-white/60 mb-6 uppercase tracking-widest text-[10px] font-black">
+                        {paymentCompleted
+                            ? "Queda sujeto a validación del pago por parte del barbero"
+                            : "Tu turno fue generado en estado PENDING. Debes abonar la seña para que pase a CONFIRMED."}
+                    </p>
 
                     <div className="w-full glass-card p-1 max-w-[260px] mx-auto mb-8 shadow-neon-glow border-2 border-neon-cyan overflow-hidden rounded-3xl">
                         <div className="bg-white p-6 rounded-2xl">
@@ -87,17 +125,51 @@ export function Confirmation() {
                         <div className="py-4 text-white font-black text-2xl tracking-[0.3em] uppercase">{qrValue}</div>
                     </div>
 
-                    <div className="w-full glass-card p-6 mb-8 border-white/5 text-left">
+                    {/* Paso final: Finalizar Compra */}
+                    <div className="w-full glass-card p-6 mb-8 border-white/5 text-left bg-white/[0.02] animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="flex items-center gap-3 mb-4">
                             <CreditCard className="w-5 h-5 text-neon-purple" />
-                            <h4 className="font-bold text-sm tracking-widest uppercase">Pagar Seña</h4>
+                            <h4 className="font-bold text-sm tracking-widest uppercase">Finalizar Compra</h4>
                         </div>
-                        <p className="text-white/40 text-xs mb-4">Para garantizar tu lugar, envía el comprobante al WhatsApp.</p>
-                        <div className="p-4 bg-white/5 rounded-xl border border-white/5">
-                            <p className="text-xs text-white/40 uppercase mb-1">CBU / ALIAS</p>
-                            <p className="text-neon-purple font-black tracking-wider uppercase">FEDEDIAZ.14</p>
-                            <p className="text-[10px] text-white/20 mt-2">BANCO MACRO - FEDERICO DIAZ</p>
+                        <p className="text-white/40 text-xs mb-4">
+                            Para asegurar tu turno, envía la seña usando el alias que corresponde a tu barbero y luego confirma el pago.
+                        </p>
+                        <div className="grid gap-4 md:grid-cols-[2fr,1fr] items-center">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-2">
+                                <p className="text-[10px] text-white/40 uppercase tracking-[0.25em]">
+                                    Alias para transferir
+                                </p>
+                                <p className="text-2xl md:text-3xl font-black tracking-wide uppercase text-neon-purple">
+                                    {paymentAlias}
+                                </p>
+                                <p className="text-[10px] text-white/30 mt-1 uppercase">
+                                    Barbero seleccionado: <span className="font-bold">{barberName || "N/D"}</span>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCopyAlias}
+                                className="w-full h-full flex items-center justify-center rounded-2xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan font-bold text-xs uppercase tracking-[0.2em] hover:bg-neon-cyan hover:text-black transition-colors shadow-neon-glow/30"
+                            >
+                                {hasCopied ? "Alias copiado" : "Copiar alias"}
+                            </button>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setPaymentCompleted(true)}
+                            className="mt-6 w-full py-4 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-[0.25em] text-xs hover:scale-[1.01] active:scale-[0.98] transition-transform shadow-neon-glow"
+                        >
+                            Ya realicé el pago
+                        </button>
+
+                        {paymentCompleted && (
+                            <div className="mt-4 p-3 rounded-xl border border-green-500/40 bg-green-500/10 text-left">
+                                <p className="text-xs font-bold text-green-400 uppercase tracking-[0.2em]">
+                                    ¡Turno registrado! Queda sujeto a la validación del pago por parte del barbero.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <button
@@ -170,6 +242,19 @@ export function Confirmation() {
                     <div className="space-y-1 text-right">
                         <p className="text-[10px] text-white/30 uppercase tracking-widest uppercase">Barbero</p>
                         <p className="text-sm font-black italic uppercase">{barberName || "Sin asignar"}</p>
+                    </div>
+                    <div className="col-span-2 mt-4">
+                        <label className="inline-flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={isFixedWeekly}
+                                onChange={(e) => setFixedWeekly(e.target.checked)}
+                                className="h-4 w-4 rounded border-white/30 bg-white/5 text-neon-cyan focus:ring-neon-cyan"
+                            />
+                            <span className="text-[11px] text-white/60 uppercase tracking-[0.2em] font-bold">
+                                Marcar como turno fijo semanal (aplica 10% OFF automático)
+                            </span>
+                        </label>
                     </div>
                 </div>
             </div>
