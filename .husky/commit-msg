@@ -1,0 +1,18 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Conventional commits validation
+COMMIT_MSG=$(cat "$1")
+PATTERN="^(feat|fix|chore|docs|style|refactor|test|build|ci|perf|revert)(\(.+\))?!?: .+"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo "❌ Error: Commit message must follow conventional commits format:"
+  echo "   feat: Add new feature"
+  echo "   fix: Resolve bug"
+  echo "   chore: Update dependencies"
+  echo ""
+  echo "Types allowed: feat, fix, chore, docs, style, refactor, test, build, ci, perf, revert"
+  exit 1
+fi
+
+echo "✅ Conventional commit validated"

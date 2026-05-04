@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useBookingStore } from "../bookingStore";
 import { supabase } from "@/shared/lib/supabase";
+import { getAllBarbers, BARBERS_CONFIG } from "@/shared/config/barbers";
 import { User } from "lucide-react";
 
-interface Barber {
+interface BarberFromDB {
     id: string;
     name: string;
     role?: string | null;
@@ -14,7 +15,7 @@ interface Barber {
 
 export function BarberSelector() {
     const setBarber = useBookingStore((state) => state.setBarber);
-    const [barbers, setBarbers] = useState<Barber[]>([]);
+    const [barbers, setBarbers] = useState<BarberFromDB[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {

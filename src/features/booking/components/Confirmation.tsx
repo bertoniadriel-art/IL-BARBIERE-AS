@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBookingStore } from "../bookingStore";
+import { getBarberConfig } from "@/shared/config/barbers";
 import { CheckCircle, Smartphone, QrCode, CreditCard, Share2, ArrowRight } from "lucide-react";
 import QRCode from "react-qr-code";
 import { supabase } from "@/shared/lib/supabase";
@@ -27,15 +28,17 @@ export function Confirmation() {
         "s4": "Corte Niños"
     };
 
-    // Precios base de referencia para calcular final_price (10% off si es turno fijo)
+// Precios base de referencia para calcular final_price (10% off si es turno fijo)
     const servicePrices: Record<string, number> = {
         s1: 12000,
         s2: 8000,
         s3: 15000,
-        s4: 10000, // Corte para chicos
+        s4: 10000, // Corte para chicas
     };
 
-    const paymentAlias = barberName === "Santi Ducca" ? "santi.ducca" : "fedediaz.14";
+    // Usar config de barberos en lugar de hardcoded
+    const barberConfig = barberName ? getBarberConfig(barberName) : undefined;
+    const paymentAlias = barberConfig?.paymentAlias ?? "barberia.ilbarbiere";
 
     const handleCopyAlias = async () => {
         try {
@@ -85,7 +88,8 @@ export function Confirmation() {
         setIsConfirmed(true);
         setIsSubmitting(false);
 
-        // WhatsApp Dynamic Link
+        // WhatsApp Dynamic Link - usar config de barberos
+        const barberWaPhone = barberConfig?.whatsappPhone ?? "3402417023";
         const message = `*IL BARBIERE OS - NUEVA RESERVA*\n\n` +
             `👤 *Cliente:* ${name}\n` +
             `✂️ *Servicio:* ${serviceNames[serviceId as keyof typeof serviceNames]}\n` +
@@ -95,11 +99,7 @@ export function Confirmation() {
             `🎟️ *Código:* ${qrHash}\n\n` +
             `_Confirmado vía IL BARBIERE OS_`;
 
-        let waPhone = "3402417023";
-        if (barberName === "Santi Ducca") {
-            waPhone = "3402503244";
-        }
-        window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`, "_blank");
+        window.open(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`, "_blank");
     };
 
     if (isConfirmed) {

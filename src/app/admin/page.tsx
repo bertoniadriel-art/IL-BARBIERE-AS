@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import type { Barber } from "@/shared/types";
+
 const ScannerModule = dynamic(() => import("@/features/admin/components/ScannerModule").then(mod => mod.ScannerModule), { ssr: false });
 import { CalendarView } from "@/features/admin/components/CalendarView";
 import { AdminLayout } from "@/features/admin/components/AdminLayout";
 import { LoginForm } from "@/features/admin/components/LoginForm";
 import { DashboardBento } from "@/features/admin/components/DashboardBento";
 
+type AdminTab = "dashboard" | "calendar" | "scanner";
+
 export default function AdminPage() {
-    const [authenticatedBarber, setAuthenticatedBarber] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "calendar" | "scanner">("dashboard");
+    const [authenticatedBarber, setAuthenticatedBarber] = useState<Barber | null>(null);
+    const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
 
     if (!authenticatedBarber) {
         return (
@@ -22,7 +26,7 @@ export default function AdminPage() {
 
     return (
         <AdminLayout
-            onTabChange={(tab: any) => setActiveTab(tab)}
+            onTabChange={(tab: AdminTab) => setActiveTab(tab)}
             onLogout={() => setAuthenticatedBarber(null)}
         >
             <div className="max-w-6xl mx-auto">
