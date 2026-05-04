@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/shared/lib/supabase";
 import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarDays, BadgeDollarSign, Users, Activity } from "lucide-react";
@@ -27,8 +27,6 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [rows, setRows] = useState<AppointmentRow[]>([]);
-
-    const supabase = useMemo(() => createClientComponentClient(), []);
 
     useEffect(() => {
         if (!barber?.id) return;
