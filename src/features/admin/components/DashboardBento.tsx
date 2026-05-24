@@ -29,7 +29,8 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
     const [rows, setRows] = useState<AppointmentRow[]>([]);
 
     useEffect(() => {
-        if (!barber?.id) return;
+        const barberId = barber?.id;
+        if (!barberId) return;
 
         async function fetchMetrics() {
             try {
@@ -45,7 +46,7 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
                     .select(
                         "status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time"
                     )
-                    .eq("barber_id", barber.id)
+                    .eq("barber_id", barberId)
                     .gte("appointment_date", format(start, "yyyy-MM-dd"))
                     .lte("appointment_date", format(end, "yyyy-MM-dd"));
 

@@ -26,7 +26,7 @@ export default function AdminPage() {
 
     return (
         <AdminLayout
-            onTabChange={(tab: AdminTab) => setActiveTab(tab)}
+            onTabChange={(tab) => setActiveTab(tab as AdminTab)}
             onLogout={() => setAuthenticatedBarber(null)}
         >
             <div className="max-w-6xl mx-auto">
