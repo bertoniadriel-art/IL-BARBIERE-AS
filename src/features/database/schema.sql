@@ -1,3 +1,5 @@
+-- Schema reflects production state. Auth handled via Supabase Auth (auth.users). Barbers must be provisioned in Auth dashboard and linked via auth_user_id.
+
 -- ==========================================
 -- IL BARBIERE OS - THE VAULT (SUPABASE SCHEMA)
 -- ==========================================
@@ -8,22 +10,21 @@ create extension if not exists "uuid-ossp";
 -- 1. BARBERS TABLE
 create table if not exists public.barbers (
   id uuid primary key default uuid_generate_v4(),
-  auth_id uuid references auth.users(id), -- Link to Supabase Auth
+  auth_user_id uuid references auth.users(id),
   name text not null,
   phone text not null,
   image_url text,
-  username text unique,
-  password text, -- Deprecated once Auth is real, but keeping for compatibility
   active boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- INITIAL BARBERS (Idempotent)
-insert into public.barbers (name, phone, image_url, username, password)
-values 
-  ('Santi Ducca', '3402503244', '/assets/barbers/santi.png', 'santi', 'santi123'), 
-  ('Fede Diaz', '3402417023', '/assets/barbers/fede.png', 'fede', 'fede123')
-on conflict (username) do nothing;
+-- INITIAL BARBERS
+-- Provision users in Supabase Auth dashboard first, then insert with matching auth_user_id
+insert into public.barbers (name, phone, image_url)
+values
+  ('Santi Ducca', '3402503244', '/assets/barbers/santi.png'),
+  ('Fede Diaz', '3402417023', '/assets/barbers/fede.png')
+on conflict do nothing;
 
 -- 2. SERVICES TABLE
 create table if not exists public.services (
@@ -37,7 +38,7 @@ create table if not exists public.services (
 );
 
 -- INITIAL SERVICES (Idempotent)
-insert into public.services (name, price, duration_min) values 
+insert into public.services (name, price, duration_min) values
 ('Corte de Pelo', 12000.00, 30),
 ('Barba', 8000.00, 30),
 ('Corte + Barba', 16000.00, 60)
@@ -82,12 +83,12 @@ grant usage on schema public to anon, authenticated;
 create policy "Barbers: public read" on public.barbers for select using (true);
 create policy "Services: public read" on public.services for select using (true);
 
-create policy "Appointments: public insert" on public.appointments 
-for insert to anon, authenticated 
+create policy "Appointments: public insert" on public.appointments
+for insert to anon, authenticated
 with check (true);
 
-create policy "Appointments: public select own" on public.appointments 
+create policy "Appointments: public select own" on public.appointments
 for select using (true); -- Allow anyone to see availability or confirmation
 
-create policy "Appointments: admin full access" on public.appointments 
+create policy "Appointments: admin full access" on public.appointments
 for all using (true);

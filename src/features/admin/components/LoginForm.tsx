@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, User, ShieldAlert } from "lucide-react";
+import { Lock, Mail, ShieldAlert } from "lucide-react";
 import { supabase } from "@/shared/lib/supabase";
+import { authService } from "@/features/auth/services/authService";
 
 interface Props {
     onLogin: (barber: any) => void;
 }
 
 export function LoginForm({ onLogin }: Props) {
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -19,44 +20,33 @@ export function LoginForm({ onLogin }: Props) {
         setLoading(true);
         setError("");
 
-        // 🔥 PROTOCOLO FAILSAFE: Si son las credenciales maestras, entrar directo
-        // Esto garantiza acceso al Búnker incluso si la DB tiene problemas de columnas
-        if ((username.toLowerCase() === "santi" && password === "santi123") ||
-            (username.toLowerCase() === "fede" && password === "fede123")) {
-
-            const barberData = username.toLowerCase() === "santi"
-                ? { id: "78c41016-d4f2-4946-a3b7-1c439cc7aedc", name: "Santi Ducca" }
-                : { id: "065f5bb5-578a-4993-8bbe-275b5831b2eb", name: "Fede Diaz" };
-
-            console.log("Failsafe Login Success:", barberData);
-            onLogin(barberData);
-            setLoading(false);
-            return;
-        }
-
         if (!supabase) {
             setError("Error de conexión: Supabase no configurado.");
             setLoading(false);
             return;
         }
 
-        try {
-            const { data, error: profileError } = await supabase
-                .from("barbers")
-                .select("*")
-                .eq("username", username)
-                .eq("password", password)
-                .single();
+        const { data, error: signInError } = await authService.signIn(email, password);
 
-            if (profileError || !data) {
-                setError("Usuario o contraseña incorrectos.");
-            } else {
-                onLogin(data);
-            }
-        } catch (err) {
-            console.error("Login Query Error:", err);
-            setError("Error en el sistema de identificación.");
+        if (signInError || !data?.user) {
+            setError("Email o contraseña incorrectos.");
+            setLoading(false);
+            return;
         }
+
+        const { data: barber, error: barberError } = await supabase
+            .from("barbers")
+            .select("*")
+            .eq("auth_user_id", data.user.id)
+            .single();
+
+        if (barberError || !barber) {
+            setError("Tu usuario no está vinculado a un perfil de barbero, contactá al admin.");
+            setLoading(false);
+            return;
+        }
+
+        onLogin(barber);
         setLoading(false);
     };
 
@@ -72,15 +62,15 @@ export function LoginForm({ onLogin }: Props) {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Nombre de Usuario</label>
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Correo Electrónico</label>
                     <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                         <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:border-neon-purple outline-none transition-all font-bold"
-                            placeholder="Ej: santi"
+                            placeholder="correo@ejemplo.com"
                             required
                         />
                     </div>

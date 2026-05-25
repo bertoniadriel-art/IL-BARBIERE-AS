@@ -3,6 +3,7 @@
 export interface Barber {
   id: string;
   name: string;
+  auth_user_id: string | null;
   paymentAlias: string;
   whatsappPhone: string;
 }
