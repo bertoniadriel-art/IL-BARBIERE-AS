@@ -30,6 +30,13 @@ describe('Barbers Config', () => {
       expect(barber).toHaveProperty('name');
       expect(barber).toHaveProperty('paymentAlias');
       expect(barber).toHaveProperty('whatsappPhone');
+      expect(barber).toHaveProperty('schedule');
+      expect(barber).toHaveProperty('vacations');
     });
+  });
+
+  it('should have payment aliases for both barbers', () => {
+    expect(BARBERS_CONFIG['Santi Ducca'].paymentAlias).toBe('santi.ducca');
+    expect(BARBERS_CONFIG['Fede Diaz'].paymentAlias).toBe('fedediaz.14');
   });
 });
