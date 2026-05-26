@@ -37,9 +37,9 @@ vi.mock('../bookingStore', () => ({
 }));
 
 const mockServices = [
-  { id: 'uuid-svc-1', name: 'Corte de Pelo', price: 12000, duration_min: 30, description: 'Degradado' },
-  { id: 'uuid-svc-2', name: 'Barba', price: 8000, duration_min: 30, description: 'Perfilado' },
-  { id: 'uuid-svc-3', name: 'Corte + Barba', price: 16000, duration_min: 60, description: 'Completo' },
+  { id: 'uuid-svc-1', name: 'Corte de Pelo', price: 12000, duration_min: 30 },
+  { id: 'uuid-svc-2', name: 'Barba', price: 8000, duration_min: 30 },
+  { id: 'uuid-svc-3', name: 'Corte + Barba', price: 16000, duration_min: 60 },
 ];
 
 function makeSuccessQuery(data: typeof mockServices) {

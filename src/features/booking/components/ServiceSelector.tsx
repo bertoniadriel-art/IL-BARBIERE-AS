@@ -10,7 +10,6 @@ interface ServiceFromDB {
   name: string;
   price: number;
   duration_min: number;
-  description: string | null;
 }
 
 // Color cycle derived from index — keeps UI identical without coupling to DB
@@ -37,7 +36,7 @@ export function ServiceSelector() {
         }
         const { data, error } = await supabase
           .from('services')
-          .select('id, name, price, duration_min, description')
+          .select('id, name, price, duration_min')
           .order('price', { ascending: true });
 
         if (error) {
@@ -129,11 +128,6 @@ export function ServiceSelector() {
                   <h3 className='text-2xl font-black italic uppercase mb-2 group-hover:text-neon-cyan transition-colors'>
                     {service.name}
                   </h3>
-                  {service.description && (
-                    <p className='text-xs text-white/40 mb-6 font-medium leading-relaxed max-w-[200px]'>
-                      {service.description}
-                    </p>
-                  )}
 
                   <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-white/20 uppercase'>
