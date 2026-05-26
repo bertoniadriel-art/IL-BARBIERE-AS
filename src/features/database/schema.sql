@@ -115,36 +115,23 @@ create policy "Appointments: public insert"
   for insert to anon, authenticated
   with check (true);
 
--- Appointments SELECT: each barber sees only their own appointments
--- (scoped via auth.uid() = barbers.auth_user_id joined through barber_id)
-create policy "Appointments: barber select own"
+-- HOTFIX 2026-05-25 — temporary permissive policies until PR3 (real Auth) lands.
+-- The previous barber-scoped policies required `auth.uid() = barbers.auth_user_id` to function,
+-- but real Supabase Auth is not yet wired (LoginForm still uses legacy plaintext path) and
+-- barbers.auth_user_id is null for both barbers. With those policies active, every read/write
+-- to appointments outside of public INSERT was blocked.
+--
+-- PR3 will:
+--   1. Create Auth users for Fede & Santi.
+--   2. Populate barbers.auth_user_id.
+--   3. Drop these TEMP policies and restore barber-scoped ones.
+
+create policy "TEMP: anon select appointments"
   on public.appointments
   for select
-  using (
-    barber_id in (
-      select id from public.barbers
-      where auth_user_id = auth.uid()
-    )
-  );
+  using (true);
 
--- Appointments UPDATE: barber can only update their own appointments
-create policy "Appointments: barber update own"
+create policy "TEMP: anon update appointments"
   on public.appointments
   for update
-  using (
-    barber_id in (
-      select id from public.barbers
-      where auth_user_id = auth.uid()
-    )
-  );
-
--- Appointments DELETE: barber can only delete their own appointments
-create policy "Appointments: barber delete own"
-  on public.appointments
-  for delete
-  using (
-    barber_id in (
-      select id from public.barbers
-      where auth_user_id = auth.uid()
-    )
-  );
+  using (true);
