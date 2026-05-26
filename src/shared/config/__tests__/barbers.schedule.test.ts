@@ -59,14 +59,20 @@ describe('getAvailableTimesForBarber', () => {
     });
   });
 
-  describe('Santi Ducca schedule — Lun–Vie 10:00–19:00, Sáb 10:00–14:00, Dom off', () => {
+  describe('Santi Ducca schedule — Mar–Vie 10:00–19:00, Sáb 10:00–14:00, Lun+Dom off', () => {
     it('returns [] for Santi on Sunday (day off)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', sunday, BASE_TIMES);
       expect(result).toEqual([]);
     });
 
-    it('returns times from 10:00 to 19:00 for Santi on Monday', () => {
+    it('returns [] for Santi on Monday (day off)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', monday, BASE_TIMES);
+      expect(result).toEqual([]);
+    });
+
+    it('returns times from 10:00 to 19:00 for Santi on Tuesday', () => {
+      const tuesday = new Date('2026-06-02T12:00:00');
+      const result = getAvailableTimesForBarber('Santi Ducca', tuesday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('10:00');
       expect(result[result.length - 1]).toBe('19:00');
@@ -87,12 +93,39 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).not.toContain('19:00');
     });
 
-    it('does not include times before 10:00 for Santi on Monday', () => {
+    it('does not include times before 10:00 for Santi on Tuesday', () => {
+      const tuesday = new Date('2026-06-02T12:00:00');
       const timesWithEarly = ['09:00', '09:30', '10:00', '10:30'];
-      const result = getAvailableTimesForBarber('Santi Ducca', monday, timesWithEarly);
+      const result = getAvailableTimesForBarber('Santi Ducca', tuesday, timesWithEarly);
       expect(result).not.toContain('09:00');
       expect(result).not.toContain('09:30');
       expect(result).toContain('10:00');
+    });
+  });
+
+  describe('Argentine national holidays — block both barbers', () => {
+    it('returns [] for Fede on Navidad 2026 (would be Friday, normally working)', () => {
+      const navidad = new Date('2026-12-25T12:00:00');
+      const result = getAvailableTimesForBarber('Fede Diaz', navidad, BASE_TIMES);
+      expect(result).toEqual([]);
+    });
+
+    it('returns [] for Santi on Año Nuevo 2026 (Thursday, normally working)', () => {
+      const anoNuevo = new Date('2026-01-01T12:00:00');
+      const result = getAvailableTimesForBarber('Santi Ducca', anoNuevo, BASE_TIMES);
+      expect(result).toEqual([]);
+    });
+
+    it('returns [] for Fede on Día de la Independencia 2026 (Thursday)', () => {
+      const indep = new Date('2026-07-09T12:00:00');
+      const result = getAvailableTimesForBarber('Fede Diaz', indep, BASE_TIMES);
+      expect(result).toEqual([]);
+    });
+
+    it('non-holiday Tuesday still returns slots for Santi', () => {
+      const regularTuesday = new Date('2026-06-02T12:00:00');
+      const result = getAvailableTimesForBarber('Santi Ducca', regularTuesday, BASE_TIMES);
+      expect(result.length).toBeGreaterThan(0);
     });
   });
 
