@@ -94,23 +94,23 @@ describe('Migration: 2026-05-25_mvp_core.sql', () => {
     it('schema.sql contains barber-scoped appointments SELECT policy', () => {
       const sql = readSQL(SCHEMA_PATH);
       // Policy uses auth.uid() joined through barber_id
-      expect(sql).toMatch(/create policy.*appointments.*select/is);
+      expect(sql).toMatch(/create policy[\s\S]*?appointments[\s\S]*?select/i);
       expect(sql).toMatch(/auth\.uid\(\)/i);
     });
 
     it('schema.sql contains RLS policy for appointments UPDATE scoped to barber', () => {
       const sql = readSQL(SCHEMA_PATH);
-      expect(sql).toMatch(/create policy.*appointments.*update/is);
+      expect(sql).toMatch(/create policy[\s\S]*?appointments[\s\S]*?update/i);
     });
 
     it('schema.sql contains open SELECT policy for services', () => {
       const sql = readSQL(SCHEMA_PATH);
-      expect(sql).toMatch(/create policy.*services.*select/is);
+      expect(sql).toMatch(/create policy[\s\S]*?services[\s\S]*?select/i);
     });
 
     it('schema.sql contains open SELECT policy for barbers', () => {
       const sql = readSQL(SCHEMA_PATH);
-      expect(sql).toMatch(/create policy.*barbers.*select/is);
+      expect(sql).toMatch(/create policy[\s\S]*?barbers[\s\S]*?select/i);
     });
 
     it('migration file contains RLS policy definitions', () => {
