@@ -1,4 +1,4 @@
-import { supabase } from "@/shared/lib/supabase";
+import { supabase } from "@/shared/lib/supabase-client";
 import type { Barber } from "@/shared/types";
 
 export const authService = {
