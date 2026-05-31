@@ -14,6 +14,8 @@ create table if not exists public.barbers (
   name text not null,
   phone text not null,
   image_url text,
+  role text not null default 'Barbero',
+  image text,
   active boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -55,8 +57,19 @@ create table if not exists public.appointments (
   appointment_time time not null,
   status text check (status in ('pending', 'confirmed', 'attended', 'cancelled')) default 'pending',
   qr_hash text unique,
+  is_fixed_weekly boolean not null default false,
+  final_price integer,
+  deposit_paid boolean not null default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- ==========================================
+-- UNIQUE CONSTRAINT — slot collision prevention
+-- ==========================================
+
+alter table public.appointments
+  add constraint if not exists appointments_unique_slot
+  unique (barber_id, appointment_date, appointment_time);
 
 -- ==========================================
 -- RLS (ROW LEVEL SECURITY)
@@ -72,6 +85,11 @@ drop policy if exists "Services: public read" on public.services;
 drop policy if exists "Appointments: public insert" on public.appointments;
 drop policy if exists "Appointments: admin select" on public.appointments;
 drop policy if exists "Appointments: admin update" on public.appointments;
+drop policy if exists "Appointments: public select own" on public.appointments;
+drop policy if exists "Appointments: admin full access" on public.appointments;
+drop policy if exists "Appointments: barber select own" on public.appointments;
+drop policy if exists "Appointments: barber update own" on public.appointments;
+drop policy if exists "Appointments: barber delete own" on public.appointments;
 
 -- Permissions
 grant all on public.barbers to anon, authenticated, service_role;
@@ -79,16 +97,54 @@ grant all on public.services to anon, authenticated, service_role;
 grant all on public.appointments to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated;
 
--- Policies
-create policy "Barbers: public read" on public.barbers for select using (true);
-create policy "Services: public read" on public.services for select using (true);
+-- Barbers: public SELECT (needed for booking flow)
+create policy "Barbers: public read"
+  on public.barbers
+  for select
+  using (true);
 
-create policy "Appointments: public insert" on public.appointments
-for insert to anon, authenticated
-with check (true);
+-- Services: public SELECT (needed for booking flow)
+create policy "Services: public read"
+  on public.services
+  for select
+  using (true);
 
-create policy "Appointments: public select own" on public.appointments
-for select using (true); -- Allow anyone to see availability or confirmation
+-- Appointments: public INSERT (anon clients booking)
+create policy "Appointments: public insert"
+  on public.appointments
+  for insert to anon, authenticated
+  with check (true);
 
-create policy "Appointments: admin full access" on public.appointments
-for all using (true);
+-- Appointments SELECT: each barber sees only their own appointments
+-- (scoped via auth.uid() = barbers.auth_user_id joined through barber_id)
+create policy "Appointments: barber select own"
+  on public.appointments
+  for select
+  using (
+    barber_id in (
+      select id from public.barbers
+      where auth_user_id = auth.uid()
+    )
+  );
+
+-- Appointments UPDATE: barber can only update their own appointments
+create policy "Appointments: barber update own"
+  on public.appointments
+  for update
+  using (
+    barber_id in (
+      select id from public.barbers
+      where auth_user_id = auth.uid()
+    )
+  );
+
+-- Appointments DELETE: barber can only delete their own appointments
+create policy "Appointments: barber delete own"
+  on public.appointments
+  for delete
+  using (
+    barber_id in (
+      select id from public.barbers
+      where auth_user_id = auth.uid()
+    )
+  );
