@@ -1,6 +1,7 @@
 // Barbers configuration — schedules, payment aliases, contact info
 // Schedules are in code (stable, 2-barber operation). Move to DB in v2 if dynamic editing is needed.
 import type { Barber } from '../types';
+import { isArgentineHoliday } from './holidays';
 
 export type { WeeklySchedule, DayWindow, VacationBlock } from '../types';
 
@@ -11,15 +12,15 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
     auth_user_id: null,
     paymentAlias: 'santi.ducca',
     whatsappPhone: '3402503244',
-    // Lun–Vie 10:00–19:00; Sáb 10:00–14:00; Dom off
+    // Mar–Vie 10:00–19:00; Sáb 10:00–14:00; Lun + Dom off
     schedule: {
-      1: { from: '10:00', to: '19:00' }, // Mon
       2: { from: '10:00', to: '19:00' }, // Tue
       3: { from: '10:00', to: '19:00' }, // Wed
       4: { from: '10:00', to: '19:00' }, // Thu
       5: { from: '10:00', to: '19:00' }, // Fri
       6: { from: '10:00', to: '14:00' }, // Sat
       // 0 = Sun — omitted means off
+      // 1 = Mon — omitted means off
     },
     vacations: [],
   },
@@ -59,6 +60,9 @@ export function getAvailableTimesForBarber(
 ): string[] {
   const cfg = BARBERS_CONFIG[barberName];
   if (!cfg) return [];
+
+  // National holidays block both barbers
+  if (isArgentineHoliday(date)) return [];
 
   // Check vacation blocks
   const onVacation = cfg.vacations.some(
