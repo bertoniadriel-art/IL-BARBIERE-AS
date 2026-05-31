@@ -66,7 +66,7 @@ describe("LoginForm (T5.4)", () => {
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
     mocks.mockFrom.mockReturnValue({ select: mockSelect });
 
-    render(<LoginForm onLogin={vi.fn()} />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByPlaceholderText("correo@ejemplo.com"), {
       target: { value: "santi@test.com" },
@@ -87,7 +87,7 @@ describe("LoginForm (T5.4)", () => {
       error: { message: "Invalid login credentials" },
     });
 
-    render(<LoginForm onLogin={vi.fn()} />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByPlaceholderText("correo@ejemplo.com"), {
       target: { value: "bad@test.com" },
@@ -98,7 +98,7 @@ describe("LoginForm (T5.4)", () => {
     fireEvent.click(screen.getByRole("button", { name: /acceder/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/email o contraseña incorrectos/i)).toBeInTheDocument();
+      expect(screen.getByText("Credenciales incorrectas")).toBeInTheDocument();
     });
     expect(mocks.mockRefresh).not.toHaveBeenCalled();
   });
@@ -109,7 +109,7 @@ describe("LoginForm (T5.4)", () => {
       error: { message: "Invalid login credentials" },
     });
 
-    render(<LoginForm onLogin={vi.fn()} />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByPlaceholderText("correo@ejemplo.com"), {
       target: { value: "bad@test.com" },
@@ -120,7 +120,7 @@ describe("LoginForm (T5.4)", () => {
     fireEvent.click(screen.getByRole("button", { name: /acceder/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/email o contraseña incorrectos/i)).toBeInTheDocument();
+      expect(screen.getByText("Credenciales incorrectas")).toBeInTheDocument();
     });
   });
 

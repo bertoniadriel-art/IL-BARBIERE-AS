@@ -6,11 +6,7 @@ import { Lock, Mail, ShieldAlert } from "lucide-react";
 import { supabase } from "@/shared/lib/supabase";
 import { authService } from "@/features/auth/services/authService";
 
-interface Props {
-  onLogin: (barber: any) => void;
-}
-
-export function LoginForm({ onLogin }: Props) {
+export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +27,7 @@ export function LoginForm({ onLogin }: Props) {
     const { data, error: signInError } = await authService.signIn(email, password);
 
     if (signInError || !data?.user) {
-      setError("Email o contraseña incorrectos.");
+      setError("Credenciales incorrectas");
       setLoading(false);
       return;
     }
@@ -48,7 +44,6 @@ export function LoginForm({ onLogin }: Props) {
       return;
     }
 
-    onLogin(barber);
     // Trigger server component re-render so the session cookie is picked up
     router.refresh();
     setLoading(false);
