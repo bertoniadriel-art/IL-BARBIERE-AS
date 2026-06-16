@@ -38,6 +38,8 @@ export function TimeSelector() {
   const setStep = useBookingStore((state) => state.setStep);
   const barberId = useBookingStore((state) => state.barberId);
   const barberName = useBookingStore((state) => state.barberName);
+  const slotConflictError = useBookingStore((state) => state.slotConflictError);
+  const setSlotConflictError = useBookingStore((state) => state.setSlotConflictError);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
@@ -45,6 +47,12 @@ export function TimeSelector() {
 
   // Generate next 14 days
   const days = Array.from({ length: 14 }).map((_, i) => addDays(startOfToday(), i));
+
+  // Clear slot conflict error when user selects a new date
+  const handleDateSelect = (dateStr: string) => {
+    if (slotConflictError) setSlotConflictError(null);
+    setSelectedDate(dateStr);
+  };
 
   // Fetch booked slots whenever barber or date changes
   useEffect(() => {
@@ -87,6 +95,13 @@ export function TimeSelector() {
       </div>
 
       <div className='flex flex-col gap-10'>
+        {/* Slot conflict error banner */}
+        {slotConflictError && (
+          <div className='p-4 rounded-2xl border border-red-500/40 bg-red-500/10 animate-in fade-in duration-300'>
+            <p className='text-red-400 text-sm font-bold'>{slotConflictError}</p>
+          </div>
+        )}
+
         {/* Date Horizontal Scroll */}
         <div className='flex gap-4 overflow-x-auto pb-4 no-scrollbar'>
           {days.map((date) => {
@@ -96,7 +111,7 @@ export function TimeSelector() {
             return (
               <button
                 key={dateStr}
-                onClick={() => !isDisabledDay && setSelectedDate(dateStr)}
+                onClick={() => !isDisabledDay && handleDateSelect(dateStr)}
                 disabled={isDisabledDay}
                 className={`flex-shrink-0 w-24 p-4 rounded-xl border flex flex-col items-center transition-all
                   ${

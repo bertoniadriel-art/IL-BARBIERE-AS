@@ -17,22 +17,30 @@ export function BarberSelector() {
     const setBarber = useBookingStore((state) => state.setBarber);
     const [barbers, setBarbers] = useState<BarberFromDB[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchBarbers = async () => {
             try {
-                if (!supabase) return;
+                if (!supabase) {
+                    setError('Supabase no configurado');
+                    return;
+                }
 
-                const { data, error } = await supabase
+                const { data, error: fetchError } = await supabase
                     .from("barbers")
                     .select("id, name, role, image");
 
-                if (error) {
-                    console.error("Error fetching barbers from Supabase:", error);
+                if (fetchError) {
+                    console.error("Error fetching barbers from Supabase:", fetchError);
+                    setError('Error al cargar barberos. Verificá tu conexión.');
                     return;
                 }
 
                 setBarbers(data || []);
+            } catch (e) {
+                console.error("Unexpected error fetching barbers:", e);
+                setError('Error inesperado al conectar con el servidor.');
             } finally {
                 setIsLoading(false);
             }
@@ -50,6 +58,11 @@ export function BarberSelector() {
             {isLoading ? (
                 <div className="flex justify-center items-center py-12 text-white/60 text-sm uppercase tracking-[0.2em]">
                     Cargando barberos...
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-red-400 text-sm uppercase tracking-[0.2em]">
+                    <User className="w-6 h-6 text-red-400/60" />
+                    {error}
                 </div>
             ) : barbers.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-white/60 text-sm uppercase tracking-[0.2em]">
