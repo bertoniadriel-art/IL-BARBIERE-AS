@@ -34,7 +34,7 @@ vi.mock('@/shared/lib/supabase', () => {
     { id: 'b-santi', name: 'Santi Ducca', auth_user_id: 'auth-user-1' },
   ];
   const SEED_SERVICES = [
-    { id: 'svc-corte', name: 'Corte de Pelo', price: 12000, duration_min: 30 },
+    { id: 'svc-corte', name: 'Corte Premium', price: 14000, duration_min: 30 },
   ];
 
   function getTableData(table: string): any[] {
@@ -167,9 +167,9 @@ async function goToConfirmation() {
 
   // Step 2: Select service
   await waitFor(() => {
-    expect(screen.getByText('Corte de Pelo')).toBeTruthy();
+    expect(screen.getByText('Corte Premium')).toBeTruthy();
   });
-  clickButton(/corte de pelo/i);
+  clickButton(/corte premium/i);
 
   // Step 3: Select time
   await waitFor(() => {
@@ -247,7 +247,7 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     expect(inserted.service_id).toBe('svc-corte');
     expect(inserted.client_name).toBe('Juan Perez');
     expect(inserted.client_phone).toBe('3402500000');
-    expect(inserted.final_price).toBe(12000);
+    expect(inserted.final_price).toBe(14000);
     expect(inserted.status).toBe('pending');
   });
 
