@@ -1,4 +1,4 @@
-import { supabase } from "@/shared/lib/supabase";
+import { supabase } from "@/shared/lib/supabase-client";
 import type { Barber } from "@/shared/types";
 
 export const authService = {
@@ -26,11 +26,15 @@ export const authService = {
     async getCurrentBarber(): Promise<Barber | null> {
         const session = await authService.getSession();
         if (!session || !supabase) return null;
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from("barbers")
             .select("*")
             .eq("auth_user_id", session.user.id)
             .single();
+        if (error) {
+            console.error("Error fetching current barber:", error);
+            return null;
+        }
         return data ?? null;
     },
 };

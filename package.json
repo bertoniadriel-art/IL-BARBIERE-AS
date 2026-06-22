@@ -13,11 +13,11 @@
     "test:coverage": "vitest --coverage",
     "biome:check": "biome check .",
     "biome:write": "biome write .",
+    "scanner:fixtures": "npx tsx scripts/generate-scanner-fixtures.ts",
     "prepare": "husky install"
   },
   "dependencies": {
-    "@supabase/auth-helpers-nextjs": "^0.15.0",
-    "@supabase/auth-helpers-react": "^0.15.0",
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.48.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -36,8 +36,10 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.0.1",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
@@ -45,6 +47,7 @@
     "jsdom": "^25.0.1",
     "lint-staged": "^15.3.0",
     "postcss": "^8.4.49",
+    "qrcode": "^1.5.4",
     "tailwindcss": "^3.4.17",
     "typescript": "^5",
     "vitest": "^2.1.8"

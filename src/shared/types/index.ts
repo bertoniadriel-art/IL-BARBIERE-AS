@@ -1,11 +1,27 @@
 // Tipos para IL BARBIERE AS
 
+export interface DayWindow {
+  from: string; // "HH:MM"
+  to: string;   // "HH:MM"
+}
+
+// Index: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat (matches Date.getDay())
+export type WeeklySchedule = Partial<Record<0 | 1 | 2 | 3 | 4 | 5 | 6, DayWindow>>;
+
+export interface VacationBlock {
+  monthZeroBased: number; // 0–11
+  dayFrom: number;
+  dayTo: number;
+}
+
 export interface Barber {
   id: string;
   name: string;
   auth_user_id: string | null;
   paymentAlias: string;
   whatsappPhone: string;
+  schedule: WeeklySchedule;
+  vacations: VacationBlock[];
 }
 
 export interface Service {
@@ -28,7 +44,7 @@ export interface Appointment {
   qr_hash: string;
   status: AppointmentStatus;
   is_fixed_weekly: boolean;
-  final_price: number;
+  final_price: number | null;
   deposit_paid: boolean;
   created_at?: string;
 }
