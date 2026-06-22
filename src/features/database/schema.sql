@@ -41,9 +41,10 @@ create table if not exists public.services (
 
 -- INITIAL SERVICES (Idempotent)
 insert into public.services (name, price, duration_min) values
-('Corte de Pelo', 12000.00, 30),
-('Barba', 8000.00, 30),
-('Corte + Barba', 16000.00, 60)
+('Corte Premium', 14000.00, 30),
+('Corte para chicos', 14000.00, 30),
+('Barba & Perfilado', 10000.00, 30),
+('Corte + Barba', 20000.00, 60)
 on conflict do nothing;
 
 -- 3. APPOINTMENTS TABLE
