@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>IL BARBIERE — Saca tu Turno</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050c0e;
+      color: #fff;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      background: radial-gradient(ellipse at 60% 0%, #0d2a2a 0%, #050c0e 55%);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 28px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle grid overlay */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,200,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,200,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,255,200,.4);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      margin-bottom: 6px;
+    }
+
+    .hero-pre {
+      font-size: clamp(42px, 12vw, 58px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -.02em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .hero-main {
+      font-size: clamp(72px, 20vw, 96px);
+      font-weight: 900;
+      line-height: .95;
+      letter-spacing: -.04em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #00ffe0 0%, #7b5ea7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, #00ffe0, transparent);
+      margin: 18px 0 24px;
+      width: 100%;
+    }
+
+    /* ── Subtitle ── */
+    .subtitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.7);
+      margin-bottom: 6px;
+    }
+
+    .subtitle-line {
+      width: 36px;
+      height: 2px;
+      background: #00ffe0;
+      margin-bottom: 32px;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      flex: 1;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+    }
+
+    .step-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #00ffe0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: #00ffe0;
+      background: rgba(0,255,200,.08);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 28px;
+      background: linear-gradient(to bottom, rgba(0,255,200,.4), rgba(0,255,200,.05));
+      margin: 4px 0;
+    }
+
+    .step-content {
+      padding-bottom: 28px;
+      padding-top: 6px;
+    }
+
+    .step:last-child .step-content { padding-bottom: 0; }
+
+    .step-title {
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(255,255,255,.45);
+      letter-spacing: .02em;
+    }
+
+    /* ── CTA ── */
+    .cta-wrap {
+      margin-top: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #00ffe0 0%, #7b5ea7 100%);
+      color: #000;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: 0 0 32px rgba(0,255,200,.25), 0 0 60px rgba(123,94,167,.15);
+      transition: opacity .15s;
+    }
+
+    .cta-btn:active { opacity: .85; }
+
+    /* ── Footer ── */
+    .footer {
+      font-size: 11px;
+      color: rgba(255,255,255,.35);
+      text-align: center;
+      letter-spacing: .05em;
+    }
+
+    .footer span { color: rgba(255,255,255,.55); }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Header -->
+    <div class="header">
+      <img class="logo" src="/assets/logo/logo-official.jpg" alt="IL BARBIERE" />
+      <div class="brand">IL BARBIERE</div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-pre">SACA TU</div>
+      <div class="hero-main">TURNO</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="subtitle">Reservá desde tu celular</div>
+    <div class="subtitle-line"></div>
+
+    <!-- Steps -->
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">1</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Abrí la app</div>
+          <div class="step-desc">Elegí barbero y horario</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">2</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Señá tu turno</div>
+          <div class="step-desc">Aseguralo con una seña</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">3</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Recibí tu QR</div>
+          <div class="step-desc">Te llega al instante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">4</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Presentate</div>
+          <div class="step-desc">Fede o Santi escanean tu QR</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">5</div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">¡A disfrutar!</div>
+          <div class="step-desc">Sentate y relajate</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://il-barbiere-10-i9699kne2-adrielias-projects.vercel.app/reservar" target="_blank">
+        ABRIR APP
+      </a>
+      <div class="footer">
+        📍 <span>San Martín 345</span> — Arroyo Seco, Santa Fe
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
