@@ -23,7 +23,7 @@ export function useConnectionStatus(): UseConnectionStatusResult {
         setStatus('connected');
         setLastSync(new Date());
       })
-      .subscribe((state) => {
+      .subscribe((state: string) => {
         if (state === 'SUBSCRIBED') {
           setStatus('connected');
           setLastSync(new Date());
