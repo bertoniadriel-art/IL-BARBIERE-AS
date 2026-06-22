@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./public/assets/logo.svg" alt="Il Barbiere" width="200" />
+  <img src="./public/assets/logo/logo-official.jpg" alt="Il Barbiere" width="200" />
 </p>
 
-<h1 align="center">IL BARBIERE - Sistema de Gestión de Turnos</h1>
+<h1 align="center">IL BARBIERE OS</h1>
 
 <p align="center">
-  App de gestión de turnos para barbería con reservas online, dashboard admin y scanner QR.
+  El Sistema Operativo de tu imagen personal.
 </p>
 
 <p align="center">
-  <a href="https://il-barbiere-10-cwt5rfcub-adrielias-projects.vercel.app/">
+  <a href="https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app/">
     <img src="https://img.shields.io/badge/Live-Demo-blue?style=for-the-badge" alt="Live Demo" />
   </a>
   <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />
@@ -52,6 +52,7 @@ pnpm dev
 | Testing | Vitest + React Testing Library |
 | Lint/Format | Biome |
 | Package Manager | pnpm |
+| Deploy | Vercel (auto-deploy from main) |
 
 ---
 
@@ -68,17 +69,17 @@ src/
 ├── features/                # Módulos por funcionalidad
 │   ├── booking/             # Reserva de turnos
 │   │   ├── components/      # Componentes del wizard
+│   │   ├── services/        # Servicios de disponibilidad
 │   │   └── bookingStore.ts  # Estado Zustand
 │   ├── admin/               # Panel admin
-│   │   └── components/      # Componentes admin
+│   │   ├── components/      # Componentes admin
+│   │   └── services/        # Servicios admin
 │   └── auth/                # Autenticación
 │
 ├── shared/                  # Código compartido
 │   ├── components/          # Componentes reutilizables
-│   │   ├── Navbar.tsx
-│   │   └── Footer.tsx
-│   ├── lib/
-│   │   └── supabase.ts      # Cliente Supabase
+│   ├── hooks/               # Custom hooks
+│   ├── lib/                 # Utilidades (Supabase, etc)
 │   └── types/               # Tipos globales
 │
 └── test/                    # Configuración de tests
@@ -99,13 +100,14 @@ src/
 | `pnpm biome:write` | Corregir lint + format |
 | `pnpm test` | Ejecutar tests |
 | `pnpm test:coverage` | Tests con coverage |
+| `pnpm scanner:fixtures` | Generar fixtures de prueba para QR scanner |
 
 ---
 
 ## 🌿 Git Flow
 
 ```
-main    ←── Producción (protegido)
+main    ←── Producción (protegido, auto-deploy a Vercel)
   ↑
 develop ←── Desarrollo
   ↑
@@ -130,12 +132,72 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
 
 ## 📱 Funcionalidades
 
-- ✅ Reserva de turnos online
-- ✅ Selector de servicio, barbero y horario
-- ✅ Dashboard admin con métricas
-- ✅ Scanner QR para confirmar turnos
-- ✅ Sistema de login admin
-- ✅ Diseño responsive mobile-first
+### Reserva Online
+- ✅ Wizard de 3 pasos (Barbero → Servicio → Horario)
+- ✅ Servicios cargados desde Supabase
+- ✅ Validación de disponibilidad en tiempo real
+- ✅ Prevención de colisiones (23505)
+- ✅ QR único por turno
+- ✅ Compartir por WhatsApp
+
+### Dashboard Admin
+- ✅ Métricas en tiempo real (flujo de caja, clientes)
+- ✅ Resumen del día
+- ✅ Quick actions (Confirmar/Presente)
+- ✅ Estado de conexión a Supabase
+- ✅ Calendario visual por barbero
+
+### Scanner QR
+- ✅ Escaneo con cámara del celular
+- ✅ Validación de turno para hoy
+- ✅ Expiración QR (2h después del turno)
+- ✅ Prevención de reutilización
+- ✅ Check-in automático
+
+### Seguridad
+- ✅ Autenticación con Supabase Auth
+- ✅ RLS (Row Level Security)
+- ✅ Middleware de sesión
+
+---
+
+## 🧪 Tests
+
+```
+124/124 tests passing
+```
+
+### Cobertura:
+- Booking flow (colisiones, servicios, horarios)
+- Dashboard (métricas, quick actions, conexión)
+- Scanner (fixtures de prueba con QRs generados)
+- Auth (login, sesión, middleware)
+
+### Fixtures de Scanner
+
+```bash
+# Generar QRs de prueba
+pnpm scanner:fixtures
+
+# QRs generados:
+# TEST-TODAY-001    → Check-in exitoso
+# TEST-TOMORROW-001 → QR para otro día
+# TEST-ATTENDED-001 → Ya registrado
+# TEST-EXPIRED-001  → QR expirado (2h)
+```
+
+---
+
+## 📊 Estado del Proyecto
+
+| PR | Estado | Descripción |
+|----|--------|-------------|
+| PR1 | ✅ | DB Foundation (schema, RLS, migrations) |
+| PR2 | ✅ | Booking Correctness (colisiones, disponibilidad) |
+| PR3 | ✅ | Auth SSR (middleware, sesiones) |
+| PR4 | ✅ | Dashboard Status (métricas, conexión, quick actions) |
+| PR5 | ✅ | Integration Tests (124 tests) |
+| Scanner | ✅ | QR Scanner con expiración 2h |
 
 ---
 
@@ -149,6 +211,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
 
 ---
 
+## 📍 Ubicación
+
+**San Martín 345, Arroyo Seco, Santa Fe**
+
+---
+
 ## 📄 Licencia
 
 MIT © 2026 Il Barbiere
+
+---
+
+<p align="center">
+  <small>Hecho por Soluciones Adriel-IA</small>
+</p>
