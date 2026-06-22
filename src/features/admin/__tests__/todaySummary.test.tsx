@@ -15,11 +15,15 @@ function createAppointment(
     appointment_time: string;
   }> = {}
 ) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  
   return {
     id: overrides.id || 'apt-1',
     status: overrides.status || 'pending',
     client_name: overrides.client_name || 'Test Client',
-    appointment_date: overrides.appointment_date || new Date().toISOString().split('T')[0],
+    appointment_date: overrides.appointment_date || todayStr,
     appointment_time: overrides.appointment_time || '10:00',
   };
 }

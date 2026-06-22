@@ -19,9 +19,14 @@ interface TodaySummaryProps {
 
 export function TodaySummary({ appointments }: TodaySummaryProps) {
   const todayAppointments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     return appointments.filter((apt) => {
       try {
-        return isToday(parseISO(apt.appointment_date));
+        const aptDate = parseISO(apt.appointment_date);
+        aptDate.setHours(0, 0, 0, 0);
+        return aptDate.getTime() === today.getTime();
       } catch {
         return false;
       }

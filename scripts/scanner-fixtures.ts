@@ -19,6 +19,18 @@ function tomorrow(): string {
   return d.toISOString().split("T")[0];
 }
 
+function hoursAgo(h: number): string {
+  const d = new Date();
+  d.setHours(d.getHours() - h);
+  return d.toISOString().split("T")[0];
+}
+
+function hoursAgoTime(h: number): string {
+  const d = new Date();
+  d.setHours(d.getHours() - h);
+  return `${String(d.getHours()).padStart(2, "0")}:00`;
+}
+
 export const SCANNER_FIXTURES: ScannerTestFixture[] = [
   {
     id: "a0000000-0000-0000-0000-000000000001",
@@ -49,5 +61,15 @@ export const SCANNER_FIXTURES: ScannerTestFixture[] = [
     appointment_time: "12:00",
     status: "attended",
     expected: "Ya fue registrado",
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000004",
+    qr_hash: "TEST-EXPIRED-001",
+    client_name: "Cliente Test Expirado",
+    client_phone: "3402000004",
+    appointment_date: hoursAgo(3),
+    appointment_time: hoursAgoTime(3),
+    status: "confirmed",
+    expected: "QR ya venció (2h)",
   },
 ];

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import { QrCode, ShieldCheck, AlertCircle } from "lucide-react";
+import { QrCode, ShieldCheck, AlertCircle, Clock } from "lucide-react";
 import { supabase } from "@/shared/lib/supabase";
+import { addHours, format, isAfter, isToday, parseISO } from "date-fns";
 
 export function ScannerModule() {
     const [scanResult, setScanResult] = useState<string | null>(null);
@@ -40,6 +41,28 @@ export function ScannerModule() {
                 return;
             }
 
+            // Validate appointment date is today
+            const appointmentDate = parseISO(data.appointment_date);
+            if (!isToday(appointmentDate)) {
+                const formattedDate = format(appointmentDate, "dd/MM/yyyy");
+                setError(`ESTE QR ES PARA EL DÍA ${formattedDate}, NO PARA HOY`);
+                return;
+            }
+
+            // Validate QR hasn't expired (2h after appointment time)
+            const appointmentDateTime = parseISO(`${data.appointment_date}T${data.appointment_time}`);
+            const expiryTime = addHours(appointmentDateTime, 2);
+            if (isAfter(new Date(), expiryTime)) {
+                setError("ESTE QR YA VENCIÓ (VÁLIDO POR 2 HORAS)");
+                return;
+            }
+
+            // Check if already attended
+            if (data.status === "attended") {
+                setError("ESTE TURNO YA FUE REGISTRADO");
+                return;
+            }
+
             setAppointment(data);
 
             // Automatically mark as attended
@@ -71,8 +94,14 @@ export function ScannerModule() {
                     <div className="p-12 text-center animate-in zoom-in-95 duration-500">
                         {error ? (
                             <>
-                                <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-6" />
-                                <h3 className="text-2xl font-bold text-red-500 mb-4">{error}</h3>
+                                {error.includes("OTRO DÍA") ? (
+                                    <Clock className="w-20 h-20 text-yellow-500 mx-auto mb-6" />
+                                ) : (
+                                    <AlertCircle className="w-20 h-20 text-red-500 mx-auto mb-6" />
+                                )}
+                                <h3 className={`text-2xl font-bold mb-4 ${error.includes("OTRO DÍA") ? "text-yellow-500" : "text-red-500"}`}>
+                                    {error}
+                                </h3>
                                 <button
                                     onClick={() => window.location.reload()}
                                     className="px-6 py-2 bg-white/10 rounded-full font-bold"
