@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, QrCode, Calendar, Scissors, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LayoutDashboard, QrCode, Calendar, KanbanSquare, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 export function AdminLayout({ children, onTabChange, onLogout }: { children: React.ReactNode, onTabChange?: (tab: string) => void, onLogout?: () => void }) {
     const [activeTab, setActiveTab] = useState("dashboard");
@@ -82,6 +82,22 @@ export function AdminLayout({ children, onTabChange, onLogout }: { children: Rea
                             ${isCollapsed ? "opacity-0 pointer-events-none md:opacity-0" : "opacity-100"}`}
                         >
                             Agenda Dual
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => handleTabChange("kanban")}
+                        className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
+                        ${activeTab === "kanban"
+                                ? "bg-neon-cyan text-black font-bold shadow-neon-glow"
+                                : "text-white/40 hover:bg-white/5 hover:text-white"
+                            }`}
+                    >
+                        <KanbanSquare className="w-5 h-5 flex-shrink-0" />
+                        <span
+                            className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
+                            ${isCollapsed ? "opacity-0 pointer-events-none md:opacity-0" : "opacity-100"}`}
+                        >
+                            Kanban
                         </span>
                     </button>
                     <button
