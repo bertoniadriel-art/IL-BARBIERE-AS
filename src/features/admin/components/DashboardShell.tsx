@@ -26,7 +26,7 @@ interface Props {
  * all client-side tab state, logout, and dynamic imports.
  */
 export function DashboardShell({ barber }: Props) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<AdminTab>("kanban");
 
   const handleLogout = async () => {
     await authService.signOut();
