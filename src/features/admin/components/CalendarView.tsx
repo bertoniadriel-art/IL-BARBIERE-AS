@@ -13,8 +13,10 @@ import {
     subMonths,
     isSameDay,
     isSameMonth,
+    getDay,
 } from "date-fns";
-import { Clock, User, Phone, ChevronLeft, ChevronRight, PlusCircle, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, X } from "lucide-react";
+import { AppointmentCard } from "./AppointmentCard";
 import { useDashboardMetrics } from "@/shared/hooks/useDashboardMetrics";
 import type { Appointment } from "@/shared/types";
 
@@ -91,42 +93,23 @@ export function CalendarView({ barber, onMutated }: CalendarViewProps) {
 
     const { monthlyCashFlow, topClients, uniqueClients: uniqueClientsThisMonth, currencyFormatter } = useDashboardMetrics(appointments);
 
-    const AppointmentCard = ({ app }: { app: Appointment }) => (
-        <div
-            className={`p-4 rounded-xl border mb-3 transition-all ${app.status === "attended"
-                ? "bg-neon-cyan/5 border-neon-cyan/20 opacity-80"
-                : app.status === "confirmed"
-                    ? "bg-emerald-500/5 border-emerald-500/30"
-                    : "bg-white/5 border-white/10"
-                }`}
-        >
-            <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-neon-cyan" />
-                    <span className="font-bold text-lg">{app.appointment_time?.slice(0, 5)}</span>
-                </div>
-                <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${app.status === "attended"
-                        ? "bg-neon-cyan text-black"
-                        : app.status === "confirmed"
-                            ? "bg-emerald-500 text-black"
-                            : "bg-white/10 text-white/40"
-                        }`}
-                >
-                    {app.status}
-                </span>
-            </div>
-            <h4 className="font-bold text-white mb-1">{app.client_name}</h4>
-            <div className="flex items-center gap-2 text-xs text-white/40">
-                <Phone className="w-3 h-3" /> {app.client_phone}
-            </div>
-            {app.final_price != null && (
-                <p className="mt-2 text-xs text-neon-cyan font-bold">
-                    {currencyFormatter.format(app.final_price)} estimados
-                </p>
-            )}
-        </div>
-    );
+    const handleMutated = async () => {
+        if (!supabase || !barber?.id) return;
+        const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+        const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+        const { data, error } = await supabase
+            .from("appointments")
+            .select(`*, barbers(name)`)
+            .eq("barber_id", barber.id)
+            .gte("appointment_date", monthStart)
+            .lte("appointment_date", monthEnd)
+            .order("appointment_date", { ascending: true })
+            .order("appointment_time", { ascending: true });
+        if (!error && data) {
+            setAppointments(data);
+        }
+        onMutated?.();
+    };
 
     const handlePrevMonth = () => {
         setCurrentMonth((prev) => subMonths(prev, 1));
@@ -326,6 +309,9 @@ export function CalendarView({ barber, onMutated }: CalendarViewProps) {
                             <span>Dom</span>
                         </div>
                         <div className="grid grid-cols-7 gap-2">
+                            {Array.from({ length: (getDay(startOfMonth(currentMonth)) + 6) % 7 }).map((_, i) => (
+                                <div key={`pad-${i}`} />
+                            ))}
                             {daysInMonth.map((day) => {
                                 const dateKey = format(day, "yyyy-MM-dd");
                                 const isSelected = selectedDate === dateKey;
@@ -395,7 +381,12 @@ export function CalendarView({ barber, onMutated }: CalendarViewProps) {
                 ) : (
                     <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                         {selectedAppointments.map((app) => (
-                            <AppointmentCard key={app.id} app={app} />
+                            <AppointmentCard
+                                key={app.id}
+                                app={app}
+                                currencyFormatter={currencyFormatter}
+                                onMutated={handleMutated}
+                            />
                         ))}
                     </div>
                 )}

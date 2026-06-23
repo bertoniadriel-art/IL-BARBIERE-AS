@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Clock, Phone, X } from "lucide-react";
 import { updateAppointmentStatus, moveAppointment } from "../services/appointmentService";
 import { getBookedSlots } from "@/features/booking/services/availabilityService";
 
 export interface Appointment {
-    id: string;
+    id?: string;
     status: string;
     client_name: string;
     client_phone: string;
@@ -37,6 +37,8 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
     const [isCancelling, setIsCancelling] = useState(false);
 
     // Move modal state
+    const moveSlotRequestId = useRef(0);
+
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [moveDate, setMoveDate] = useState(app.appointment_date);
     const [moveTime, setMoveTime] = useState(app.appointment_time?.slice(0, 5) ?? "10:00");
@@ -55,7 +57,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         setCancelError(null);
 
         try {
-            const { error } = await updateAppointmentStatus(app.id, "cancelled");
+            const { error } = await updateAppointmentStatus(app.id ?? "", "cancelled");
             if (error) {
                 setLocalStatus(prevStatus);
                 setCancelError("Error al cancelar. Intenta de nuevo.");
@@ -74,7 +76,9 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         setIsMoveModalOpen(true);
 
         if (app.barber_id) {
+            const reqId = ++moveSlotRequestId.current;
             const slots = await getBookedSlots(app.barber_id, localDate);
+            if (reqId !== moveSlotRequestId.current) return;
             setBookedSlots(slots);
         }
     }
@@ -88,11 +92,15 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         setMoveDate(newDate);
         setMoveError(null);
         if (app.barber_id) {
+            const reqId = ++moveSlotRequestId.current;
             const slots = await getBookedSlots(app.barber_id, newDate);
+            if (reqId !== moveSlotRequestId.current) return;
             setBookedSlots(slots);
-            // Reset time to first free slot
-            const firstFree = TIME_SLOTS.find((t) => !slots.includes(t));
-            setMoveTime(firstFree ?? "10:00");
+            // Only reset time if the current selection is now occupied on the new date
+            if (slots.includes(moveTime)) {
+                const firstFree = TIME_SLOTS.find((s) => !slots.includes(s));
+                if (firstFree) setMoveTime(firstFree);
+            }
         }
     }
 
@@ -112,7 +120,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         setIsMoving(true);
         setMoveError(null);
 
-        const { error } = await moveAppointment(app.id, app.barber_id ?? "", moveDate, moveTime);
+        const { error } = await moveAppointment(app.id ?? "", app.barber_id ?? "", moveDate, moveTime);
 
         setIsMoving(false);
 
