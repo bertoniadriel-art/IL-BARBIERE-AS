@@ -8,7 +8,7 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => {
   const mockUpdate = vi.fn();
@@ -42,6 +42,15 @@ vi.mock("@/shared/lib/supabase", () => ({
 
 vi.mock("@/features/admin/services/appointmentService", () => ({
   updateAppointmentStatus: vi.fn(),
+}));
+
+// Capture onMutated prop passed to CalendarView
+let capturedOnMutated: (() => void) | undefined;
+vi.mock("../components/CalendarView", () => ({
+  CalendarView: vi.fn((props: { onMutated?: () => void }) => {
+    capturedOnMutated = props.onMutated;
+    return null;
+  }),
 }));
 
 import { DashboardBento } from "../components/DashboardBento";
@@ -173,6 +182,27 @@ describe("DashboardBento (T8.2)", () => {
 
     await waitFor(() => {
       expect(mockUpdateAppointmentStatus).toHaveBeenCalledWith("apt-2", "attended");
+    });
+  });
+
+  it("T1.3: passes onMutated callback to CalendarView that triggers refetch", async () => {
+    const chain = createChainableQuery([]);
+    mocks.mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue(chain) });
+
+    capturedOnMutated = undefined;
+    render(<DashboardBento barber={{ id: "b1", name: "Test Barber" }} />);
+
+    await waitFor(() => {
+      expect(capturedOnMutated).toBeDefined();
+    });
+
+    // Calling onMutated triggers a refetch (mockFrom gets called again)
+    const callCountBefore = mocks.mockFrom.mock.calls.length;
+    await act(async () => {
+      capturedOnMutated!();
+    });
+    await waitFor(() => {
+      expect(mocks.mockFrom.mock.calls.length).toBeGreaterThan(callCountBefore);
     });
   });
 

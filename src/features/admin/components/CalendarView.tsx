@@ -13,17 +13,27 @@ import {
     isSameDay,
     isSameMonth,
 } from "date-fns";
-import { Clock, User, Phone, ChevronLeft, ChevronRight, PlusCircle, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, PlusCircle, X } from "lucide-react";
+import { AppointmentCard } from "./AppointmentCard";
+import { AgendaCompact } from "./AgendaCompact";
+
+const SANTI_ID = "1755f2ef-3156-4dbe-bba1-31dea3c44be8";
+
+type ViewMode = "calendario" | "agenda";
 
 interface CalendarViewProps {
     barber: { id: string; name: string } | null;
+    onMutated?: () => void;
 }
 
-export function CalendarView({ barber }: CalendarViewProps) {
+export function CalendarView({ barber, onMutated }: CalendarViewProps) {
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState<Date>(startOfToday());
     const [selectedDate, setSelectedDate] = useState<string>(format(startOfToday(), "yyyy-MM-dd"));
+
+    const [viewMode, setViewMode] = useState<ViewMode>("calendario");
+    const isSanti = barber?.id === SANTI_ID;
 
     const [isOverbookModalOpen, setIsOverbookModalOpen] = useState(false);
     const [overbookDate, setOverbookDate] = useState<string>(format(startOfToday(), "yyyy-MM-dd"));
@@ -37,40 +47,46 @@ export function CalendarView({ barber }: CalendarViewProps) {
     const end = endOfMonth(currentMonth);
     const daysInMonth = eachDayOfInterval({ start, end });
 
-    useEffect(() => {
-        async function fetchAppointments() {
-            if (!supabase || !barber?.id) {
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-
-            const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
-            const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-
-            const { data, error } = await supabase
-                .from("appointments")
-                .select(
-                    `
-                *,
-                barbers(name)
-            `
-                )
-                .eq("barber_id", barber.id)
-                .gte("appointment_date", monthStart)
-                .lte("appointment_date", monthEnd)
-                .order("appointment_date", { ascending: true })
-                .order("appointment_time", { ascending: true });
-
-            if (!error && data) {
-                setAppointments(data);
-            }
+    async function fetchAppointments() {
+        if (!supabase || !barber?.id) {
             setLoading(false);
+            return;
         }
 
+        setLoading(true);
+
+        const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+        const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+
+        const { data, error } = await supabase
+            .from("appointments")
+            .select(
+                `
+            *,
+            barbers(name)
+        `
+            )
+            .eq("barber_id", barber.id)
+            .gte("appointment_date", monthStart)
+            .lte("appointment_date", monthEnd)
+            .order("appointment_date", { ascending: true })
+            .order("appointment_time", { ascending: true });
+
+        if (!error && data) {
+            setAppointments(data);
+        }
+        setLoading(false);
+    }
+
+    useEffect(() => {
         fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentMonth, barber?.id]);
+
+    function handleMutated() {
+        fetchAppointments();
+        onMutated?.();
+    }
 
     const appointmentsByDate = useMemo(() => {
         const map: Record<string, any[]> = {};
@@ -128,43 +144,6 @@ export function CalendarView({ barber }: CalendarViewProps) {
                 maximumFractionDigits: 0,
             }),
         []
-    );
-
-    const AppointmentCard = ({ app }: { app: any }) => (
-        <div
-            className={`p-4 rounded-xl border mb-3 transition-all ${app.status === "attended"
-                ? "bg-neon-cyan/5 border-neon-cyan/20 opacity-80"
-                : app.status === "confirmed"
-                    ? "bg-emerald-500/5 border-emerald-500/30"
-                    : "bg-white/5 border-white/10"
-                }`}
-        >
-            <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-neon-cyan" />
-                    <span className="font-bold text-lg">{app.appointment_time?.slice(0, 5)}</span>
-                </div>
-                <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${app.status === "attended"
-                        ? "bg-neon-cyan text-black"
-                        : app.status === "confirmed"
-                            ? "bg-emerald-500 text-black"
-                            : "bg-white/10 text-white/40"
-                        }`}
-                >
-                    {app.status}
-                </span>
-            </div>
-            <h4 className="font-bold text-white mb-1">{app.client_name}</h4>
-            <div className="flex items-center gap-2 text-xs text-white/40">
-                <Phone className="w-3 h-3" /> {app.client_phone}
-            </div>
-            {app.final_price != null && (
-                <p className="mt-2 text-xs text-neon-cyan font-bold">
-                    {currencyFormatter.format(app.final_price)} estimados
-                </p>
-            )}
-        </div>
     );
 
     const handlePrevMonth = () => {
@@ -319,7 +298,25 @@ export function CalendarView({ barber }: CalendarViewProps) {
                             {format(currentMonth, "MMMM yyyy")}
                         </h3>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        {isSanti && (
+                            <div className="flex items-center rounded-xl border border-white/10 overflow-hidden text-[10px] font-bold uppercase tracking-[0.15em]">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("calendario")}
+                                    className={`px-3 py-1.5 transition-colors ${viewMode === "calendario" ? "bg-neon-cyan text-black" : "text-white/50 hover:text-white hover:bg-white/5"}`}
+                                >
+                                    Calendario
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("agenda")}
+                                    className={`px-3 py-1.5 transition-colors ${viewMode === "agenda" ? "bg-neon-cyan text-black" : "text-white/50 hover:text-white hover:bg-white/5"}`}
+                                >
+                                    Agenda
+                                </button>
+                            </div>
+                        )}
                         <button
                             type="button"
                             onClick={handlePrevMonth}
@@ -337,7 +334,9 @@ export function CalendarView({ barber }: CalendarViewProps) {
                     </div>
                 </div>
 
-                {loading ? (
+                {viewMode === "agenda" ? (
+                    <AgendaCompact appointmentsByDate={appointmentsByDate} />
+                ) : loading ? (
                     <div className="py-10 text-center text-white/40 text-xs uppercase tracking-[0.3em]">
                         Cargando agenda...
                     </div>
@@ -422,7 +421,12 @@ export function CalendarView({ barber }: CalendarViewProps) {
                 ) : (
                     <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                         {selectedAppointments.map((app) => (
-                            <AppointmentCard key={app.id} app={app} />
+                            <AppointmentCard
+                                key={app.id}
+                                app={app}
+                                currencyFormatter={currencyFormatter}
+                                onMutated={handleMutated}
+                            />
                         ))}
                     </div>
                 )}

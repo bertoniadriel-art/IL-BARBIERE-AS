@@ -95,6 +95,10 @@ export function TodaySummary({ appointments }: TodaySummaryProps) {
       ) : (
         <p className='text-xs text-white/40'>Sin turnos programados para hoy.</p>
       )}
+      <div className='flex items-center justify-between text-[11px] mt-2'>
+        <span className='text-red-400'>Cancelados</span>
+        <span className='font-bold text-white'>{statusCounts.cancelled}</span>
+      </div>
     </div>
   );
 }
