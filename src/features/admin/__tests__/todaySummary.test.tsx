@@ -77,6 +77,36 @@ describe('TodaySummary (REQ-PR4.2)', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
   });
 
+  it('T1.4: shows cancelled count when > 0', () => {
+    const appointments = [
+      createAppointment({ id: 'apt-1', status: 'cancelled' }),
+      createAppointment({ id: 'apt-2', status: 'cancelled' }),
+    ];
+
+    render(<TodaySummary appointments={appointments} />);
+
+    expect(screen.getByText('Cancelados')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('T1.4: shows cancelled row with 0 when no cancellations', () => {
+    const appointments = [
+      createAppointment({ id: 'apt-1', status: 'pending' }),
+    ];
+
+    render(<TodaySummary appointments={appointments} />);
+
+    expect(screen.getByText('Cancelados')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
+
+  it('W2: shows Cancelados row with 0 when total is zero', () => {
+    render(<TodaySummary appointments={[]} />);
+
+    expect(screen.getByText('Cancelados')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
+
   it('filters out appointments from other days', () => {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];

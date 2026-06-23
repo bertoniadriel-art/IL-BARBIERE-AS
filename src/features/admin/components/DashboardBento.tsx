@@ -33,7 +33,12 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
+  const [refetchKey, setRefetchKey] = useState(0);
   const { status: connectionStatus, lastSync } = useConnectionStatus();
+
+  function refetch() {
+    setRefetchKey((k) => k + 1);
+  }
 
   useEffect(() => {
     const barberId = barber?.id;
@@ -71,7 +76,7 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
     }
 
     fetchMetrics();
-  }, [barber?.id, supabase]);
+  }, [barber?.id, supabase, refetchKey]);
 
   const { monthlyCashFlow, topClients, uniqueClients, currencyFormatter } =
     useDashboardMetrics(rows);
@@ -289,7 +294,7 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
         </div>
         <div className='mt-4'>
           {barber ? (
-            <CalendarView barber={barber} />
+            <CalendarView barber={barber} onMutated={refetch} />
           ) : (
             <div className='py-10 text-center text-white/40 text-xs uppercase tracking-[0.3em]'>
               Inicia sesión como barbero para ver el calendario.
