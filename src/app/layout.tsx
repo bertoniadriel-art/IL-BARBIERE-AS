@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/shared/components/Navbar";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 
 export const metadata: Metadata = {
     title: "IL BARBIERE OS | Reservas Premium",
@@ -21,7 +22,9 @@ export default function RootLayout({
             <body className="bg-[#0a0a0a] text-white antialiased selection:bg-neon-cyan selection:text-black">
                 <Navbar />
                 <main className="pt-20">
-                    {children}
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
                 </main>
             </body>
         </html>

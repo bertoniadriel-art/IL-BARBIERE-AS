@@ -7,3 +7,5 @@ build/
 .DS_Store
 *.local
 tsconfig.tsbuildinfo
+# Local AI runtime state
+.atl/

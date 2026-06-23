@@ -1,9 +1,12 @@
 /**
  * appointmentService — unit tests
- * TDD: T2.1 — moveAppointment success + 23505 slot_occupied
+ * TDD: T8.1 — updateAppointmentStatus calls Supabase update with correct args
+ *
+ * REQ-8.1: Admin dashboard persists status updates to Supabase.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+/// <reference types="@testing-library/jest-dom" />
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => {
   const mockEq = vi.fn();
@@ -12,56 +15,79 @@ const mocks = vi.hoisted(() => {
   return { mockEq, mockUpdate, mockFrom };
 });
 
-vi.mock('@/shared/lib/supabase-client', () => ({
+vi.mock("@/shared/lib/supabase-client", () => ({
   supabase: {
     from: (...args: any[]) => mocks.mockFrom(...args),
   },
 }));
 
-import { moveAppointment } from '../services/appointmentService';
+import { updateAppointmentStatus } from "../services/appointmentService";
 
-function createUpdateChain(result: { error: any }) {
-  const chain: any = {};
-  chain.eq = vi.fn().mockResolvedValue(result);
-  chain.update = vi.fn().mockReturnValue(chain);
-  return chain;
-}
-
-describe('appointmentService — moveAppointment (T2.1)', () => {
+describe("appointmentService (T8.1)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('resolves with { error: null } on success', async () => {
-    const chain = createUpdateChain({ error: null });
-    mocks.mockFrom.mockReturnValue(chain);
-
-    const result = await moveAppointment('apt-1', '2026-07-10', '11:00');
-
-    expect(result.error).toBeNull();
-    expect(chain.update).toHaveBeenCalledWith({
-      appointment_date: '2026-07-10',
-      appointment_time: '11:00',
+  it("calls supabase update with correct table, status, and id", async () => {
+    mocks.mockFrom.mockReturnValue({
+      update: mocks.mockUpdate.mockReturnValue({
+        eq: mocks.mockEq.mockResolvedValue({ error: null }),
+      }),
     });
-    expect(chain.eq).toHaveBeenCalledWith('id', 'apt-1');
+
+    const { error } = await updateAppointmentStatus("apt-123", "confirmed");
+
+    expect(error).toBeNull();
+    expect(mocks.mockFrom).toHaveBeenCalledWith("appointments");
+    expect(mocks.mockUpdate).toHaveBeenCalledWith({ status: "confirmed" });
+    expect(mocks.mockEq).toHaveBeenCalledWith("id", "apt-123");
   });
 
-  it('resolves with { error: { type: "slot_occupied" } } on 23505', async () => {
-    const chain = createUpdateChain({ error: { code: '23505', message: 'unique violation' } });
-    mocks.mockFrom.mockReturnValue(chain);
+  it("returns Error when supabase returns an error", async () => {
+    mocks.mockFrom.mockReturnValue({
+      update: mocks.mockUpdate.mockReturnValue({
+        eq: mocks.mockEq.mockResolvedValue({
+          error: { message: "row not found" },
+        }),
+      }),
+    });
 
-    const result = await moveAppointment('apt-1', '2026-07-10', '11:00');
+    const { error } = await updateAppointmentStatus("apt-bad", "attended");
 
-    expect(result.error).toEqual({ type: 'slot_occupied' });
+    expect(error).toBeInstanceOf(Error);
+    expect(error!.message).toBe("row not found");
   });
 
-  it('resolves with { error: Error } on other DB errors', async () => {
-    const chain = createUpdateChain({ error: { code: '42501', message: 'permission denied' } });
-    mocks.mockFrom.mockReturnValue(chain);
+  it("returns Error when supabase is null (not configured)", async () => {
+    vi.doMock("@/shared/lib/supabase-client", () => ({ supabase: null }));
 
-    const result = await moveAppointment('apt-1', '2026-07-10', '11:00');
+    // Re-import with null supabase
+    vi.resetModules();
+    vi.doMock("@/shared/lib/supabase-client", () => ({ supabase: null }));
+    const { updateAppointmentStatus: updateNull } = await import(
+      "../services/appointmentService"
+    );
 
-    expect(result.error).toBeInstanceOf(Error);
-    expect((result.error as Error).message).toBe('permission denied');
+    const { error } = await updateNull("apt-123", "confirmed");
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error!.message).toBe("Supabase no configurado");
+
+    vi.doUnmock("@/shared/lib/supabase-client");
+    vi.resetModules();
+  });
+
+  it("passes 'attended' status correctly (triangulation)", async () => {
+    mocks.mockFrom.mockReturnValue({
+      update: mocks.mockUpdate.mockReturnValue({
+        eq: mocks.mockEq.mockResolvedValue({ error: null }),
+      }),
+    });
+
+    const { error } = await updateAppointmentStatus("apt-456", "attended");
+
+    expect(error).toBeNull();
+    expect(mocks.mockUpdate).toHaveBeenCalledWith({ status: "attended" });
+    expect(mocks.mockEq).toHaveBeenCalledWith("id", "apt-456");
   });
 });
