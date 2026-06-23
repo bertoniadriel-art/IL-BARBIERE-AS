@@ -19,9 +19,10 @@ import type { Appointment } from "@/shared/types";
 
 interface CalendarViewProps {
     barber: { id: string; name: string } | null;
+    onMutated?: () => void;
 }
 
-export function CalendarView({ barber }: CalendarViewProps) {
+export function CalendarView({ barber, onMutated }: CalendarViewProps) {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState<Date>(startOfToday());
@@ -34,6 +35,7 @@ export function CalendarView({ barber }: CalendarViewProps) {
     const [overbookClientPhone, setOverbookClientPhone] = useState<string>("");
     const [overbookPrice, setOverbookPrice] = useState<string>("");
     const [isCreatingOverbook, setIsCreatingOverbook] = useState(false);
+    const [overbookError, setOverbookError] = useState<string | null>(null);
 
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
@@ -145,6 +147,7 @@ export function CalendarView({ barber }: CalendarViewProps) {
         setOverbookClientName("");
         setOverbookClientPhone("");
         setOverbookPrice("");
+        setOverbookError(null);
     };
 
     const handleCreateOverbook = async () => {
@@ -152,12 +155,13 @@ export function CalendarView({ barber }: CalendarViewProps) {
         if (!overbookClientName || !overbookTime || !overbookDate) return;
 
         setIsCreatingOverbook(true);
+        setOverbookError(null);
 
         try {
             const payload: Partial<Appointment> = {
                 barber_id: barber.id,
                 client_name: overbookClientName,
-                client_phone: overbookClientPhone,
+                client_phone: overbookClientPhone || "0000000000",
                 appointment_date: overbookDate,
                 appointment_time: overbookTime,
                 status: "confirmed",
@@ -169,6 +173,11 @@ export function CalendarView({ barber }: CalendarViewProps) {
 
             if (error) {
                 console.error("Error creating overbook appointment:", error);
+                setOverbookError(
+                    error.code === "23505"
+                        ? "Ese horario ya tiene un turno. Elegí otra hora."
+                        : `Error al crear el turno: ${error.message}`
+                );
             } else {
                 // refresh appointments for current month
                 const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
@@ -194,6 +203,7 @@ export function CalendarView({ barber }: CalendarViewProps) {
 
                 setSelectedDate(overbookDate);
                 closeOverbookModal();
+                onMutated?.();
             }
         } finally {
             setIsCreatingOverbook(false);
@@ -469,11 +479,16 @@ export function CalendarView({ barber }: CalendarViewProps) {
                                 />
                             </div>
                         </div>
+                        {overbookError && (
+                            <p className="mt-4 text-xs text-red-400 font-bold text-center">
+                                {overbookError}
+                            </p>
+                        )}
                         <button
                             type="button"
                             disabled={isCreatingOverbook || !overbookClientName || !overbookDate || !overbookTime}
                             onClick={handleCreateOverbook}
-                            className="mt-6 w-full py-3 rounded-2xl bg-red-600 text-white font-black uppercase tracking-[0.25em] text-[11px] hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-[0_0_20px_rgba(239,68,68,0.5)]"
+                            className="mt-4 w-full py-3 rounded-2xl bg-red-600 text-white font-black uppercase tracking-[0.25em] text-[11px] hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-[0_0_20px_rgba(239,68,68,0.5)]"
                         >
                             {isCreatingOverbook ? "Creando Sobreturno..." : "Confirmar Sobreturno"}
                         </button>
