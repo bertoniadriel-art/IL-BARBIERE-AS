@@ -1,6 +1,6 @@
-import { createClient } from "@/shared/lib/supabase-server";
-import { LoginForm } from "@/features/admin/components/LoginForm";
-import { DashboardShell } from "@/features/admin/components/DashboardShell";
+import { DashboardShell } from '@/features/admin/components/DashboardShell';
+import { LoginForm } from '@/features/admin/components/LoginForm';
+import { createClient } from '@/shared/lib/supabase-server';
 
 export default async function GestionPersonalPage() {
   const supabase = await createClient();
@@ -14,9 +14,9 @@ export default async function GestionPersonalPage() {
 
   if (user) {
     const { data, error } = await supabase
-      .from("barbers")
-      .select("*")
-      .eq("auth_user_id", user.id)
+      .from('barbers')
+      .select('*')
+      .eq('auth_user_id', user.id)
       .single();
     barber = data ?? null;
     barberError = error;
@@ -24,10 +24,10 @@ export default async function GestionPersonalPage() {
 
   if (barberError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-400 text-sm font-bold mb-2">Error de base de datos</p>
-          <p className="text-white/40 text-xs">{barberError.message}</p>
+      <div className='min-h-screen bg-background flex items-center justify-center p-4'>
+        <div className='text-center'>
+          <p className='text-red-400 text-sm font-bold mb-2'>Error de base de datos</p>
+          <p className='text-white/40 text-xs'>{barberError.message}</p>
         </div>
       </div>
     );
@@ -35,7 +35,7 @@ export default async function GestionPersonalPage() {
 
   if (!barber) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className='min-h-screen bg-background flex items-center justify-center p-4'>
         <LoginForm />
       </div>
     );

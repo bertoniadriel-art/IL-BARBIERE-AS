@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useBookingStore } from '../bookingStore';
 import { supabase } from '@/shared/lib/supabase';
 import { Clock, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useBookingStore } from '../bookingStore';
 
 interface ServiceFromDB {
   id: string;

@@ -4,9 +4,9 @@
  * TDD: T4.1 move button, T4.2 slot validation, T4.3 move success/error
  */
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const mockUpdateAppointmentStatus = vi.fn();
@@ -52,10 +52,7 @@ describe('AppointmentCard — T3.1: Cancel button visibility', () => {
 
   it('shows Cancelar button for pending appointment', () => {
     render(
-      <AppointmentCard
-        app={makeApp({ status: 'pending' })}
-        currencyFormatter={currencyFormatter}
-      />
+      <AppointmentCard app={makeApp({ status: 'pending' })} currencyFormatter={currencyFormatter} />
     );
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
   });
@@ -135,10 +132,7 @@ describe('AppointmentCard — T4.1: Mover button', () => {
 
   it('shows Mover button for pending appointment', () => {
     render(
-      <AppointmentCard
-        app={makeApp({ status: 'pending' })}
-        currencyFormatter={currencyFormatter}
-      />
+      <AppointmentCard app={makeApp({ status: 'pending' })} currencyFormatter={currencyFormatter} />
     );
     expect(screen.getByRole('button', { name: /mover/i })).toBeInTheDocument();
   });
@@ -158,7 +152,11 @@ describe('AppointmentCard — T4.1: Mover button', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+        })}
         currencyFormatter={currencyFormatter}
       />
     );
@@ -181,7 +179,12 @@ describe('AppointmentCard — T4.2: Slot validation in MoveModal', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00', barber_id: 'barber-1' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+          barber_id: 'barber-1',
+        })}
         currencyFormatter={currencyFormatter}
       />
     );
@@ -222,7 +225,12 @@ describe('AppointmentCard — T4.2: Slot validation in MoveModal', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00', barber_id: 'barber-1' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+          barber_id: 'barber-1',
+        })}
         currencyFormatter={currencyFormatter}
         onMutated={onMutated}
       />
@@ -253,7 +261,12 @@ describe('AppointmentCard — T4.2: Slot validation in MoveModal', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00', barber_id: 'barber-1' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+          barber_id: 'barber-1',
+        })}
         currencyFormatter={currencyFormatter}
         onMutated={onMutated}
       />
@@ -293,7 +306,12 @@ describe('AppointmentCard — T4.3: Move success/error handling', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00', barber_id: 'barber-1' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+          barber_id: 'barber-1',
+        })}
         currencyFormatter={currencyFormatter}
         onMutated={onMutated}
       />
@@ -330,7 +348,12 @@ describe('AppointmentCard — T4.3: Move success/error handling', () => {
 
     render(
       <AppointmentCard
-        app={makeApp({ status: 'pending', appointment_date: '2026-07-01', appointment_time: '10:00', barber_id: 'barber-1' })}
+        app={makeApp({
+          status: 'pending',
+          appointment_date: '2026-07-01',
+          appointment_time: '10:00',
+          barber_id: 'barber-1',
+        })}
         currencyFormatter={currencyFormatter}
         onMutated={onMutated}
       />

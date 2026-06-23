@@ -3,9 +3,9 @@
  * TDD: T5.2 Santi-only toggle, T5.3 cancelled strikethrough
  */
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const SANTI_ID = '1755f2ef-3156-4dbe-bba1-31dea3c44be8';
 const OTHER_ID = 'other-barber-id';
@@ -45,7 +45,9 @@ vi.mock('@/shared/lib/supabase', () => ({
 
 vi.mock('../components/AgendaCompact', () => ({
   AgendaCompact: vi.fn(({ appointmentsByDate }: { appointmentsByDate: any }) => (
-    <div data-testid="agenda-compact">AgendaCompact({Object.keys(appointmentsByDate).length} dates)</div>
+    <div data-testid='agenda-compact'>
+      AgendaCompact({Object.keys(appointmentsByDate).length} dates)
+    </div>
   )),
 }));
 
@@ -55,7 +57,7 @@ vi.mock('../components/AppointmentCard', () => ({
   AppointmentCard: vi.fn((props: any) => {
     lastAppCardProps = props;
     return (
-      <div data-testid="appointment-card">
+      <div data-testid='appointment-card'>
         <h4 className={props.app.status === 'cancelled' ? 'line-through' : ''}>
           {props.app.client_name}
         </h4>

@@ -3,9 +3,9 @@
  * TDD: T5.1 grouping, empty-day hide, strikethrough, no fetch
  */
 
-/// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+/// <reference types="@testing-library/jest-dom" />
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const supabaseMock = vi.hoisted(() => ({
   from: vi.fn(),

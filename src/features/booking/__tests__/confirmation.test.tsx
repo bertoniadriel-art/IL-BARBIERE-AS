@@ -1,3 +1,4 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 /**
  * Tests for Confirmation component (T2.3, T3.3, T6.1).
  *
@@ -5,8 +6,7 @@
  * T3.3: reads serviceName/servicePrice from store, uses real UUID in INSERT, final_price rounded to nearest 100, shows paymentAlias per barber
  * T6.1: Zod validateBookingForm wired — invalid phone shows error, insert NOT called
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Confirmation } from '../components/Confirmation';
 
 // Mock supabase insert
@@ -128,7 +128,7 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
         expect(mockInsert).toHaveBeenCalledWith(
           expect.objectContaining({
             service_id: 'uuid-svc-real-1',
-          }),
+          })
         );
       });
 
@@ -136,7 +136,7 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
       expect(mockInsert).not.toHaveBeenCalledWith(
         expect.objectContaining({
           service_id: '00000000-0000-0000-0000-000000000001',
-        }),
+        })
       );
     });
 
@@ -157,7 +157,7 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
         expect(mockInsert).toHaveBeenCalledWith(
           expect.objectContaining({
             final_price: 12000,
-          }),
+          })
         );
       });
     });
@@ -179,7 +179,7 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
         expect(mockInsert).toHaveBeenCalledWith(
           expect.objectContaining({
             final_price: 10800,
-          }),
+          })
         );
       });
     });
@@ -262,7 +262,7 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
           (el) =>
             el.textContent?.toLowerCase().includes('teléfono') ||
             el.textContent?.toLowerCase().includes('formato') ||
-            el.textContent?.toLowerCase().includes('dígito'),
+            el.textContent?.toLowerCase().includes('dígito')
         );
         expect(hasPhoneError).toBe(true);
       });

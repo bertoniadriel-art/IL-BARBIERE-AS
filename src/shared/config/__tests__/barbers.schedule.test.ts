@@ -1,24 +1,43 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getAvailableTimesForBarber } from '../barbers';
 
 // Base times: 30-min slots from 09:00 to 20:00
 // Matches the time grid used in the booking wizard
 const BASE_TIMES = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00', '19:30', '20:00',
+  '09:00',
+  '09:30',
+  '10:00',
+  '10:30',
+  '11:00',
+  '11:30',
+  '12:00',
+  '12:30',
+  '13:00',
+  '13:30',
+  '14:00',
+  '14:30',
+  '15:00',
+  '15:30',
+  '16:00',
+  '16:30',
+  '17:00',
+  '17:30',
+  '18:00',
+  '18:30',
+  '19:00',
+  '19:30',
+  '20:00',
 ];
 
 // Day helpers using a fixed reference week
 // 2026-05-25 is a Monday — use noon local time to avoid UTC-midnight timezone shifts
-const monday    = new Date('2026-05-25T12:00:00'); // day 1
-const tuesday   = new Date('2026-05-26T12:00:00'); // day 2
+const monday = new Date('2026-05-25T12:00:00'); // day 1
+const tuesday = new Date('2026-05-26T12:00:00'); // day 2
 const wednesday = new Date('2026-05-27T12:00:00'); // day 3
-const thursday  = new Date('2026-05-28T12:00:00'); // day 4
-const friday    = new Date('2026-05-29T12:00:00'); // day 5
-const saturday  = new Date('2026-05-30T12:00:00'); // day 6
-const sunday    = new Date('2026-05-31T12:00:00'); // day 0
+const thursday = new Date('2026-05-28T12:00:00'); // day 4
+const friday = new Date('2026-05-29T12:00:00'); // day 5
+const saturday = new Date('2026-05-30T12:00:00'); // day 6
+const sunday = new Date('2026-05-31T12:00:00'); // day 0
 
 describe('getAvailableTimesForBarber', () => {
   describe('Fede Diaz schedule — Mar–Sáb 09:00–20:00, Lun+Dom off', () => {

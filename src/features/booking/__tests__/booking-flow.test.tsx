@@ -1,3 +1,4 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 /**
  * Integration test: Full Booking Flow (T9.2, T9.3).
  *
@@ -5,10 +6,9 @@
  * REQ-9.2: 23505 collision shows error, does not navigate away.
  * REQ-9.3: No live Supabase connection.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BookingWizard } from '../components/BookingWizard';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBookingStore } from '../bookingStore';
+import { BookingWizard } from '../components/BookingWizard';
 
 // ── Hoisted shared state (accessible inside vi.mock factories) ───────────────
 
@@ -22,7 +22,9 @@ const { appointmentsDB, resetAppointments, insertShouldFail } = vi.hoisted(() =>
     },
     insertShouldFail: {
       get: () => insertShouldFail,
-      set: (v: boolean) => { insertShouldFail = v; },
+      set: (v: boolean) => {
+        insertShouldFail = v;
+      },
     },
   };
 });
@@ -30,9 +32,7 @@ const { appointmentsDB, resetAppointments, insertShouldFail } = vi.hoisted(() =>
 // ── Mock module (all data inlined for hoisting safety) ───────────────────────
 
 vi.mock('@/shared/lib/supabase', () => {
-  const SEED_BARBERS = [
-    { id: 'b-santi', name: 'Santi Ducca', auth_user_id: 'auth-user-1' },
-  ];
+  const SEED_BARBERS = [{ id: 'b-santi', name: 'Santi Ducca', auth_user_id: 'auth-user-1' }];
   const SEED_SERVICES = [
     { id: 'svc-corte', name: 'Corte Premium', price: 14000, duration_min: 30 },
   ];
@@ -114,7 +114,7 @@ vi.mock('@/shared/lib/supabase', () => {
                 a.barber_id === row.barber_id &&
                 a.appointment_date === row.appointment_date &&
                 a.appointment_time === row.appointment_time &&
-                a.status !== 'cancelled',
+                a.status !== 'cancelled'
             );
             if (collision) {
               return Promise.resolve({
@@ -142,9 +142,7 @@ vi.mock('@/shared/lib/supabase', () => {
 
 // Mock react-qr-code
 vi.mock('react-qr-code', () => ({
-  default: ({ value }: { value: string }) => (
-    <div data-testid="qr-code">{value}</div>
-  ),
+  default: ({ value }: { value: string }) => <div data-testid='qr-code'>{value}</div>,
 }));
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -178,29 +176,45 @@ async function goToConfirmation() {
 
   // Wait for at least one enabled date
   await waitFor(() => {
-    const enabled = screen.getAllByRole('button').filter(
-      (btn): btn is HTMLButtonElement => btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? ''),
-    );
+    const enabled = screen
+      .getAllByRole('button')
+      .filter(
+        (btn): btn is HTMLButtonElement =>
+          btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? '')
+      );
     expect(enabled.length).toBeGreaterThan(0);
   });
 
   // Click first enabled date
-  const dateBtns = screen.getAllByRole('button').filter(
-    (btn): btn is HTMLButtonElement => btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? ''),
-  );
+  const dateBtns = screen
+    .getAllByRole('button')
+    .filter(
+      (btn): btn is HTMLButtonElement =>
+        btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? '')
+    );
   fireEvent.click(dateBtns[0]);
 
   // Wait for time grid
   await waitFor(() => {
-    const times = screen.getAllByRole('button').filter(
-      (btn): btn is HTMLButtonElement => btn instanceof HTMLButtonElement && /^\d{2}:\d{2}$/.test(btn.textContent?.trim() ?? '') && !btn.disabled,
-    );
+    const times = screen
+      .getAllByRole('button')
+      .filter(
+        (btn): btn is HTMLButtonElement =>
+          btn instanceof HTMLButtonElement &&
+          /^\d{2}:\d{2}$/.test(btn.textContent?.trim() ?? '') &&
+          !btn.disabled
+      );
     expect(times.length).toBeGreaterThan(0);
   });
 
-  const timeBtns = screen.getAllByRole('button').filter(
-    (btn): btn is HTMLButtonElement => btn instanceof HTMLButtonElement && /^\d{2}:\d{2}$/.test(btn.textContent?.trim() ?? '') && !btn.disabled,
-  );
+  const timeBtns = screen
+    .getAllByRole('button')
+    .filter(
+      (btn): btn is HTMLButtonElement =>
+        btn instanceof HTMLButtonElement &&
+        /^\d{2}:\d{2}$/.test(btn.textContent?.trim() ?? '') &&
+        !btn.disabled
+    );
   fireEvent.click(timeBtns[0]);
 
   // Step 4: confirmation screen rendered

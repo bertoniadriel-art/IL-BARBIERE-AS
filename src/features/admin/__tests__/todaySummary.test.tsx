@@ -18,7 +18,7 @@ function createAppointment(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().split('T')[0];
-  
+
   return {
     id: overrides.id || 'apt-1',
     status: overrides.status || 'pending',
@@ -90,9 +90,7 @@ describe('TodaySummary (REQ-PR4.2)', () => {
   });
 
   it('T1.4: shows cancelled row with 0 when no cancellations', () => {
-    const appointments = [
-      createAppointment({ id: 'apt-1', status: 'pending' }),
-    ];
+    const appointments = [createAppointment({ id: 'apt-1', status: 'pending' })];
 
     render(<TodaySummary appointments={appointments} />);
 

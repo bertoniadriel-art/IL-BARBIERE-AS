@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useBookingStore } from '../bookingStore';
 import { getBarberConfig } from '@/shared/config/barbers';
-import { validateBookingForm } from '@/shared/lib/validation';
-import { CheckCircle, CreditCard, ArrowRight } from 'lucide-react';
-import QRCode from 'react-qr-code';
 import { supabase } from '@/shared/lib/supabase';
+import { validateBookingForm } from '@/shared/lib/validation';
 import { format } from 'date-fns';
+import { ArrowRight, CheckCircle, CreditCard } from 'lucide-react';
+import { useState } from 'react';
+import QRCode from 'react-qr-code';
+import { useBookingStore } from '../bookingStore';
 
 export function Confirmation() {
   const {
@@ -38,7 +38,7 @@ export function Confirmation() {
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
 
   // Format date for display
-  const formattedDate = date ? format(new Date(date + 'T12:00:00'), 'dd-MM-yyyy') : '';
+  const formattedDate = date ? format(new Date(`${date}T12:00:00`), 'dd-MM-yyyy') : '';
 
   // Payment alias from barber config
   const barberConfig = barberName ? getBarberConfig(barberName) : undefined;
@@ -104,12 +104,8 @@ export function Confirmation() {
 
     if (error) {
       // T2.3 — 23505 unique constraint violation: slot was just taken
-      if (
-        error.code === '23505' &&
-        error.message.includes('appointments_unique_slot')
-      ) {
-        const conflictMsg =
-          'Este turno acaba de ser tomado. Por favor elegí otro horario.';
+      if (error.code === '23505' && error.message.includes('appointments_unique_slot')) {
+        const conflictMsg = 'Este turno acaba de ser tomado. Por favor elegí otro horario.';
         setSlotConflictError(conflictMsg);
         setSlotError(conflictMsg);
         setIsSubmitting(false);
@@ -128,15 +124,7 @@ export function Confirmation() {
     // WhatsApp dynamic link — store URL for user-triggered open
     const barberWaPhone = barberConfig?.whatsappPhone ?? '3402417023';
     const displayService = serviceName ?? 'Servicio';
-    const message =
-      `*IL BARBIERE OS - NUEVA RESERVA*\n\n` +
-      `👤 *Cliente:* ${clientName}\n` +
-      `✂️ *Servicio:* ${displayService}\n` +
-      `📅 *Fecha:* ${formattedDate}\n` +
-      `⏰ *Hora:* ${time} HS\n` +
-      `💈 *Barbero:* ${barberName || 'Sin asignar'}\n` +
-      `🎟️ *Código:* ${qrHash}\n\n` +
-      `_Confirmado vía IL BARBIERE OS_`;
+    const message = `*IL BARBIERE OS - NUEVA RESERVA*\n\n👤 *Cliente:* ${clientName}\n✂️ *Servicio:* ${displayService}\n📅 *Fecha:* ${formattedDate}\n⏰ *Hora:* ${time} HS\n💈 *Barbero:* ${barberName || 'Sin asignar'}\n🎟️ *Código:* ${qrHash}\n\n_Confirmado vía IL BARBIERE OS_`;
 
     setWhatsappUrl(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`);
   };
@@ -189,8 +177,7 @@ export function Confirmation() {
                   {paymentAlias}
                 </p>
                 <p className='text-[10px] text-white/30 mt-1 uppercase'>
-                  Barbero seleccionado:{' '}
-                  <span className='font-bold'>{barberName || 'N/D'}</span>
+                  Barbero seleccionado: <span className='font-bold'>{barberName || 'N/D'}</span>
                 </p>
               </div>
               <button

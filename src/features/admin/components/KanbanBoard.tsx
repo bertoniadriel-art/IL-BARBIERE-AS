@@ -166,7 +166,9 @@ export function KanbanBoard({ barber }: KanbanBoardProps) {
   }, [rows, todayStr]);
 
   const pendingDepositsCount = useMemo(
-    () => rows.filter((r) => (r.status === 'pending' || r.status === 'confirmed') && !r.deposit_paid).length,
+    () =>
+      rows.filter((r) => (r.status === 'pending' || r.status === 'confirmed') && !r.deposit_paid)
+        .length,
     [rows]
   );
 
@@ -269,11 +271,7 @@ export function KanbanBoard({ barber }: KanbanBoardProps) {
                   <p className='text-center text-white/20 text-xs py-6'>Sin turnos</p>
                 ) : (
                   cards.map((row) => (
-                    <AppointmentCard
-                      key={row.id}
-                      row={row}
-                      onStatusChange={handleStatusChange}
-                    />
+                    <AppointmentCard key={row.id} row={row} onStatusChange={handleStatusChange} />
                   ))
                 )}
               </div>

@@ -7,7 +7,7 @@
  *
  * Also tests the dev-mode assertion for unknown barber names (W2 mitigation).
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { filterAvailableSlots } from '../services/timeSelectorHelpers';
 
 const BASE_TIMES = [

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { validateBookingForm, phoneSchema, nameSchema } from './validation';
+import { describe, expect, it } from 'vitest';
+import { nameSchema, phoneSchema, validateBookingForm } from './validation';
 
 describe('Validation', () => {
   describe('phoneSchema', () => {
@@ -35,7 +35,7 @@ describe('Validation', () => {
     it('should return null for valid data', () => {
       const errors = validateBookingForm({
         name: 'Juan Perez',
-        phone: '3402500000'
+        phone: '3402500000',
       });
       expect(errors).toBeNull();
     });
@@ -43,7 +43,7 @@ describe('Validation', () => {
     it('should return errors for invalid data', () => {
       const errors = validateBookingForm({
         name: 'J',
-        phone: '123'
+        phone: '123',
       });
       expect(errors).not.toBeNull();
       expect(errors).toHaveProperty('name');

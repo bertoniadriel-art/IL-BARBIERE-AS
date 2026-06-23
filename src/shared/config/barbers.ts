@@ -56,7 +56,7 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
 export function getAvailableTimesForBarber(
   barberName: string,
   date: Date,
-  baseTimes: string[],
+  baseTimes: string[]
 ): string[] {
   const cfg = BARBERS_CONFIG[barberName];
   if (!cfg) return [];
@@ -69,7 +69,7 @@ export function getAvailableTimesForBarber(
     (v) =>
       date.getMonth() === v.monthZeroBased &&
       date.getDate() >= v.dayFrom &&
-      date.getDate() <= v.dayTo,
+      date.getDate() <= v.dayTo
   );
   if (onVacation) return [];
 

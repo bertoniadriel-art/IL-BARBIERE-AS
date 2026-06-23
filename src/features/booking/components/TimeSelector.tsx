@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useBookingStore } from '../bookingStore';
-import { format, addDays, startOfToday } from 'date-fns';
+import { addDays, format, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useEffect, useState } from 'react';
+import { useBookingStore } from '../bookingStore';
 import { getBookedSlots } from '../services/availabilityService';
 import { filterAvailableSlots } from '../services/timeSelectorHelpers';
 
@@ -67,14 +67,14 @@ export function TimeSelector() {
   }, [barberId, selectedDate]);
 
   const getTimesForDate = (dateStr: string): string[] => {
-    const date = new Date(dateStr + 'T12:00:00');
+    const date = new Date(`${dateStr}T12:00:00`);
     if (!barberName) return [];
     return filterAvailableSlots(barberName, date, BASE_TIMES, bookedTimes);
   };
 
   // For date availability preview (uses empty bookedTimes to show all schedule days)
   const dateHasSlots = (dateStr: string): boolean => {
-    const date = new Date(dateStr + 'T12:00:00');
+    const date = new Date(`${dateStr}T12:00:00`);
     if (!barberName) return false;
     return filterAvailableSlots(barberName, date, BASE_TIMES, []).length > 0;
   };

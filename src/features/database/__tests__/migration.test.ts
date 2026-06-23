@@ -1,16 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 
-const MIGRATION_PATH = resolve(
-  __dirname,
-  '../migrations/2026-05-25_mvp_core.sql'
-);
+const MIGRATION_PATH = resolve(__dirname, '../migrations/2026-05-25_mvp_core.sql');
 
-const SCHEMA_PATH = resolve(
-  __dirname,
-  '../schema.sql'
-);
+const SCHEMA_PATH = resolve(__dirname, '../schema.sql');
 
 function readSQL(filePath: string): string {
   return readFileSync(filePath, 'utf-8');
@@ -30,17 +24,23 @@ describe('Migration: 2026-05-25_mvp_core.sql', () => {
 
     it('contains ADD COLUMN for appointments.is_fixed_weekly', () => {
       const sql = readSQL(MIGRATION_PATH);
-      expect(sql).toMatch(/alter table public\.appointments add column if not exists is_fixed_weekly/i);
+      expect(sql).toMatch(
+        /alter table public\.appointments add column if not exists is_fixed_weekly/i
+      );
     });
 
     it('contains ADD COLUMN for appointments.final_price as integer', () => {
       const sql = readSQL(MIGRATION_PATH);
-      expect(sql).toMatch(/alter table public\.appointments add column if not exists final_price integer/i);
+      expect(sql).toMatch(
+        /alter table public\.appointments add column if not exists final_price integer/i
+      );
     });
 
     it('contains ADD COLUMN for appointments.deposit_paid', () => {
       const sql = readSQL(MIGRATION_PATH);
-      expect(sql).toMatch(/alter table public\.appointments add column if not exists deposit_paid/i);
+      expect(sql).toMatch(
+        /alter table public\.appointments add column if not exists deposit_paid/i
+      );
     });
 
     it('contains CTE soft-cancel dedup block', () => {

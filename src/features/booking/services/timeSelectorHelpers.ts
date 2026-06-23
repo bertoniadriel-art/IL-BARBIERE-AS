@@ -1,4 +1,4 @@
-import { getAvailableTimesForBarber, BARBERS_CONFIG } from '@/shared/config/barbers';
+import { BARBERS_CONFIG, getAvailableTimesForBarber } from '@/shared/config/barbers';
 
 /**
  * Pure function: returns slots available for booking.
@@ -18,13 +18,12 @@ export function filterAvailableSlots(
   barberName: string,
   date: Date,
   baseTimes: string[],
-  bookedTimes: string[],
+  bookedTimes: string[]
 ): string[] {
   // Dev-mode assertion: warn if barber name not found in config
   if (process.env.NODE_ENV !== 'production' && !(barberName in BARBERS_CONFIG)) {
     console.warn(
-      `[filterAvailableSlots] Unknown barber name: "${barberName}". ` +
-        `Update BARBERS_CONFIG in barbers.ts if this barber was renamed.`,
+      `[filterAvailableSlots] Unknown barber name: "${barberName}". Update BARBERS_CONFIG in barbers.ts if this barber was renamed.`
     );
   }
 

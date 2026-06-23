@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getBookedSlots } from '../services/availabilityService';
 
 // Mock the supabase module
@@ -49,10 +49,7 @@ describe('getBookedSlots (T2.1)', () => {
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             in: vi.fn().mockResolvedValue({
-              data: [
-                { appointment_time: '10:00:00' },
-                { appointment_time: '14:30:00' },
-              ],
+              data: [{ appointment_time: '10:00:00' }, { appointment_time: '14:30:00' }],
               error: null,
             }),
           }),
