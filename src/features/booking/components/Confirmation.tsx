@@ -35,6 +35,7 @@ export function Confirmation() {
   const [hasCopied, setHasCopied] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState<string | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
 
   // Format date for display
   const formattedDate = date ? format(new Date(date + 'T12:00:00'), 'dd-MM-yyyy') : '';
@@ -60,6 +61,12 @@ export function Confirmation() {
     }
   };
 
+  const handleOpenWhatsApp = () => {
+    if (whatsappUrl) {
+      window.open(whatsappUrl, '_blank');
+    }
+  };
+
   const handleConfirm = async () => {
     // T6.1 — Zod validation before insert
     const errors = validateBookingForm({ name: clientName, phone: clientPhone });
@@ -71,49 +78,54 @@ export function Confirmation() {
     setSlotError(null);
     setIsSubmitting(true);
 
-    const qrHash = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const qrHash = crypto.randomUUID().slice(0, 8).toUpperCase();
     const finalPrice = computeFinalPrice();
 
-    if (supabase && barberId) {
-      const { error } = await supabase.from('appointments').insert({
-        barber_id: barberId,
-        service_id: serviceId, // T3.3: real UUID from store (no hardcoded fallback)
-        client_name: clientName,
-        client_phone: clientPhone,
-        appointment_date: date,
-        appointment_time: time,
-        qr_hash: qrHash,
-        status: 'pending',
-        is_fixed_weekly: isFixedWeekly,
-        final_price: finalPrice,
-        deposit_paid: false,
-      });
+    if (!supabase || !barberId) {
+      console.error('Cannot save appointment: Supabase not configured or no barber selected');
+      setValidationErrors({ submit: 'Error de conexión. Intentá nuevamente.' });
+      setIsSubmitting(false);
+      return;
+    }
 
-      if (error) {
-        // T2.3 — 23505 unique constraint violation: slot was just taken
-        if (
-          error.code === '23505' &&
-          error.message.includes('appointments_unique_slot')
-        ) {
-          const conflictMsg =
-            'Este turno acaba de ser tomado. Por favor elegí otro horario.';
-          setSlotConflictError(conflictMsg);
-          setSlotError(conflictMsg);
-          setIsSubmitting(false);
-          setStep(3);
-          return;
-        }
-        console.error('Error saving appointment:', error);
+    const { error } = await supabase.from('appointments').insert({
+      barber_id: barberId,
+      service_id: serviceId, // T3.3: real UUID from store (no hardcoded fallback)
+      client_name: clientName,
+      client_phone: clientPhone,
+      appointment_date: date,
+      appointment_time: time,
+      qr_hash: qrHash,
+      status: 'pending',
+      is_fixed_weekly: isFixedWeekly,
+      final_price: finalPrice,
+      deposit_paid: false,
+    });
+
+    if (error) {
+      // T2.3 — 23505 unique constraint violation: slot was just taken
+      if (
+        error.code === '23505' &&
+        error.message.includes('appointments_unique_slot')
+      ) {
+        const conflictMsg =
+          'Este turno acaba de ser tomado. Por favor elegí otro horario.';
+        setSlotConflictError(conflictMsg);
+        setSlotError(conflictMsg);
         setIsSubmitting(false);
+        setStep(3);
         return;
       }
+      console.error('Error saving appointment:', error);
+      setIsSubmitting(false);
+      return;
     }
 
     setQrValue(qrHash);
     setIsConfirmed(true);
     setIsSubmitting(false);
 
-    // WhatsApp dynamic link
+    // WhatsApp dynamic link — store URL for user-triggered open
     const barberWaPhone = barberConfig?.whatsappPhone ?? '3402417023';
     const displayService = serviceName ?? 'Servicio';
     const message =
@@ -126,7 +138,7 @@ export function Confirmation() {
       `🎟️ *Código:* ${qrHash}\n\n` +
       `_Confirmado vía IL BARBIERE OS_`;
 
-    window.open(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    setWhatsappUrl(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`);
   };
 
   if (isConfirmed) {
@@ -206,6 +218,15 @@ export function Confirmation() {
               </div>
             )}
           </div>
+
+          {whatsappUrl && (
+            <button
+              onClick={handleOpenWhatsApp}
+              className='mb-4 w-full py-4 rounded-2xl bg-green-500 text-white font-black uppercase tracking-[0.25em] text-xs hover:scale-[1.01] active:scale-[0.98] transition-transform shadow-lg'
+            >
+              Enviar por WhatsApp
+            </button>
+          )}
 
           <button
             onClick={reset}
@@ -345,8 +366,13 @@ export function Confirmation() {
           </>
         )}
       </button>
+      {validationErrors.submit && (
+        <div className='mt-4 p-3 rounded-xl border border-red-500/40 bg-red-500/10 text-center'>
+          <p className='text-red-400 text-xs font-bold'>{validationErrors.submit}</p>
+        </div>
+      )}
       <p className='text-center mt-6 text-white/20 text-[10px] font-bold uppercase tracking-widest'>
-        Al confirmar, serás redirigido a WhatsApp
+        Después de confirmar, podés enviar los datos por WhatsApp
       </p>
     </div>
   );

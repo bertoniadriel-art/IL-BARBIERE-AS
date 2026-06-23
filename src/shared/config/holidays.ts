@@ -34,5 +34,9 @@ export function isArgentineHoliday(date: Date): boolean {
   const d = String(date.getDate()).padStart(2, '0');
   const iso = `${y}-${m}-${d}`;
   if (y === 2026) return HOLIDAYS_AR_2026.includes(iso);
+  console.warn(
+    `[holidays] Year ${y} not supported. Only 2026 holidays are defined. ` +
+    `Update holidays.ts to add HOLIDAYS_AR_${y}.`
+  );
   return false;
 }

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>IL BARBIERE — Saca tu Turno</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan:   #00f3ff;
+      --purple: #bc00ff;
+      --bg:     #0a0a0a;
+      --border: rgba(255,255,255,.1);
+      --text:   #ededed;
+      --muted:  rgba(237,237,237,.4);
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      background: radial-gradient(ellipse at 65% 0%, rgba(0,243,255,.06) 0%, transparent 60%);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 28px 36px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,243,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,243,255,.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,243,255,.35);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: .2em;
+      color: var(--text);
+    }
+
+    /* ── Hero ── */
+    .hero-pre {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 13vw, 64px);
+      letter-spacing: .04em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .hero-main {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(80px, 22vw, 108px);
+      letter-spacing: .02em;
+      line-height: .9;
+      background: linear-gradient(135deg, #00f3ff, #bc00ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, var(--cyan), transparent);
+      margin: 20px 0 26px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .subtitle-line {
+      width: 32px;
+      height: 2px;
+      background: var(--cyan);
+      margin-bottom: 32px;
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; flex: 1; }
+
+    .step { display: flex; align-items: flex-start; gap: 16px; }
+
+    .step-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: .05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,243,255,.06);
+      flex-shrink: 0;
+    }
+
+    .step-line {
+      width: 1.5px;
+      flex: 1;
+      min-height: 24px;
+      background: linear-gradient(to bottom, rgba(0,243,255,.35), rgba(0,243,255,.03));
+      margin: 5px 0;
+    }
+
+    .step-content {
+      padding-bottom: 26px;
+      padding-top: 6px;
+    }
+
+    .step:last-child .step-content { padding-bottom: 0; }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    /* ── CTA ── */
+    .cta-wrap {
+      margin-top: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #00f3ff, #bc00ff);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: .3em;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: 0 0 32px rgba(0,243,255,.2), 0 0 60px rgba(188,0,255,.12);
+      transition: opacity .15s;
+    }
+
+    .cta-btn:active { opacity: .85; }
+
+    .footer {
+      font-size: 11px;
+      color: rgba(255,255,255,.3);
+      text-align: center;
+      letter-spacing: .05em;
+    }
+
+    .footer span { color: rgba(255,255,255,.5); }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <div class="header">
+      <img class="logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGFkODAxMDAwMGM2MDMwMDAwMzcwNjAwMDBhYzA3MDAwMDM4MDkwMDAwYWQwYzAwMDBlODExMDAwMDQyMTIwMDAwY2ExMzAwMDBkNjE0MDAwMDA1MWEwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAlgCWAwEiAAIRAQMRAf/EAKMAAAEFAQEBAAAAAAAAAAAAAAACAwQFBwYBCBAAAgIBAwMEAQUAAAAAAAAAAgMAAQQFERIQEyIgITAyFBUjJDEzEQABAwEEBQkGBAYDAAAAAAABAAIRIQMSMVEQQWFxoQQgIjKBkbHB8BMwQlLR4WKSsvEjM3KCotIFFMISAAECAwgCAwEBAAAAAAAAAAEAESExQVFhcYGRobHwEMEg0eHxMP/aAAwDAQACAQMBAAABxgAAAAU4CFrsXFwpDw87FiXs9a+QR1te23RDjcZgAA2fGNnDGAAFyoqvVsv6mnzJ075wAcEAAAFh0fGEh/vONub6dLz72TFqq42fGNn88xh9iapTUezrfTXtDprVCZTcWMGVcHrWaepgWGoaF4rDaz6A5kMVu6Zx53puH7vnpsqk2fGNnrIGMWldePO10H0bb2zrMH3dPkGPX1C2+Z2HjdWda5XjuAoY0t7xk9ToN5lFyDltyneXFnmmz43slPWZBaVF5JdoSV61Gi3Ndbh3XI2EyTE0qumZtFsuKhddRCa4nimIBYAN9nyvX2dlw2r5bqVZFxzqed7N5rTafus2VC4PfMj2g85O/iWp5yN84e+V9tGcPaosbA85yyQ8FQWvLPv5BqOS61Ak5FqOU9J6j6Czbnq2Qz2ul/P60I35nCfA3WHi8T1P0FFyKnDfWMZbDZU4rJWrb8ssc5flU2v45sdUvGnWTxUy4oXH3FsXtb6RBoYZdGgHhkB4ZuFqT0rcOynt82pmvh+7LjOzMN4wAejzIEqypZrzt5XSnpkmsTcPntPYPsrVZppa3320oGk10EAabNnxjZwxg2cDGDZwMYNnAxl/Xz0yTzXD1WRt7AHmM+bOJ8xg2cDGDZwMY2cA/9oACAEBAAEFAvVVbzjKVdz8cpaLqcZt8e0/qD7yt6ncGd1cpwSi5QlVGY20sdvg2m/Tf1LyCCJeJRiKKMXYX6R8a3gBZ3jaIMvSMe5naSSfWjK2jF0dMXwvqA8rMuVzRsbiAzeXc1LBpfVOMx0/R8iXgtG+1Mdu0ernXWvYb8AmJ/jCPozUgKGgxPC0WhnsFWyZz+K6ojn2iWcxy18S6ceRPLkU0h3cTd7Qi4wz4hip7jM/Fu6DIpg52pUuEwinO5o23c1fFDhjn5ZAbhK94v79NPdanN8b35Xnt2rRk7mxnAfymLrqB2FtzCbFT7jdRf2D69VZjF1j5FEDDthaevtL1d/FTa9Sfsj6PryGDXtwnGbTHxe7eSgVXhrHdeQEzXd5mSuqHtzhOE7c7cWPuqvHI+0RXImaeoa1dK1LQvkRLQiajhhcHCQMDEBmR28fknBXTBFLIjT1VFYiRUoMfILt43JWnq7rzQFP+1f1poc2H7t1tm56YHJxmvl5HkAW7cUfNvDHmCW4W2qXfjjvAbDBUIW7hjTT7uwzgAKOBc0Nf7q73bq2MVFogbmSA5KOjmK+nQb4LX/Jx0q/aPggciZuOT6xx7KV/wAnHSu6TqS7RV9EZjFUrUWTJedzHzmIjc9jZWoNoV57F0eew6rKKqvV3XKyyov1Nu56i0oeewqQ0tizWTJfbL6Ve034wbohMLC95vN5vN5vN5vN4te8Gto5039A3PcLAqOjTdfAvFu5Q7RjIRcvVRbTjFOubAyFjT8Rk/EZKwjg4MEQXCLaMbCPl8FXtKZO5ynMZV1OU7lS3DLdcJ3y0y6ndnOdyc7+D//aAAgBAwEBPwHS1s+v2HFBjdZ4/QOXsWnB3gfMHgncncNset/fzY5tnyhzNoyPlknWbbcXm0OSIjQ0J47zXv0hwOGmytLhkfvsXKmBwFoO31nq0WQntIndiU4ySc9Fo66CVyUU3lPbdJBxGnk3TY5vrbxg9uiyP/r9JV9X1bvvEAYLkV282TAZX6LlXKGutHkHEr2gXtQuQ2o8fJWmJ3p77vrsR+LeAPEqethqAvYJpBJpi66JGQqm9W9TrOknU2TgmkAA0recREuI1QgNgoya5uw7oTZuhxDcTeMYAUouT1u6r0nsJpwRKtBPZVexMTGsnv8AUK7qu3qzslC90aYTO0lXTlS6RGcq7QQ2oF2TqGxFs3paelHcPumWRMACl27G9CxdZxqpGljo3ax61J9jrbUeH29FQoUJtkXYCUyzFkKq0fePMY+NcI3XYxv6p/14lDk7Nv5gfJCzsm4id7vIV4J3KQKAR2R64bk+0LudKvFXub//2gAIAQIBAT8B0Qmsn1+w4oWbNZ4/QOX/AF2u6ruIPmDwT+SuG2PWBqO0c2I5tlypzIrIyPlkn2bOUNvMo4avI+SIih0NHCpTxnianZP20lpGmwtSwyP32Fcssw4C1b2+XbqOixbNMyJ3YlOdeJOehjbxAXKTWMkK6eSfxGPZs8ceMHt0WH+36CrquKybdBOtWoJnMplkYC9mvZlf8eIJ3HyVqOk7eVyeh492PCU34dxJ8PoiMMdZMJ0wK4NvGNpojjFeqIA+aBinAyRWl1oOqdconaauimTcfFOxIBdh0a6zWqsQC8hznUjDCRjOyitDJKszj63qI6UyIA4fUKazeikbVArXKNgCkZ1vTOUIHGXYmYGaBi7DhSe8povmhqXTOSeHWAdLh/Emg+uWgFWdpd3HEetSfZ/E2o8Ptt71KlSmNL8BKY0WIk4+uHrFW1tfPMs3waG74fv6lEMfjG/qn/XiShyaz2/mB8kLKxbiJ3v8m14J/K2to0RsAj7+G5WlqX84GFfKvHPm/wD/2gAIAQEBBj8C5+KoHHsXVcsHd3vs1hOxYtZ4+ZVX2juCwf8AmWNo3tlUe1+x4VQWf5MXn8P2Vfc09xQ9i+U5aisPWz6c+93fXQGtEk4BfxXSflbh3rqR/cVeZL2a8xz7r8M8lB9fdRzdmrdo9qcX0Gwa+/mG0Z1SerlOWnoNLl1P8h9VDrN3rbgp1K47A9UraOZ/VTsGKGb69miyj5Bpqi02cswKuXTeyzV63qfky3nyUAADIU0O3fYLogmMlX0fupOLaOU56WM3calHLAbhou67OnYcNG1OfkOKY3NwQtLP+ZZVG0ax3IObgVdZV/gpJJUJzZ6ze2i9o3HA7fugfm6Lt63abR3yh300sgwCQDlBRyGgMzqUX/KOJ+yLj8InuTmgwHGeYHNMEYFS6XO29UbgiO0b2r+oaBvCtvWvmEA0OdVfOrFF2aA14nermt/gMeePWNENnkjvPjoth6x5kSGjWSgGOlhxrPSCvOIphvXWHeidQoNyswDJgl3bzgu13iUd50EfO3imNDBLnNE+KaGsa0uOWoIDMhCWNE06sphaAHF0U1yo9m1WktF1urAal7O429ldVp0QQLsTqlOaGtMYi6nlzb0OdE5BB72DCSobZ0aJNI3L2dxt7K6rTo9EXYGRNU9rWdKow1o7zos9juGKYPlDneSDflb4pm+e5Na6L2qV0sLMSO3Wn/haB31Vs78UdydaRLnH1uTnu+JxJ7E51iBtW0t4u/dXHOuig7laXTIkCexOtYlzj63IvOL3Eq8H3jJJw36Sflb4q0/Ddb5o2piHGB3Jzvlb4r2hxHcITnjDAHY37pxAisb09217l2cWoMNOjXtVwYvoBrM0VkzN47mpoECtZR2XitscWoNGN3iUASOl4DSbjrufkj0jjLszt7FDnlzTUVRuGJxouk8lXQ8huSutcQNigvMZK7eN3JdfgFfnpZ4oOv1GHaq2ju9XS83clEm7lv8AquuaZUVTPMkdij4f0H/VQfdeqbSvrq/Edp1LZqGz783YpCiP7dY/p+ikdJuf19x0uiOJ7FkBw2uzOxbP1HM8/YpbXxWsnMY9uawr+Gh/Kui4HYeieKwXV8FqHauk7uVBXvKr3Drdp1Lwb7quOYxVbtpwcsXt2OF8Kj7Pi3zXWZ+dy/mN4u818Tv8QtTBkFT3uKwC6oWA9z//2gAIAQECAT8h+RZA6gmA34WwAaH5ymQlLK6w5RITH+YIwCYXm36iJM6yEOEU/Dh9u4UeAINyUESlWAQ4MTrAoHVRuWbIkUAKBEs55nF6MbAx/wAAZLIthJU2/ngEJFn+VTBaiFDBHq2rD2KBNBYLMX8G5Noyobf20fIIidN/oOcE+N80fgewJkoaJKxGC4znJsUMZ14O7kjZDScD+tpi8Z/OGiU1YruFOA8jb+NxsRxkbfgwCQqbAIk6KIAQQCwJeBGFOuWBZoYBF4DE0+JoljP3A9KeTDHhNhAYmQzKIxIk3yqbGE2QSDMJOzRPQboc6GCc+34eUQ3mLNSZqbmQsL5cMhmY5eAADJzhzugWTGKa1GxEA7hIS5scBvbp0XBYACS6TWvRNF1CYYKZuZmiBEGUgABkPAJxa1IIMydAU+BlOWOwtTsiiTM0t+18U2eirfeqgiXPyWhYB6LU6xIdgHhodGJDOLkZJsseewtV8yeA3Vx8OEzs6eLB2wcbxc2lUa6C+F2IMEFJASsxjvu1RByGLklBgkXBobRI4p1gEQG0bkNg+iIbQkGldNAYGexM0ekSOf2n631/PAuAtKPGAcPJ4i25jB37AxQgs2gvCBvGqb+vIEt+E98mh1vaoEqELI62gwvNrPgSgc4IEFHAexFpMEUKzbxw6g5QG4/UQFiuktU5cBr4smTkWkG15KVRkNhFPpGBMpWCgVq/VfQYKHDFbe3MFEBTJkyZMh1xpE5WnEaiEx0IvtExBsIK0EdFBItQUkFE0Aw9m5Ma6GMvBa0JhECUSI2sAgH432ok8SrmYocqChdiQYZAJyenpyci5w5CaJF11yC6hsHsFP8AlWIlhGuwFTIwRExbOZCufWpQhhkyD0JTKaoTALgsRQAQs8Q8mDxxQLOAGGZBRr0A3SyHnheqVyQcEDlUtSwF1nCBhQcHc7WouUY6JmXAAdpEBBAAMqJJAkLmqALpZDzwvUZgZqLAOqgMWAFLoTJtRdCqFytBfKX0m3idLjqsVJiWH2rhjWPhlgHYOr5K087KPBQwAAwQiDIMR2ZMT7oiXpYmUjUoYbzS4ilUSbq5GqWcwMRaSJkicU5qiGalrRjgYIwopK2oC7OMoTKJwKGG80sBTFyHCGiidEQJgBYvZFHvZpgxlI4FOFVtSYe0A2xsP5R9IKB3FDwuXVAm3Do6nQzlrR/UbmmMcc4OOiDQfGhmknr/AKi3CYATMOErt6bfHMZMTnlBX9EOScbgExwS0C/0ihgBGJYwkMU9zajg4HCYAVNeyUeNVCct+lUUMIPB5kZ2onQKeacwazkCZ2vbRBgg9IyWaKb8ESqMSIIocQhoMmyDKUwpRNjsNBBAAkDAIBskclou0EcZp+S1omGbTzTdAc8UHwQJnjAB1AQoBsLgonzdRYRfBFi1TBmX04cMgdgBomDXtPNSbPcvIDyQt4RTChBeWQToJYckwztMdEfD59rQnECXl6+0XFDceuLZaSDQi0f5AAxxxjIOCwVwWEYO9Az2BQKAwgWJeN+wIu+DMDEp/YvQIRMDQjswndcP6zqNaG5QpgmD/gxmIlB8JBwBokuXBWmjIENsbxnwFg6Dk5+UoYlMdkU80Ajcy9hFmTDD3JDjqpQibW/L066gNyQn5BdB+yJ9n0dDHAHs/Sg2V7jZXYTWcuBhqpbsAJEh9nsEYnP+BCcFiEAlwbB/RCmxOZUMKN11+geyO7XKIJ5L2/our2mQ4Z7ExOc9FQFr0S8/9KkzjynVJl9EJv8AT7V0GR9lE9dIcf4f/9oADAMBAgICAwIAABDzzcc95PfyjzX/AI88+1kou5QE+0wzxo3RsZIKMM5qJZME8eGKECkwB66sbWOJnugkmZV6NqGZvwwCPTsL8vI58Lzk8owwwBCRQwwg/9oACAEDAgE/EPACHaxaWqH4X0Yq+1gPQWGn1rxpjEFgyAWIhoGHwLGesWuprxH4tEWsjFPJC0KVVnYNhuNCiEQQxEx4cMZCJwFMzDNMGMgFdMBo2EvL652n4svICMHQoFSuOxVclshkTcmv8BIAyAwH4AnYqJ18XbCGNEdxrCRYSKQcR5juoOp+hAwTGQ3NcJlqIirIl4jqVEUcs5EmsVASQL2g+avleIQmNN34W7IgFqxHpoSoaOOA5DoonOJcyQa5kHMohyjHaRNqOx0UEBrgrsAa9YmTiHTEJLFwZ5qFWgWNbibwKEDOoLEVLQosAK+EBwgThKKAq7Z3lO4yvJxmOnUIdfOQcsExYOCwwFgBvdlKEYEummKMBJJp5BxaKFsKBAZlg8bWqj+gROnUdkFfJmgQ7FAeLK55D+3YsVe3G0/a9SgJqamoy18sGJkBinZNy3oW+1GtPILJ6CCtih+j111iz5E6I+vAMLhQnqvIeyASAY0mc8RKe97oPkCEi2C7ME6318f/2gAIAQICAT8Q8DRahW9Pso9L6L11K6pGnEi8aYxYyAGiIaBDEU+BaDzMWuprxFE/Cll0KeSFo8K4BzIGIgR4ETGQZApmWGaaNg3AcMJeZx5A/wAPWOxXZz0vPADBSDwX4QU8NROvi+Q7LIqKbzFnX0EyGXrvZT7ECNE+KDoHSNCTrFcI/Q9hNLJ8yG1w8AoYaxBgJ2+g2igF4HZJR97RcWIAF2jvJ7CXKHgiGKocdpUALjuhYaHAyI8hKK9dHrPsLQiiJIWGN5doR9eJJLY2KCUwsV2sXYsV3c/f+AfDlmNasGJkBiu5H4Qj3kFpKLXjqXgAXFfXjLwoiiAMAuDSbNU8+RJCRgWXRvlP/9oACAEBAgE/EPlMhPsJ3JcWkRX11vTvGxT5mPY4+CnoP8zIA5NEetHrLFOtaAQfAOGxWkiLaaCvVx2ViBqr9NJBcCTuLFUfv7AgfOJtQGbGCoebwaGX+EIGNXg2KEPuH1ua3J5cYYsWcWfKdPV7MkXvZOkH3uLa6iipgSww9BUiPkJrc3BrEy2bcREk07lU4nFD/kEuR2JkBEwTJ3AAC6F5MUUsACSBwIDdoaMhRX5mcHoE/ovTS9Q4eGRJSfnQD4R1mGyWiR6YA6Kxvc+HfBr+2F/9QU0Dj4BXIAKDej0w2tEN4S8Ec6jWFsoTwduD6BlggB14HZvcp2EjOGPAo7gZRY3BBg/3oUiEQYEef5/RqM5FezFK7ajxX4ufISjISATIxO8XTo1diE1HdYyIqAAvDA4kPM3uUIrIbQMxIACaT6G6IousUj84GDDcQho3Eg266S6QlgIr01BO0VWvktFY9EZcUOmAWeiHgMQV4OHDOpjBkmwvIG49IZQyrEGNYVQMgy7oRw5Bww5JAQUHHkWILBQFjbnas5rBKSyJEi5zUljkuGwLAc6sqmh0mqIT4lCmk/VUQcg4HSrCytfA4cPFygNSy/Uu8oFlAc4eYNgkoP4DUohnFoLMk8uQPvjGjHJ/y9gRzXXG5mRcOuAfvrrEYxKZMn0AhYLFSDzbJiyRSEkOLwJQymLprKhWQ3khN67YG6GTgmk1EGPIKxRWQHgEM4Gd4XoMmCC5daO6WOgfl9o1GjiDYUzHn00sTHsDuJ/HgLrvCKiKItCKU7kXAy4BIuAzX9kxqMoWI6U6V0GaMAU4/TW6pCmMx0Xfqiiq4QslcI2KGheCdgpAeLEZzkVX0jA8laniZW3uhCB3qcKNq1mLzqEOgr+rCQ9pOPTdGiMONUl+DoQEFNXGNCyI+8kSnD5KKjZYxMBZUTJPeJxBQaJKJaDZMQUgBUU8rInYLLrVXjQsjCaoBEKKOgdJXiCccVIRbtN/0rgLMi3Q1k/Veh3hk7oxktQPQ32g6wN6qPxI1VopCkQF+dxAXQxWHIwGQvkc8o310CRuZkyImZWVUiABoHMtUcgjIxSIPLQKSKUi6tmkrk57QaEER0CRgymhETMoruU5ugxUAahGBwyMY51xmdxQB1OAOk8ke01wG05f0SpA2IOQLKCVtWWEHQoSI04A09olGROOiEQglIPIhhdzBS10KtCNPgQksWLmmwTP8YNykgbq9KQhQICsxLyokcSLAAR5o8h8ePO2oS2PRIohlMhASQSY5pdzB64EzBPnKaTqJDdoQRhESyQyTZYpIetGv/BaghizCmcdVaVBrSeDbEUCMyHjuIHLvanMLbEQAPBQBVDo4qCLjMUSe0jomDKZNUlCMs3uRRePXWKyDFcEYWzxhxcppBYCHRRikMRgVhm4iX2wIZgB1xpAyAVILhgkjehyhPoWIToFHrKGgkxmnPm/oXiQeip+M+wOsiNBxmCNESoP+T/lQGHeuoUCWertJZOd8CXDo8SaMRJqifIXDolQeBvIqaC5cCDoRZvmiWzXYHT6euG4k6dOnTp0IqJKQewtUHjB3ENmatOl7i6QQh6d/Pk0IKx5B3NYKcD/AEH8CjfLSfwl0OmEnfrixbqNIEgcI31v4Un4QFWcAgXbG66tCCR7ipC4QMAP2JuT+tiH+AARIEFiEPFAlOrSJtkYGG5NITugAE7xMoIIFJ5h42kqMOGivuKqPICgewdxRzcnJ/zdQYNWQNHJzd2eBO4cscirkZPUn+f/2Q==" alt="IL BARBIERE" />
+      <div class="brand">IL BARBIERE</div>
+    </div>
+
+    <div class="hero-pre">SACA TU</div>
+    <div class="hero-main">TURNO</div>
+
+    <div class="divider"></div>
+
+    <div class="subtitle">Reservá desde tu celular</div>
+    <div class="subtitle-line"></div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Abrí la app</div>
+          <div class="step-desc">Elegí barbero y horario</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Señá tu turno</div>
+          <div class="step-desc">Aseguralo con una seña</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Recibí tu QR</div>
+          <div class="step-desc">Te llega al instante</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Presentate</div>
+          <div class="step-desc">Fede o Santi escanean tu QR</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">5</div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">¡A disfrutar!</div>
+          <div class="step-desc">Sentate y relajate</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://il-barbiere-10-i9699kne2-adrielias-projects.vercel.app/reservar" target="_blank">
+        ABRIR APP
+      </a>
+      <div class="footer">
+        📍 <span>San Martín 345</span> — Arroyo Seco, Santa Fe
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

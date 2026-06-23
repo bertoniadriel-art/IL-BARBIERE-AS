@@ -44,7 +44,7 @@ export interface Appointment {
   qr_hash: string;
   status: AppointmentStatus;
   is_fixed_weekly: boolean;
-  final_price: number;
+  final_price: number | null;
   deposit_paid: boolean;
   created_at?: string;
 }
