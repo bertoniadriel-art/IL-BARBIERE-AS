@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/shared/lib/supabase";
 import {
     format,
+    parseISO,
     startOfToday,
     startOfMonth,
     endOfMonth,
@@ -202,7 +203,11 @@ export function CalendarView({ barber, onMutated }: CalendarViewProps) {
                 }
 
                 setSelectedDate(overbookDate);
-                closeOverbookModal();
+                setIsOverbookModalOpen(false);
+                setOverbookClientName("");
+                setOverbookClientPhone("");
+                setOverbookPrice("");
+                setOverbookError(null);
                 onMutated?.();
             }
         } finally {
@@ -371,7 +376,7 @@ export function CalendarView({ barber, onMutated }: CalendarViewProps) {
                             Turnos del día
                         </p>
                         <h3 className="text-lg md:text-xl font-black mt-1">
-                            {format(new Date(selectedDate), "dd 'de' MMMM")}
+                            {format(parseISO(selectedDate), "dd 'de' MMMM")}
                         </h3>
                     </div>
                     <button

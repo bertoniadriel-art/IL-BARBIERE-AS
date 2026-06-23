@@ -34,6 +34,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
     const [localDate, setLocalDate] = useState(app.appointment_date);
     const [localTime, setLocalTime] = useState(app.appointment_time?.slice(0, 5));
     const [cancelError, setCancelError] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Move modal state
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
@@ -47,16 +48,22 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
     const isCancelled = localStatus === "cancelled";
 
     async function handleCancel() {
+        if (isCancelling) return;
+        setIsCancelling(true);
         const prevStatus = localStatus;
         setLocalStatus("cancelled");
         setCancelError(null);
 
-        const { error } = await updateAppointmentStatus(app.id, "cancelled");
-        if (error) {
-            setLocalStatus(prevStatus);
-            setCancelError("Error al cancelar. Intenta de nuevo.");
-        } else {
-            onMutated?.();
+        try {
+            const { error } = await updateAppointmentStatus(app.id, "cancelled");
+            if (error) {
+                setLocalStatus(prevStatus);
+                setCancelError("Error al cancelar. Intenta de nuevo.");
+            } else {
+                onMutated?.();
+            }
+        } finally {
+            setIsCancelling(false);
         }
     }
 
@@ -105,7 +112,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         setIsMoving(true);
         setMoveError(null);
 
-        const { error } = await moveAppointment(app.id, moveDate, moveTime);
+        const { error } = await moveAppointment(app.id, app.barber_id ?? "", moveDate, moveTime);
 
         setIsMoving(false);
 
@@ -175,7 +182,8 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
                         <button
                             type="button"
                             onClick={handleCancel}
-                            className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/30 transition-colors"
+                            disabled={isCancelling}
+                            className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             Cancelar
                         </button>
@@ -240,7 +248,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
                                         <option
                                             key={slot}
                                             value={slot}
-                                            disabled={bookedSlots.includes(slot) && slot !== (app.appointment_time?.slice(0, 5))}
+                                            disabled={bookedSlots.includes(slot) && slot !== localTime}
                                         >
                                             {slot}{bookedSlots.includes(slot) ? " (ocupado)" : ""}
                                         </option>

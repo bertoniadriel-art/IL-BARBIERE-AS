@@ -17,20 +17,26 @@ export async function updateAppointmentStatus(
 
 export async function moveAppointment(
   id: string,
+  barberId: string,
   newDate: string,
   newTime: string
 ): Promise<{ error: MoveError | null }> {
   if (!supabase) return { error: new Error("Supabase no configurado") };
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ appointment_date: newDate, appointment_time: newTime })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("barber_id", barberId)
+    .select("id");
   if (error) {
     return {
       error: (error as { code?: string }).code === "23505"
         ? { type: "slot_occupied" }
         : new Error((error as { message?: string }).message ?? "Error desconocido"),
     };
+  }
+  if (!data || data.length === 0) {
+    return { error: new Error("No se pudo mover el turno. El turno no existe o no tenés permisos.") };
   }
   return { error: null };
 }
