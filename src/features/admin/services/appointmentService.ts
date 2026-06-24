@@ -40,3 +40,23 @@ export async function moveAppointment(
   }
   return { error: null };
 }
+
+export async function createAppointment(payload: {
+  barber_id: string;
+  client_name: string;
+  client_phone: string;
+  appointment_date: string;
+  appointment_time: string;
+  final_price: number | null;
+  deposit_paid: boolean;
+}): Promise<{ error: Error | null }> {
+  if (!supabase) return { error: new Error('Supabase no configurado') };
+  const qr_hash = `MANUAL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const { error } = await supabase.from('appointments').insert({
+    ...payload,
+    status: 'confirmed',
+    is_fixed_weekly: false,
+    qr_hash,
+  });
+  return { error: error ? new Error(error.message) : null };
+}
