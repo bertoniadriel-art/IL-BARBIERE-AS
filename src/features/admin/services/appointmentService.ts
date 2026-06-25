@@ -55,6 +55,7 @@ export async function registerPayment(
 
 export async function createAppointment(payload: {
   barber_id: string;
+  service_id: string;
   client_name: string;
   client_phone: string;
   appointment_date: string;
