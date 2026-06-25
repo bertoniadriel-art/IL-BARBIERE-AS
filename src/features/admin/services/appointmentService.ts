@@ -41,6 +41,18 @@ export async function moveAppointment(
   return { error: null };
 }
 
+export async function registerPayment(
+  id: string,
+  type: 'paid' | 'debt'
+): Promise<{ error: Error | null }> {
+  if (!supabase) return { error: new Error('Supabase no configurado') };
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: type === 'paid' ? 'attended' : 'debt' })
+    .eq('id', id);
+  return { error: error ? new Error(error.message) : null };
+}
+
 export async function createAppointment(payload: {
   barber_id: string;
   client_name: string;

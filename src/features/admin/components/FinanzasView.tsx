@@ -1,5 +1,6 @@
 'use client';
 
+import { registerPayment } from '@/features/admin/services/appointmentService';
 import { supabase } from '@/shared/lib/supabase';
 import {
   addDays,
@@ -13,6 +14,7 @@ import { es } from 'date-fns/locale';
 import { useEffect, useMemo, useState } from 'react';
 
 interface AppointmentRow {
+  id: string;
   status: string;
   final_price: number | null;
   deposit_paid: boolean;
@@ -32,7 +34,11 @@ const ARS = new Intl.NumberFormat('es-AR', {
 });
 
 function isPaid(row: AppointmentRow) {
-  return row.status === 'attended' || row.status === 'confirmed';
+  return row.status === 'attended';
+}
+
+function isSettled(row: AppointmentRow) {
+  return row.status === 'attended' || row.status === 'debt';
 }
 
 export function FinanzasView({ barber }: FinanzasViewProps) {
@@ -49,7 +55,7 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
 
         const { data } = await supabase
           .from('appointments')
-          .select('status, final_price, deposit_paid, client_name, appointment_date, appointment_time')
+          .select('id, status, final_price, deposit_paid, client_name, appointment_date, appointment_time')
           .eq('barber_id', barber.id)
           .gte('appointment_date', from)
           .lte('appointment_date', to)
@@ -90,6 +96,13 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
       },
     };
   }, [rows, todayStr, weekStart, weekEnd, monthStart, monthEnd]);
+
+  async function handlePayment(id: string, type: 'paid' | 'debt') {
+    const prev = rows;
+    setRows(rows.map((r) => r.id === id ? { ...r, status: type === 'paid' ? 'attended' : 'debt' } : r));
+    const { error } = await registerPayment(id, type);
+    if (error) setRows(prev);
+  }
 
   const todayRows = useMemo(
     () =>
@@ -165,40 +178,54 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
         <div className='py-10 text-center text-white/20 text-sm'>Sin turnos hoy</div>
       ) : (
         <div className='flex flex-col gap-2'>
-          {todayRows.map((row, i) => {
-            const paid = isPaid(row);
-            return (
-              <div
-                key={i}
-                className='flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5'
-              >
-                <span className='text-neon-cyan font-black tabular-nums text-sm w-12 text-right flex-shrink-0'>
-                  {row.appointment_time?.slice(0, 5)}
+          {todayRows.map((row) => (
+            <div
+              key={row.id}
+              className='flex items-center gap-3 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5'
+            >
+              <span className='text-neon-cyan font-black tabular-nums text-sm w-12 text-right flex-shrink-0'>
+                {row.appointment_time?.slice(0, 5)}
+              </span>
+              <p className='flex-1 font-bold text-sm text-white truncate'>
+                {row.client_name || '—'}
+              </p>
+              {row.final_price != null && (
+                <span className={`text-sm font-black flex-shrink-0 ${isPaid(row) ? 'text-emerald-400' : 'text-white/40'}`}>
+                  {ARS.format(row.final_price)}
                 </span>
-                <p className='flex-1 font-bold text-sm text-white truncate'>
-                  {row.client_name || '—'}
-                </p>
-                {row.final_price != null ? (
-                  <span className={`text-sm font-black ${paid ? 'text-emerald-400' : 'text-white/30'}`}>
-                    {ARS.format(row.final_price)}
-                  </span>
-                ) : (
-                  <span className='text-xs text-white/20'>Sin precio</span>
-                )}
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ml-1 ${
-                    row.status === 'attended'
-                      ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
-                      : row.status === 'confirmed'
-                        ? 'text-sky-400 bg-sky-400/10 border-sky-400/30'
-                        : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
-                  }`}
-                >
-                  {row.status === 'attended' ? 'Atendido' : row.status === 'confirmed' ? 'Confirmado' : 'Pendiente'}
+              )}
+
+              {/* Status / action */}
+              {row.status === 'attended' && (
+                <span className='text-[10px] font-bold px-2.5 py-1 rounded-full border text-emerald-400 bg-emerald-400/10 border-emerald-400/30 flex-shrink-0'>
+                  Cobrado ✓
                 </span>
-              </div>
-            );
-          })}
+              )}
+              {row.status === 'debt' && (
+                <span className='text-[10px] font-bold px-2.5 py-1 rounded-full border text-orange-400 bg-orange-400/10 border-orange-400/30 flex-shrink-0'>
+                  Fiado ⚠
+                </span>
+              )}
+              {!isSettled(row) && (
+                <div className='flex gap-2 flex-shrink-0'>
+                  <button
+                    type='button'
+                    onClick={() => handlePayment(row.id, 'paid')}
+                    className='text-[10px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors'
+                  >
+                    Cobrar
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => handlePayment(row.id, 'debt')}
+                    className='text-[10px] font-bold px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/25 text-orange-400 hover:bg-orange-500/20 transition-colors'
+                  >
+                    Fiar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

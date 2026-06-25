@@ -49,7 +49,7 @@ export interface Appointment {
   created_at?: string;
 }
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'attended' | 'cancelled';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'attended' | 'cancelled' | 'debt';
 
 export interface BookingState {
   step: number;
