@@ -30,6 +30,7 @@ export function DashboardShell({ barber }: Props) {
   const [refetchKey, setRefetchKey] = useState(0);
   const [notification, setNotification] = useState<IncomingAppointment | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState<IncomingAppointment[]>([]);
 
   const handleLogout = async () => {
     await authService.signOut();
@@ -39,6 +40,7 @@ export function DashboardShell({ barber }: Props) {
   const handleNewAppointment = useCallback((appt: IncomingAppointment) => {
     setNotification(appt);
     setNotificationCount((c) => c + 1);
+    setRecentNotifications((prev) => [appt, ...prev].slice(0, 8));
   }, []);
 
   useNewAppointmentNotifications(barber.id, handleNewAppointment);
@@ -131,7 +133,7 @@ export function DashboardShell({ barber }: Props) {
 
           {activeTab === 'agenda' && (
             <div className='animate-in fade-in duration-500'>
-              <AgendaView barber={barber} refetchKey={refetchKey} />
+              <AgendaView barber={barber} refetchKey={refetchKey} recentNotifications={recentNotifications} />
             </div>
           )}
           {activeTab === 'scanner' && <ScannerModule barberId={barber.id} />}

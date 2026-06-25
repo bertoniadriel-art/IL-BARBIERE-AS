@@ -2,7 +2,9 @@
 
 import { moveAppointment, updateAppointmentStatus } from '@/features/admin/services/appointmentService';
 import { getBookedSlots } from '@/features/booking/services/availabilityService';
+import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import { supabase } from '@/shared/lib/supabase';
+import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import type { AppointmentStatus } from '@/shared/types';
 import {
   addDays,
@@ -14,9 +16,18 @@ import {
   startOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { CalendarDays, ChevronDown, ChevronUp, Download, X } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { useEffect, useRef, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+// 30-min slots 08:00–20:00
+const BASE_TIMES = Array.from({ length: 25 }, (_, i) => {
+  const h = Math.floor(i / 2) + 8;
+  const m = i % 2 === 0 ? '00' : '30';
+  return `${String(h).padStart(2, '0')}:${m}`;
+});
+
+const TIME_SLOTS = BASE_TIMES;
 
 interface AppointmentRow {
   id: string;
@@ -34,13 +45,8 @@ interface AppointmentRow {
 interface AgendaViewProps {
   barber: { id: string; name: string };
   refetchKey?: number;
+  recentNotifications?: IncomingAppointment[];
 }
-
-const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
-  const h = Math.floor(i / 2) + 8;
-  const m = i % 2 === 0 ? '00' : '30';
-  return `${String(h).padStart(2, '0')}:${m}`;
-});
 
 function statusLabel(status: string) {
   if (status === 'pending') return { label: 'Pendiente', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' };
@@ -50,6 +56,130 @@ function statusLabel(status: string) {
   return { label: status, color: 'text-white/40 bg-white/5 border-white/10' };
 }
 
+// ── Live ticker ──────────────────────────────────────────────────────────────
+function LiveTicker({ notifications }: { notifications: IncomingAppointment[] }) {
+  if (notifications.length === 0) return null;
+  return (
+    <div className='flex items-center gap-2 mb-6 overflow-hidden'>
+      <span className='text-[9px] font-black uppercase tracking-[0.2em] text-neon-cyan flex-shrink-0 flex items-center gap-1'>
+        <span className='w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse inline-block' />
+        Live
+      </span>
+      <div className='flex-1 overflow-x-auto scrollbar-none'>
+        <div className='flex gap-2 w-max animate-in slide-in-from-right duration-500'>
+          {notifications.map((n, i) => (
+            <span
+              key={i}
+              className='flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 text-white/70 whitespace-nowrap'
+            >
+              {n.client_name || 'Cliente'} · {n.appointment_time?.slice(0, 5)} hs
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Mini calendar ─────────────────────────────────────────────────────────────
+function MiniCalendar({
+  barberName,
+  rows,
+}: {
+  barberName: string;
+  rows: AppointmentRow[];
+}) {
+  const [open, setOpen] = useState(false);
+
+  const days = useMemo(() => {
+    return Array.from({ length: 14 }, (_, i) => {
+      const date = addDays(new Date(), i);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const total = getAvailableTimesForBarber(barberName, date, BASE_TIMES).length;
+      const booked = rows.filter((r) => r.appointment_date === dateStr).length;
+      const pct = total > 0 ? booked / total : 0;
+      return { date, dateStr, total, booked, pct };
+    });
+  }, [barberName, rows]);
+
+  function occupancyColor(pct: number) {
+    if (pct === 0) return 'bg-white/10';
+    if (pct < 0.5) return 'bg-emerald-500';
+    if (pct < 0.8) return 'bg-yellow-400';
+    return 'bg-red-500';
+  }
+
+  function occupancyLabel(pct: number, total: number) {
+    if (total === 0) return { text: 'Libre', color: 'text-white/20' };
+    if (pct === 0) return { text: 'Vacío — ¡publicar!', color: 'text-white/30' };
+    if (pct < 0.5) return { text: 'Disponible', color: 'text-emerald-400' };
+    if (pct < 0.8) return { text: 'Llenándose', color: 'text-yellow-400' };
+    if (pct < 1) return { text: 'Casi lleno', color: 'text-orange-400' };
+    return { text: 'Completo', color: 'text-red-400' };
+  }
+
+  return (
+    <div className='mb-8'>
+      <button
+        type='button'
+        onClick={() => setOpen((v) => !v)}
+        className='w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-colors'
+      >
+        <div className='flex items-center gap-2'>
+          <CalendarDays className='w-4 h-4 text-white/40' />
+          <span className='text-xs font-bold text-white/50 uppercase tracking-widest'>
+            Disponibilidad próximos 14 días
+          </span>
+        </div>
+        {open ? (
+          <ChevronUp className='w-4 h-4 text-white/30' />
+        ) : (
+          <ChevronDown className='w-4 h-4 text-white/30' />
+        )}
+      </button>
+
+      {open && (
+        <div className='mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-2 duration-300'>
+          {days.map(({ date, dateStr, total, booked, pct }) => {
+            if (total === 0) return null;
+            const { text, color } = occupancyLabel(pct, total);
+            return (
+              <div
+                key={dateStr}
+                className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
+              >
+                <div className='flex justify-between items-start mb-2'>
+                  <div>
+                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
+                      {format(date, 'EEE', { locale: es })}
+                    </p>
+                    <p className='text-base font-black text-white leading-none'>
+                      {format(date, 'd MMM', { locale: es })}
+                    </p>
+                  </div>
+                  <span className={`text-[9px] font-bold ${booked}/${total} flex items-baseline gap-0.5`}>
+                    <span className='text-white/70 text-sm font-black'>{booked}</span>
+                    <span className='text-white/30'>/{total}</span>
+                  </span>
+                </div>
+                {/* Occupancy bar */}
+                <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
+                  <div
+                    className={`h-full rounded-full transition-all ${occupancyColor(pct)}`}
+                    style={{ width: `${Math.min(pct * 100, 100)}%` }}
+                  />
+                </div>
+                <p className={`text-[9px] font-bold ${color}`}>{text}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AppointmentRow ────────────────────────────────────────────────────────────
 function AppointmentRow({
   row,
   onStatusChange,
@@ -62,10 +192,7 @@ function AppointmentRow({
   const time = row.appointment_time?.slice(0, 5) ?? '';
   const { label, color } = statusLabel(row.status);
 
-  // QR modal
   const [qrOpen, setQrOpen] = useState(false);
-
-  // Move modal
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveDate, setMoveDate] = useState(row.appointment_date);
   const [moveTime, setMoveTime] = useState(time);
@@ -98,23 +225,14 @@ function AppointmentRow({
   }
 
   async function handleMoveConfirm() {
-    if (moveDate === row.appointment_date && moveTime === time) {
-      setMoveOpen(false);
-      return;
-    }
-    if (bookedSlots.includes(moveTime)) {
-      setMoveError('Ese horario ya está ocupado.');
-      return;
-    }
+    if (moveDate === row.appointment_date && moveTime === time) { setMoveOpen(false); return; }
+    if (bookedSlots.includes(moveTime)) { setMoveError('Ese horario ya está ocupado.'); return; }
     setIsMoving(true);
     const { error } = await moveAppointment(row.id, row.barber_id, moveDate, moveTime);
     setIsMoving(false);
     if (error) {
-      setMoveError(
-        typeof error === 'object' && 'type' in error && error.type === 'slot_occupied'
-          ? 'Ese horario ya está ocupado.'
-          : 'Error al mover el turno.'
-      );
+      setMoveError(typeof error === 'object' && 'type' in error && error.type === 'slot_occupied'
+        ? 'Ese horario ya está ocupado.' : 'Error al mover el turno.');
       return;
     }
     setMoveOpen(false);
@@ -127,11 +245,8 @@ function AppointmentRow({
     const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `turno-${row.qr_hash}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = `turno-${row.qr_hash}.svg`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
@@ -143,17 +258,14 @@ function AppointmentRow({
         <div className='w-14 text-right flex-shrink-0'>
           <span className='text-lg font-black text-neon-cyan tabular-nums'>{time}</span>
         </div>
-
         <div className='flex-1 min-w-0'>
           <p className='font-bold text-white text-sm truncate'>
             {row.client_name || 'Cliente sin nombre'}
           </p>
           <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
-            {row.deposit_paid ? (
-              <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
-            ) : (
-              <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>
-            )}
+            {row.deposit_paid
+              ? <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
+              : <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>}
             {row.services?.name && (
               <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
                 {row.services.name}
@@ -166,44 +278,29 @@ function AppointmentRow({
             )}
           </div>
         </div>
-
         <div className='flex items-center gap-2 flex-shrink-0 flex-wrap justify-end'>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}`}>
-            {label}
-          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}`}>{label}</span>
           {row.status === 'pending' && (
-            <button
-              type='button'
-              onClick={() => onStatusChange(row.id, 'confirmed')}
-              className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
-            >
+            <button type='button' onClick={() => onStatusChange(row.id, 'confirmed')}
+              className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
               Confirmar
             </button>
           )}
           {row.status === 'confirmed' && (
-            <button
-              type='button'
-              onClick={() => onStatusChange(row.id, 'attended')}
-              className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
-            >
+            <button type='button' onClick={() => onStatusChange(row.id, 'attended')}
+              className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
               Presente
             </button>
           )}
           {isActive && (
-            <button
-              type='button'
-              onClick={openMove}
-              className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
-            >
+            <button type='button' onClick={openMove}
+              className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'>
               Mover
             </button>
           )}
           {row.qr_hash && (
-            <button
-              type='button'
-              onClick={() => setQrOpen(true)}
-              className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
-            >
+            <button type='button' onClick={() => setQrOpen(true)}
+              className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'>
               QR
             </button>
           )}
@@ -212,33 +309,20 @@ function AppointmentRow({
 
       {/* QR Modal */}
       {qrOpen && row.qr_hash && (
-        <div
-          className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'
-          onClick={() => setQrOpen(false)}
-        >
-          <div
-            className='bg-[#111114] border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl w-72'
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm' onClick={() => setQrOpen(false)}>
+          <div className='bg-[#111114] border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl w-72' onClick={(e) => e.stopPropagation()}>
             <div className='w-full flex justify-between items-center'>
               <p className='text-xs font-black uppercase tracking-widest text-white/40'>QR del turno</p>
-              <button type='button' onClick={() => setQrOpen(false)} className='text-white/30 hover:text-white'>
-                <X className='w-4 h-4' />
-              </button>
+              <button type='button' onClick={() => setQrOpen(false)} className='text-white/30 hover:text-white'><X className='w-4 h-4' /></button>
             </div>
             <p className='font-bold text-white'>{row.client_name}</p>
-            <p className='text-white/40 text-xs'>
-              {format(parseISO(row.appointment_date), "d MMM", { locale: es })} · {time} hs
-            </p>
+            <p className='text-white/40 text-xs'>{format(parseISO(row.appointment_date), "d MMM", { locale: es })} · {time} hs</p>
             <div className='bg-white p-4 rounded-2xl'>
               <QRCode id={`qr-svg-${row.id}`} value={row.qr_hash} size={180} />
             </div>
             <p className='text-white/30 font-mono text-[10px] tracking-widest'>{row.qr_hash}</p>
-            <button
-              type='button'
-              onClick={handleDownloadQR}
-              className='w-full py-3 rounded-2xl bg-white/8 border border-white/15 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-white/12 transition-colors'
-            >
+            <button type='button' onClick={handleDownloadQR}
+              className='w-full py-3 rounded-2xl bg-white/8 border border-white/15 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-white/12 transition-colors'>
               <Download className='w-3.5 h-3.5' /> Descargar SVG
             </button>
           </div>
@@ -249,58 +333,30 @@ function AppointmentRow({
       {moveOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm'>
           <div className='w-full max-w-sm mx-4 bg-[#111114] border border-neon-cyan/30 rounded-3xl p-6 relative animate-in zoom-in-95 duration-300'>
-            <button
-              type='button'
-              onClick={() => setMoveOpen(false)}
-              className='absolute top-4 right-4 text-white/30 hover:text-white'
-            >
-              <X className='w-4 h-4' />
-            </button>
+            <button type='button' onClick={() => setMoveOpen(false)} className='absolute top-4 right-4 text-white/30 hover:text-white'><X className='w-4 h-4' /></button>
             <p className='text-[10px] uppercase tracking-widest text-neon-cyan font-black mb-1'>Mover turno</p>
             <p className='text-lg font-black mb-5'>{row.client_name}</p>
-
             <div className='space-y-4'>
               <div>
-                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-                  Nueva fecha
-                </label>
-                <input
-                  type='date'
-                  value={moveDate}
-                  onChange={(e) => handleMoveDateChange(e.target.value)}
-                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
-                />
+                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>Nueva fecha</label>
+                <input type='date' value={moveDate} onChange={(e) => handleMoveDateChange(e.target.value)}
+                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan' />
               </div>
               <div>
-                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-                  Nuevo horario
-                </label>
-                <select
-                  value={moveTime}
-                  onChange={(e) => setMoveTime(e.target.value)}
-                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
-                >
+                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>Nuevo horario</label>
+                <select value={moveTime} onChange={(e) => setMoveTime(e.target.value)}
+                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'>
                   {TIME_SLOTS.map((slot) => (
-                    <option
-                      key={slot}
-                      value={slot}
-                      disabled={bookedSlots.includes(slot) && slot !== time}
-                    >
+                    <option key={slot} value={slot} disabled={bookedSlots.includes(slot) && slot !== time}>
                       {slot}{bookedSlots.includes(slot) ? ' (ocupado)' : ''}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
-
             {moveError && <p className='mt-3 text-xs text-red-400'>{moveError}</p>}
-
-            <button
-              type='button'
-              disabled={isMoving}
-              onClick={handleMoveConfirm}
-              className='mt-5 w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-xs hover:opacity-90 disabled:opacity-40 transition-opacity'
-            >
+            <button type='button' disabled={isMoving} onClick={handleMoveConfirm}
+              className='mt-5 w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-xs hover:opacity-90 disabled:opacity-40 transition-opacity'>
               {isMoving ? 'Moviendo...' : 'Confirmar'}
             </button>
           </div>
@@ -310,12 +366,8 @@ function AppointmentRow({
   );
 }
 
-function DayGroup({
-  label,
-  rows,
-  onStatusChange,
-  onMoved,
-}: {
+// ── DayGroup ──────────────────────────────────────────────────────────────────
+function DayGroup({ label, rows, onStatusChange, onMoved }: {
   label: string;
   rows: AppointmentRow[];
   onStatusChange: (id: string, next: AppointmentStatus) => void;
@@ -338,7 +390,8 @@ function DayGroup({
   );
 }
 
-export function AgendaView({ barber, refetchKey }: AgendaViewProps) {
+// ── AgendaView ────────────────────────────────────────────────────────────────
+export function AgendaView({ barber, refetchKey, recentNotifications = [] }: AgendaViewProps) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
 
@@ -347,19 +400,15 @@ export function AgendaView({ barber, refetchKey }: AgendaViewProps) {
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
       const limit = format(addDays(new Date(), 14), 'yyyy-MM-dd');
-
       const { data } = await supabase
         .from('appointments')
-        .select(
-          'id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, services(name)'
-        )
+        .select('id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, services(name)')
         .eq('barber_id', barber.id)
         .gte('appointment_date', today)
         .lte('appointment_date', limit)
         .not('status', 'eq', 'cancelled')
         .order('appointment_date', { ascending: true })
         .order('appointment_time', { ascending: true });
-
       setRows((data as AppointmentRow[]) ?? []);
     } finally {
       setLoading(false);
@@ -390,7 +439,11 @@ export function AgendaView({ barber, refetchKey }: AgendaViewProps) {
 
   return (
     <div>
-      <div className='grid grid-cols-3 gap-3 mb-8'>
+      {/* Live ticker */}
+      <LiveTicker notifications={recentNotifications} />
+
+      {/* Stats strip */}
+      <div className='grid grid-cols-3 gap-3 mb-6'>
         {[
           { label: 'Hoy', value: todayRows.length, sub: 'turnos' },
           { label: 'Pendientes', value: todayRows.filter((r) => r.status === 'pending').length, sub: 'sin confirmar' },
@@ -404,6 +457,10 @@ export function AgendaView({ barber, refetchKey }: AgendaViewProps) {
         ))}
       </div>
 
+      {/* Collapsible mini-calendar */}
+      <MiniCalendar barberName={barber.name} rows={rows} />
+
+      {/* Appointment lists */}
       {loading ? (
         <div className='py-16 text-center text-white/30 text-xs uppercase tracking-[0.3em]'>Cargando...</div>
       ) : rows.length === 0 ? (
