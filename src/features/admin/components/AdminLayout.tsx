@@ -12,20 +12,22 @@ import { useState } from 'react';
 
 export function AdminLayout({
   children,
+  activeTab,
   onTabChange,
   onLogout,
   notificationCount = 0,
 }: {
   children: React.ReactNode;
+  activeTab?: string;
   onTabChange?: (tab: string) => void;
   onLogout?: () => void;
   notificationCount?: number;
 }) {
-  const [activeTab, setActiveTab] = useState('agenda');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const currentTab = activeTab ?? 'agenda';
+
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
     if (onTabChange) onTabChange(tab);
   };
 
@@ -95,7 +97,7 @@ export function AdminLayout({
               onClick={() => handleTabChange(tab.key)}
               className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
                           ${
-                            activeTab === tab.key
+                            currentTab === tab.key
                               ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
                               : 'text-white/40 hover:bg-white/5 hover:text-white'
                           }`}

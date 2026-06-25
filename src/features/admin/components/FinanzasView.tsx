@@ -3,7 +3,6 @@
 import { registerPayment } from '@/features/admin/services/appointmentService';
 import { supabase } from '@/shared/lib/supabase';
 import {
-  addDays,
   endOfMonth,
   endOfWeek,
   format,
@@ -51,7 +50,7 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
         setLoading(true);
         const today = new Date();
         const from = format(startOfMonth(today), 'yyyy-MM-dd');
-        const to = format(endOfMonth(addDays(today, 7)), 'yyyy-MM-dd');
+        const to = format(endOfMonth(today), 'yyyy-MM-dd');
 
         const { data } = await supabase
           .from('appointments')

@@ -4,7 +4,7 @@
 // In Supabase dashboard: Database → Replication → enable "appointments".
 
 import { supabase } from '@/shared/lib/supabase-client';
-import { useCallback, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export interface IncomingAppointment {
   id: string;
@@ -18,7 +18,10 @@ export function useNewAppointmentNotifications(
   barberId: string | null,
   onNew: (appt: IncomingAppointment) => void
 ) {
-  const stableOnNew = useCallback(onNew, []);
+  const onNewRef = useRef(onNew);
+  useEffect(() => {
+    onNewRef.current = onNew;
+  });
 
   useEffect(() => {
     if (!supabase || !barberId) return;
@@ -34,7 +37,7 @@ export function useNewAppointmentNotifications(
           filter: `barber_id=eq.${barberId}`,
         },
         (payload: { new: Record<string, unknown> }) => {
-          stableOnNew(payload.new as unknown as IncomingAppointment);
+          onNewRef.current(payload.new as unknown as IncomingAppointment);
         }
       )
       .subscribe();
@@ -42,5 +45,5 @@ export function useNewAppointmentNotifications(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [barberId, stableOnNew]);
+  }, [barberId]);
 }

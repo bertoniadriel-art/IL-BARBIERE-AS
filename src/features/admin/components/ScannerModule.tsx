@@ -71,7 +71,25 @@ export function ScannerModule({ barberId }: Props) {
       return;
     }
 
-    await supabase.from('appointments').update({ status: 'attended' }).eq('id', data.id);
+    const { data: updated, error: updateError } = await supabase
+      .from('appointments')
+      .update({ status: 'attended' })
+      .eq('id', data.id)
+      .in('status', ['confirmed', 'pending'])
+      .select('id');
+
+    if (updateError) {
+      setErrorMsg('ERROR AL REGISTRAR EL TURNO');
+      setState('error');
+      return;
+    }
+
+    if (!updated || updated.length === 0) {
+      setErrorMsg('ESTE TURNO YA FUE REGISTRADO');
+      setState('error');
+      return;
+    }
+
     setAppointment(data);
     setState('success');
   }, [barberId]);

@@ -59,7 +59,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
           }
         }
       });
-  }, [isOpen]);
+  }, [isOpen, serviceId]);
 
   // Auto-fill price when service changes
   function handleServiceChange(id: string) {
@@ -105,7 +105,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       barber_id: barber.id,
       service_id: serviceId,
       client_name: clientName.trim(),
-      client_phone: '0000000000',
+      client_phone: null,
       appointment_date: date,
       appointment_time: time,
       final_price: price ? Number(price) : null,

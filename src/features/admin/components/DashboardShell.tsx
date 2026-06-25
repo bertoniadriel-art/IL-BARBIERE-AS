@@ -112,6 +112,7 @@ export function DashboardShell({ barber }: Props) {
       )}
 
       <AdminLayout
+        activeTab={activeTab}
         onTabChange={(tab) => {
           setActiveTab(tab as AdminTab);
           if (tab === 'agenda') setNotificationCount(0);

@@ -18,7 +18,7 @@ import {
 import { es } from 'date-fns/locale';
 import { CalendarDays, ChevronDown, ChevronUp, Download, X } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // 30-min slots 08:00–20:00
 const BASE_TIMES = Array.from({ length: 25 }, (_, i) => {
@@ -157,7 +157,7 @@ function MiniCalendar({
                       {format(date, 'd MMM', { locale: es })}
                     </p>
                   </div>
-                  <span className={`text-[9px] font-bold ${booked}/${total} flex items-baseline gap-0.5`}>
+                  <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
                     <span className='text-white/70 text-sm font-black'>{booked}</span>
                     <span className='text-white/30'>/{total}</span>
                   </span>
@@ -347,7 +347,7 @@ function AppointmentRow({
                 <select value={moveTime} onChange={(e) => setMoveTime(e.target.value)}
                   className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'>
                   {TIME_SLOTS.map((slot) => (
-                    <option key={slot} value={slot} disabled={bookedSlots.includes(slot) && slot !== time}>
+                    <option key={slot} value={slot} disabled={bookedSlots.includes(slot) && !(slot === time && moveDate === row.appointment_date)}>
                       {slot}{bookedSlots.includes(slot) ? ' (ocupado)' : ''}
                     </option>
                   ))}
@@ -395,7 +395,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
 
-  async function fetchAgenda() {
+  const fetchAgenda = useCallback(async () => {
     try {
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -413,9 +413,9 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     } finally {
       setLoading(false);
     }
-  }
+  }, [barber.id]);
 
-  useEffect(() => { fetchAgenda(); }, [barber.id, refetchKey]);
+  useEffect(() => { fetchAgenda(); }, [barber.id, refetchKey, fetchAgenda]);
 
   async function handleStatusChange(id: string, next: AppointmentStatus) {
     const prev = rows;
@@ -431,6 +431,14 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     return isWithinInterval(d, {
       start: startOfDay(addDays(new Date(), 2)),
       end: startOfDay(addDays(new Date(), 7)),
+    });
+  });
+
+  const nextWeeksRows = rows.filter((r) => {
+    const d = parseISO(r.appointment_date);
+    return isWithinInterval(d, {
+      start: startOfDay(addDays(new Date(), 8)),
+      end: startOfDay(addDays(new Date(), 14)),
     });
   });
 
@@ -471,6 +479,9 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
           <DayGroup label={tomorrowLabel} rows={tomorrowRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
           {weekRows.length > 0 && (
             <DayGroup label='Esta semana' rows={weekRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
+          )}
+          {nextWeeksRows.length > 0 && (
+            <DayGroup label='Próximas semanas' rows={nextWeeksRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
           )}
         </>
       )}
