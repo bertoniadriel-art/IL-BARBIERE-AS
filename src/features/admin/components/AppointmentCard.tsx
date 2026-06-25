@@ -3,6 +3,7 @@
 import { getBookedSlots } from '@/features/booking/services/availabilityService';
 import { Clock, Phone, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import QRCode from 'react-qr-code';
 import { moveAppointment, updateAppointmentStatus } from '../services/appointmentService';
 
 export interface Appointment {
@@ -14,6 +15,7 @@ export interface Appointment {
   appointment_date: string;
   final_price?: number | null;
   barber_id?: string;
+  qr_hash?: string;
 }
 
 export interface AppointmentCardProps {
@@ -35,6 +37,7 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
   const [localTime, setLocalTime] = useState(app.appointment_time?.slice(0, 5));
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   // Move modal state
   const moveSlotRequestId = useRef(0);
@@ -202,9 +205,42 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
             >
               Mover
             </button>
+            {app.qr_hash && (
+              <button
+                type='button'
+                onClick={() => setIsQRModalOpen(true)}
+                className='px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/30 transition-colors'
+              >
+                Ver QR
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* QR Modal */}
+      {isQRModalOpen && app.qr_hash && (
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'
+          onClick={() => setIsQRModalOpen(false)}
+        >
+          <div
+            className='bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <QRCode value={app.qr_hash} size={200} />
+            <p className='text-black font-bold text-sm'>{app.client_name}</p>
+            <p className='text-gray-400 text-[10px] font-mono'>{app.qr_hash}</p>
+            <button
+              type='button'
+              onClick={() => setIsQRModalOpen(false)}
+              className='mt-1 px-4 py-1.5 rounded-full bg-black text-white text-xs font-bold'
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Move Modal */}
       {isMoveModalOpen && (

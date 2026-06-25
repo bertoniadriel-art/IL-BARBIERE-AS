@@ -49,8 +49,8 @@ export async function createAppointment(payload: {
   appointment_time: string;
   final_price: number | null;
   deposit_paid: boolean;
-}): Promise<{ error: Error | null }> {
-  if (!supabase) return { error: new Error('Supabase no configurado') };
+}): Promise<{ error: Error | null; qr_hash: string | null }> {
+  if (!supabase) return { error: new Error('Supabase no configurado'), qr_hash: null };
   const qr_hash = `MANUAL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const { error } = await supabase.from('appointments').insert({
     ...payload,
@@ -58,5 +58,5 @@ export async function createAppointment(payload: {
     is_fixed_weekly: false,
     qr_hash,
   });
-  return { error: error ? new Error(error.message) : null };
+  return { error: error ? new Error(error.message) : null, qr_hash: error ? null : qr_hash };
 }

@@ -17,6 +17,7 @@ interface AppointmentRow {
   client_phone: string | null;
   appointment_date: string;
   appointment_time: string;
+  qr_hash?: string | null;
 }
 
 interface KanbanBoardProps {
@@ -134,7 +135,7 @@ export function KanbanBoard({ barber }: KanbanBoardProps) {
         const { data } = await supabase
           .from('appointments')
           .select(
-            'id, status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time'
+            'id, status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time, qr_hash'
           )
           .eq('barber_id', barberId)
           .gte('appointment_date', format(start, 'yyyy-MM-dd'))

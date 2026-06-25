@@ -1,12 +1,26 @@
 import { supabase } from '@/shared/lib/supabase';
 
-export interface BookedSlot {
+interface BookedRow {
   appointment_time: string;
+  services: { duration_min: number } | null;
+}
+
+function expandSlots(time: string, durationMin: number): string[] {
+  const [h, m] = time.slice(0, 5).split(':').map(Number);
+  const startMin = h * 60 + m;
+  const slots: string[] = [];
+  for (let t = startMin; t < startMin + durationMin; t += 30) {
+    const hh = String(Math.floor(t / 60)).padStart(2, '0');
+    const mm = String(t % 60).padStart(2, '0');
+    slots.push(`${hh}:${mm}`);
+  }
+  return slots;
 }
 
 /**
  * Fetches booked time slots for a given barber on a given date.
  * Excludes cancelled appointments (they free up the slot).
+ * Expands slots based on service duration (e.g. a 60-min service at 10:00 blocks 10:00 and 10:30).
  * Normalizes DB "HH:MM:SS" format to "HH:MM".
  *
  * @param barberId - UUID of the barber
@@ -18,7 +32,7 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
 
   const { data, error } = await supabase
     .from('appointments')
-    .select('appointment_time')
+    .select('appointment_time, services(duration_min)')
     .eq('barber_id', barberId)
     .eq('appointment_date', date)
     .in('status', ['pending', 'confirmed', 'attended']);
@@ -28,6 +42,12 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
     return [];
   }
 
-  // Normalize: DB returns "HH:MM:SS", grid uses "HH:MM"
-  return (data ?? []).map((r: BookedSlot) => r.appointment_time.slice(0, 5));
+  const blocked = new Set<string>();
+  for (const row of (data ?? []) as BookedRow[]) {
+    const duration = row.services?.duration_min ?? 30;
+    for (const slot of expandSlots(row.appointment_time, duration)) {
+      blocked.add(slot);
+    }
+  }
+  return [...blocked];
 }

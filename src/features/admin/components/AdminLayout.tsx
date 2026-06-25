@@ -1,29 +1,54 @@
 'use client';
 
 import {
-  Calendar,
-  KanbanSquare,
-  LayoutDashboard,
+  BadgeDollarSign,
+  CalendarDays,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   QrCode,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useState } from 'react';
 
 export function AdminLayout({
   children,
   onTabChange,
   onLogout,
-}: { children: React.ReactNode; onTabChange?: (tab: string) => void; onLogout?: () => void }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  notificationCount = 0,
+}: {
+  children: React.ReactNode;
+  onTabChange?: (tab: string) => void;
+  onLogout?: () => void;
+  notificationCount?: number;
+}) {
+  const [activeTab, setActiveTab] = useState('agenda');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (onTabChange) onTabChange(tab);
   };
+
+  const tabs = [
+    {
+      key: 'agenda',
+      label: 'Agenda',
+      icon: <CalendarDays className='w-5 h-5 flex-shrink-0' />,
+      badge: notificationCount,
+    },
+    {
+      key: 'scanner',
+      label: 'Escáner QR',
+      icon: <QrCode className='w-5 h-5 flex-shrink-0' />,
+      badge: 0,
+    },
+    {
+      key: 'finanzas',
+      label: 'Finanzas',
+      icon: <BadgeDollarSign className='w-5 h-5 flex-shrink-0' />,
+      badge: 0,
+    },
+  ];
 
   return (
     <div className='flex min-h-screen bg-[#0a0a0a] text-white'>
@@ -43,7 +68,7 @@ export function AdminLayout({
             </div>
             <span
               className={`font-bold tracking-tighter uppercase leading-none text-[10px] md:text-xs whitespace-nowrap transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
+                            ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
             >
               EL BÚNKER <br />
               <span className='text-neon-cyan'>OS EDITION</span>
@@ -64,74 +89,33 @@ export function AdminLayout({
         </div>
 
         <nav className='flex-1 space-y-2'>
-          <button
-            onClick={() => handleTabChange('dashboard')}
-            className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
-                        ${
-                          activeTab === 'dashboard'
-                            ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
-                            : 'text-white/40 hover:bg-white/5 hover:text-white'
-                        }`}
-          >
-            <LayoutDashboard className='w-5 h-5 flex-shrink-0' />
-            <span
-              className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
+                          ${
+                            activeTab === tab.key
+                              ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
+                              : 'text-white/40 hover:bg-white/5 hover:text-white'
+                          }`}
             >
-              Dashboard
-            </span>
-          </button>
-          <button
-            onClick={() => handleTabChange('calendar')}
-            className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
-                        ${
-                          activeTab === 'calendar'
-                            ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
-                            : 'text-white/40 hover:bg-white/5 hover:text-white'
-                        }`}
-          >
-            <Calendar className='w-5 h-5 flex-shrink-0' />
-            <span
-              className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
-            >
-              Agenda Dual
-            </span>
-          </button>
-          <button
-            onClick={() => handleTabChange('kanban')}
-            className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
-                        ${
-                          activeTab === 'kanban'
-                            ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
-                            : 'text-white/40 hover:bg-white/5 hover:text-white'
-                        }`}
-          >
-            <KanbanSquare className='w-5 h-5 flex-shrink-0' />
-            <span
-              className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
-            >
-              Kanban
-            </span>
-          </button>
-          <button
-            onClick={() => handleTabChange('scanner')}
-            className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
-                        ${
-                          activeTab === 'scanner'
-                            ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
-                            : 'text-white/40 hover:bg-white/5 hover:text-white'
-                        }`}
-          >
-            <QrCode className='w-5 h-5 flex-shrink-0' />
-            <span
-              className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
-            >
-              Escáner QR
-            </span>
-          </button>
+              <div className='relative flex-shrink-0'>
+                {tab.icon}
+                {tab.badge > 0 && (
+                  <span className='absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center'>
+                    {tab.badge > 9 ? '9+' : tab.badge}
+                  </span>
+                )}
+              </div>
+              <span
+                className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
+                              ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+              >
+                {tab.label}
+              </span>
+            </button>
+          ))}
         </nav>
 
         <button
@@ -141,7 +125,7 @@ export function AdminLayout({
           <LogOut className='w-5 h-5 flex-shrink-0' />
           <span
             className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                        ${isCollapsed ? 'opacity-0 pointer-events-none md:opacity-0' : 'opacity-100'}`}
+                        ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             Salir
           </span>

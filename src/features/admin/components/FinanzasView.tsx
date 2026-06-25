@@ -1,0 +1,206 @@
+'use client';
+
+import { supabase } from '@/shared/lib/supabase';
+import {
+  addDays,
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useEffect, useMemo, useState } from 'react';
+
+interface AppointmentRow {
+  status: string;
+  final_price: number | null;
+  deposit_paid: boolean;
+  client_name: string | null;
+  appointment_date: string;
+  appointment_time: string;
+}
+
+interface FinanzasViewProps {
+  barber: { id: string };
+}
+
+const ARS = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0,
+});
+
+function isPaid(row: AppointmentRow) {
+  return row.status === 'attended' || row.status === 'confirmed';
+}
+
+export function FinanzasView({ barber }: FinanzasViewProps) {
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<AppointmentRow[]>([]);
+
+  useEffect(() => {
+    async function fetchFinanzas() {
+      try {
+        setLoading(true);
+        const today = new Date();
+        const from = format(startOfMonth(today), 'yyyy-MM-dd');
+        const to = format(endOfMonth(addDays(today, 7)), 'yyyy-MM-dd');
+
+        const { data } = await supabase
+          .from('appointments')
+          .select('status, final_price, deposit_paid, client_name, appointment_date, appointment_time')
+          .eq('barber_id', barber.id)
+          .gte('appointment_date', from)
+          .lte('appointment_date', to)
+          .not('status', 'eq', 'cancelled');
+
+        setRows((data as AppointmentRow[]) ?? []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFinanzas();
+  }, [barber.id]);
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+
+  const metrics = useMemo(() => {
+    const sum = (filter: (r: AppointmentRow) => boolean) =>
+      rows.filter((r) => isPaid(r) && filter(r)).reduce((acc, r) => acc + (r.final_price ?? 0), 0);
+    const count = (filter: (r: AppointmentRow) => boolean) =>
+      rows.filter((r) => isPaid(r) && filter(r)).length;
+
+    return {
+      today: {
+        total: sum((r) => r.appointment_date === todayStr),
+        count: count((r) => r.appointment_date === todayStr),
+      },
+      week: {
+        total: sum((r) => r.appointment_date >= weekStart && r.appointment_date <= weekEnd),
+        count: count((r) => r.appointment_date >= weekStart && r.appointment_date <= weekEnd),
+      },
+      month: {
+        total: sum((r) => r.appointment_date >= monthStart && r.appointment_date <= monthEnd),
+        count: count((r) => r.appointment_date >= monthStart && r.appointment_date <= monthEnd),
+      },
+    };
+  }, [rows, todayStr, weekStart, weekEnd, monthStart, monthEnd]);
+
+  const todayRows = useMemo(
+    () =>
+      rows
+        .filter((r) => r.appointment_date === todayStr)
+        .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time)),
+    [rows, todayStr]
+  );
+
+  const metricCards = [
+    {
+      label: 'Hoy',
+      sub: format(new Date(), "d 'de' MMMM", { locale: es }),
+      total: metrics.today.total,
+      count: metrics.today.count,
+      border: 'border-neon-cyan/30',
+      text: 'text-neon-cyan',
+    },
+    {
+      label: 'Esta semana',
+      sub: `${format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'd MMM', { locale: es })} – ${format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'd MMM', { locale: es })}`,
+      total: metrics.week.total,
+      count: metrics.week.count,
+      border: 'border-neon-purple/30',
+      text: 'text-neon-purple',
+    },
+    {
+      label: 'Este mes',
+      sub: format(new Date(), 'MMMM yyyy', { locale: es }),
+      total: metrics.month.total,
+      count: metrics.month.count,
+      border: 'border-white/10',
+      text: 'text-white',
+    },
+  ];
+
+  return (
+    <div>
+      {/* Metric cards */}
+      <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10'>
+        {metricCards.map((m) => (
+          <div
+            key={m.label}
+            className={`glass-card rounded-2xl p-5 border ${m.border}`}
+          >
+            <p className='text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-0.5'>
+              {m.label}
+            </p>
+            <p className='text-[10px] text-white/20 mb-3'>{m.sub}</p>
+            <p className={`text-2xl font-black ${m.text} mb-1`}>
+              {loading ? '—' : ARS.format(m.total)}
+            </p>
+            <p className='text-[10px] text-white/30'>
+              {loading ? '' : `${m.count} turno${m.count !== 1 ? 's' : ''} cobrado${m.count !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Today's detail */}
+      <div className='mb-2 flex items-center gap-3'>
+        <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30'>
+          Cobros de hoy
+        </p>
+        <div className='flex-1 h-px bg-white/5' />
+      </div>
+
+      {loading ? (
+        <div className='py-10 text-center text-white/30 text-xs uppercase tracking-[0.3em]'>
+          Cargando...
+        </div>
+      ) : todayRows.length === 0 ? (
+        <div className='py-10 text-center text-white/20 text-sm'>Sin turnos hoy</div>
+      ) : (
+        <div className='flex flex-col gap-2'>
+          {todayRows.map((row, i) => {
+            const paid = isPaid(row);
+            return (
+              <div
+                key={i}
+                className='flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5'
+              >
+                <span className='text-neon-cyan font-black tabular-nums text-sm w-12 text-right flex-shrink-0'>
+                  {row.appointment_time?.slice(0, 5)}
+                </span>
+                <p className='flex-1 font-bold text-sm text-white truncate'>
+                  {row.client_name || '—'}
+                </p>
+                {row.final_price != null ? (
+                  <span className={`text-sm font-black ${paid ? 'text-emerald-400' : 'text-white/30'}`}>
+                    {ARS.format(row.final_price)}
+                  </span>
+                ) : (
+                  <span className='text-xs text-white/20'>Sin precio</span>
+                )}
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ml-1 ${
+                    row.status === 'attended'
+                      ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
+                      : row.status === 'confirmed'
+                        ? 'text-sky-400 bg-sky-400/10 border-sky-400/30'
+                        : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30'
+                  }`}
+                >
+                  {row.status === 'attended' ? 'Atendido' : row.status === 'confirmed' ? 'Confirmado' : 'Pendiente'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

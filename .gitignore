@@ -9,3 +9,10 @@ build/
 tsconfig.tsbuildinfo
 # Local AI runtime state
 .atl/
+.claude/
+openspec/
+
+# Dev artifacts
+preview-dashboard.html
+AXON-L-MEJORAS-*.md
+WhatsApp\ Audio\ *

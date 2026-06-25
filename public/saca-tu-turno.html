@@ -154,6 +154,7 @@
     .step-content {
       padding-bottom: 26px;
       padding-top: 6px;
+      flex: 1;
     }
 
     .step:last-child .step-content { padding-bottom: 0; }
@@ -171,6 +172,21 @@
       font-size: 12px;
       font-weight: 400;
       color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Step screen mockup ── */
+    .step-screen {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.07);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+
+    .step-screen svg {
+      display: block;
+      width: 100%;
+      height: auto;
     }
 
     /* ── CTA ── */
@@ -214,7 +230,7 @@
   <div class="card">
 
     <div class="header">
-      <img class="logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGFkODAxMDAwMGM2MDMwMDAwMzcwNjAwMDBhYzA3MDAwMDM4MDkwMDAwYWQwYzAwMDBlODExMDAwMDQyMTIwMDAwY2ExMzAwMDBkNjE0MDAwMDA1MWEwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAlgCWAwEiAAIRAQMRAf/EAKMAAAEFAQEBAAAAAAAAAAAAAAACAwQFBwYBCBAAAgIBAwMEAQUAAAAAAAAAAgMAAQQFERIQEyIgITAyFBUjJDEzEQABAwEEBQkGBAYDAAAAAAABAAIRIQMSMVEQQWFxoQQgIjKBkbHB8BMwQlLR4WKSsvEjM3KCotIFFMISAAECAwgCAwEBAAAAAAAAAAEAESExQVFhcYGRobHwEMEg0eHxMP/aAAwDAQACAQMBAAABxgAAAAU4CFrsXFwpDw87FiXs9a+QR1te23RDjcZgAA2fGNnDGAAFyoqvVsv6mnzJ075wAcEAAAFh0fGEh/vONub6dLz72TFqq42fGNn88xh9iapTUezrfTXtDprVCZTcWMGVcHrWaepgWGoaF4rDaz6A5kMVu6Zx53puH7vnpsqk2fGNnrIGMWldePO10H0bb2zrMH3dPkGPX1C2+Z2HjdWda5XjuAoY0t7xk9ToN5lFyDltyneXFnmmz43slPWZBaVF5JdoSV61Gi3Ndbh3XI2EyTE0qumZtFsuKhddRCa4nimIBYAN9nyvX2dlw2r5bqVZFxzqed7N5rTafus2VC4PfMj2g85O/iWp5yN84e+V9tGcPaosbA85yyQ8FQWvLPv5BqOS61Ak5FqOU9J6j6Czbnq2Qz2ul/P60I35nCfA3WHi8T1P0FFyKnDfWMZbDZU4rJWrb8ssc5flU2v45sdUvGnWTxUy4oXH3FsXtb6RBoYZdGgHhkB4ZuFqT0rcOynt82pmvh+7LjOzMN4wAejzIEqypZrzt5XSnpkmsTcPntPYPsrVZppa3320oGk10EAabNnxjZwxg2cDGDZwMYNnAxl/Xz0yTzXD1WRt7AHmM+bOJ8xg2cDGDZwMY2cA/9oACAEBAAEFAvVVbzjKVdz8cpaLqcZt8e0/qD7yt6ncGd1cpwSi5QlVGY20sdvg2m/Tf1LyCCJeJRiKKMXYX6R8a3gBZ3jaIMvSMe5naSSfWjK2jF0dMXwvqA8rMuVzRsbiAzeXc1LBpfVOMx0/R8iXgtG+1Mdu0ernXWvYb8AmJ/jCPozUgKGgxPC0WhnsFWyZz+K6ojn2iWcxy18S6ceRPLkU0h3cTd7Qi4wz4hip7jM/Fu6DIpg52pUuEwinO5o23c1fFDhjn5ZAbhK94v79NPdanN8b35Xnt2rRk7mxnAfymLrqB2FtzCbFT7jdRf2D69VZjF1j5FEDDthaevtL1d/FTa9Sfsj6PryGDXtwnGbTHxe7eSgVXhrHdeQEzXd5mSuqHtzhOE7c7cWPuqvHI+0RXImaeoa1dK1LQvkRLQiajhhcHCQMDEBmR28fknBXTBFLIjT1VFYiRUoMfILt43JWnq7rzQFP+1f1poc2H7t1tm56YHJxmvl5HkAW7cUfNvDHmCW4W2qXfjjvAbDBUIW7hjTT7uwzgAKOBc0Nf7q73bq2MVFogbmSA5KOjmK+nQb4LX/Jx0q/aPggciZuOT6xx7KV/wAnHSu6TqS7RV9EZjFUrUWTJedzHzmIjc9jZWoNoV57F0eew6rKKqvV3XKyyov1Nu56i0oeewqQ0tizWTJfbL6Ve034wbohMLC95vN5vN5vN5vN4te8Gto5039A3PcLAqOjTdfAvFu5Q7RjIRcvVRbTjFOubAyFjT8Rk/EZKwjg4MEQXCLaMbCPl8FXtKZO5ynMZV1OU7lS3DLdcJ3y0y6ndnOdyc7+D//aAAgBAwEBPwHS1s+v2HFBjdZ4/QOXsWnB3gfMHgncncNset/fzY5tnyhzNoyPlknWbbcXm0OSIjQ0J47zXv0hwOGmytLhkfvsXKmBwFoO31nq0WQntIndiU4ySc9Fo66CVyUU3lPbdJBxGnk3TY5vrbxg9uiyP/r9JV9X1bvvEAYLkV282TAZX6LlXKGutHkHEr2gXtQuQ2o8fJWmJ3p77vrsR+LeAPEqethqAvYJpBJpi66JGQqm9W9TrOknU2TgmkAA0recREuI1QgNgoya5uw7oTZuhxDcTeMYAUouT1u6r0nsJpwRKtBPZVexMTGsnv8AUK7qu3qzslC90aYTO0lXTlS6RGcq7QQ2oF2TqGxFs3paelHcPumWRMACl27G9CxdZxqpGljo3ax61J9jrbUeH29FQoUJtkXYCUyzFkKq0fePMY+NcI3XYxv6p/14lDk7Nv5gfJCzsm4id7vIV4J3KQKAR2R64bk+0LudKvFXub//2gAIAQIBAT8B0Qmsn1+w4oWbNZ4/QOX/AF2u6ruIPmDwT+SuG2PWBqO0c2I5tlypzIrIyPlkn2bOUNvMo4avI+SIih0NHCpTxnianZP20lpGmwtSwyP32Fcssw4C1b2+XbqOixbNMyJ3YlOdeJOehjbxAXKTWMkK6eSfxGPZs8ceMHt0WH+36CrquKybdBOtWoJnMplkYC9mvZlf8eIJ3HyVqOk7eVyeh492PCU34dxJ8PoiMMdZMJ0wK4NvGNpojjFeqIA+aBinAyRWl1oOqdconaauimTcfFOxIBdh0a6zWqsQC8hznUjDCRjOyitDJKszj63qI6UyIA4fUKazeikbVArXKNgCkZ1vTOUIHGXYmYGaBi7DhSe8povmhqXTOSeHWAdLh/Emg+uWgFWdpd3HEetSfZ/E2o8Ptt71KlSmNL8BKY0WIk4+uHrFW1tfPMs3waG74fv6lEMfjG/qn/XiShyaz2/mB8kLKxbiJ3v8m14J/K2to0RsAj7+G5WlqX84GFfKvHPm/wD/2gAIAQEBBj8C5+KoHHsXVcsHd3vs1hOxYtZ4+ZVX2juCwf8AmWNo3tlUe1+x4VQWf5MXn8P2Vfc09xQ9i+U5aisPWz6c+93fXQGtEk4BfxXSflbh3rqR/cVeZL2a8xz7r8M8lB9fdRzdmrdo9qcX0Gwa+/mG0Z1SerlOWnoNLl1P8h9VDrN3rbgp1K47A9UraOZ/VTsGKGb69miyj5Bpqi02cswKuXTeyzV63qfky3nyUAADIU0O3fYLogmMlX0fupOLaOU56WM3calHLAbhou67OnYcNG1OfkOKY3NwQtLP+ZZVG0ax3IObgVdZV/gpJJUJzZ6ze2i9o3HA7fugfm6Lt63abR3yh300sgwCQDlBRyGgMzqUX/KOJ+yLj8InuTmgwHGeYHNMEYFS6XO29UbgiO0b2r+oaBvCtvWvmEA0OdVfOrFF2aA14nermt/gMeePWNENnkjvPjoth6x5kSGjWSgGOlhxrPSCvOIphvXWHeidQoNyswDJgl3bzgu13iUd50EfO3imNDBLnNE+KaGsa0uOWoIDMhCWNE06sphaAHF0U1yo9m1WktF1urAal7O429ldVp0QQLsTqlOaGtMYi6nlzb0OdE5BB72DCSobZ0aJNI3L2dxt7K6rTo9EXYGRNU9rWdKow1o7zos9juGKYPlDneSDflb4pm+e5Na6L2qV0sLMSO3Wn/haB31Vs78UdydaRLnH1uTnu+JxJ7E51iBtW0t4u/dXHOuig7laXTIkCexOtYlzj63IvOL3Eq8H3jJJw36Sflb4q0/Ddb5o2piHGB3Jzvlb4r2hxHcITnjDAHY37pxAisb09217l2cWoMNOjXtVwYvoBrM0VkzN47mpoECtZR2XitscWoNGN3iUASOl4DSbjrufkj0jjLszt7FDnlzTUVRuGJxouk8lXQ8huSutcQNigvMZK7eN3JdfgFfnpZ4oOv1GHaq2ju9XS83clEm7lv8AquuaZUVTPMkdij4f0H/VQfdeqbSvrq/Edp1LZqGz783YpCiP7dY/p+ikdJuf19x0uiOJ7FkBw2uzOxbP1HM8/YpbXxWsnMY9uawr+Gh/Kui4HYeieKwXV8FqHauk7uVBXvKr3Drdp1Lwb7quOYxVbtpwcsXt2OF8Kj7Pi3zXWZ+dy/mN4u818Tv8QtTBkFT3uKwC6oWA9z//2gAIAQECAT8h+RZA6gmA34WwAaH5ymQlLK6w5RITH+YIwCYXm36iJM6yEOEU/Dh9u4UeAINyUESlWAQ4MTrAoHVRuWbIkUAKBEs55nF6MbAx/wAAZLIthJU2/ngEJFn+VTBaiFDBHq2rD2KBNBYLMX8G5Noyobf20fIIidN/oOcE+N80fgewJkoaJKxGC4znJsUMZ14O7kjZDScD+tpi8Z/OGiU1YruFOA8jb+NxsRxkbfgwCQqbAIk6KIAQQCwJeBGFOuWBZoYBF4DE0+JoljP3A9KeTDHhNhAYmQzKIxIk3yqbGE2QSDMJOzRPQboc6GCc+34eUQ3mLNSZqbmQsL5cMhmY5eAADJzhzugWTGKa1GxEA7hIS5scBvbp0XBYACS6TWvRNF1CYYKZuZmiBEGUgABkPAJxa1IIMydAU+BlOWOwtTsiiTM0t+18U2eirfeqgiXPyWhYB6LU6xIdgHhodGJDOLkZJsseewtV8yeA3Vx8OEzs6eLB2wcbxc2lUa6C+F2IMEFJASsxjvu1RByGLklBgkXBobRI4p1gEQG0bkNg+iIbQkGldNAYGexM0ekSOf2n631/PAuAtKPGAcPJ4i25jB37AxQgs2gvCBvGqb+vIEt+E98mh1vaoEqELI62gwvNrPgSgc4IEFHAexFpMEUKzbxw6g5QG4/UQFiuktU5cBr4smTkWkG15KVRkNhFPpGBMpWCgVq/VfQYKHDFbe3MFEBTJkyZMh1xpE5WnEaiEx0IvtExBsIK0EdFBItQUkFE0Aw9m5Ma6GMvBa0JhECUSI2sAgH432ok8SrmYocqChdiQYZAJyenpyci5w5CaJF11yC6hsHsFP8AlWIlhGuwFTIwRExbOZCufWpQhhkyD0JTKaoTALgsRQAQs8Q8mDxxQLOAGGZBRr0A3SyHnheqVyQcEDlUtSwF1nCBhQcHc7WouUY6JmXAAdpEBBAAMqJJAkLmqALpZDzwvUZgZqLAOqgMWAFLoTJtRdCqFytBfKX0m3idLjqsVJiWH2rhjWPhlgHYOr5K087KPBQwAAwQiDIMR2ZMT7oiXpYmUjUoYbzS4ilUSbq5GqWcwMRaSJkicU5qiGalrRjgYIwopK2oC7OMoTKJwKGG80sBTFyHCGiidEQJgBYvZFHvZpgxlI4FOFVtSYe0A2xsP5R9IKB3FDwuXVAm3Do6nQzlrR/UbmmMcc4OOiDQfGhmknr/AKi3CYATMOErt6bfHMZMTnlBX9EOScbgExwS0C/0ihgBGJYwkMU9zajg4HCYAVNeyUeNVCct+lUUMIPB5kZ2onQKeacwazkCZ2vbRBgg9IyWaKb8ESqMSIIocQhoMmyDKUwpRNjsNBBAAkDAIBskclou0EcZp+S1omGbTzTdAc8UHwQJnjAB1AQoBsLgonzdRYRfBFi1TBmX04cMgdgBomDXtPNSbPcvIDyQt4RTChBeWQToJYckwztMdEfD59rQnECXl6+0XFDceuLZaSDQi0f5AAxxxjIOCwVwWEYO9Az2BQKAwgWJeN+wIu+DMDEp/YvQIRMDQjswndcP6zqNaG5QpgmD/gxmIlB8JBwBokuXBWmjIENsbxnwFg6Dk5+UoYlMdkU80Ajcy9hFmTDD3JDjqpQibW/L066gNyQn5BdB+yJ9n0dDHAHs/Sg2V7jZXYTWcuBhqpbsAJEh9nsEYnP+BCcFiEAlwbB/RCmxOZUMKN11+geyO7XKIJ5L2/our2mQ4Z7ExOc9FQFr0S8/9KkzjynVJl9EJv8AT7V0GR9lE9dIcf4f/9oADAMBAgICAwIAABDzzcc95PfyjzX/AI88+1kou5QE+0wzxo3RsZIKMM5qJZME8eGKECkwB66sbWOJnugkmZV6NqGZvwwCPTsL8vI58Lzk8owwwBCRQwwg/9oACAEDAgE/EPACHaxaWqH4X0Yq+1gPQWGn1rxpjEFgyAWIhoGHwLGesWuprxH4tEWsjFPJC0KVVnYNhuNCiEQQxEx4cMZCJwFMzDNMGMgFdMBo2EvL652n4svICMHQoFSuOxVclshkTcmv8BIAyAwH4AnYqJ18XbCGNEdxrCRYSKQcR5juoOp+hAwTGQ3NcJlqIirIl4jqVEUcs5EmsVASQL2g+avleIQmNN34W7IgFqxHpoSoaOOA5DoonOJcyQa5kHMohyjHaRNqOx0UEBrgrsAa9YmTiHTEJLFwZ5qFWgWNbibwKEDOoLEVLQosAK+EBwgThKKAq7Z3lO4yvJxmOnUIdfOQcsExYOCwwFgBvdlKEYEummKMBJJp5BxaKFsKBAZlg8bWqj+gROnUdkFfJmgQ7FAeLK55D+3YsVe3G0/a9SgJqamoy18sGJkBinZNy3oW+1GtPILJ6CCtih+j111iz5E6I+vAMLhQnqvIeyASAY0mc8RKe97oPkCEi2C7ME6318f/2gAIAQICAT8Q8DRahW9Pso9L6L11K6pGnEi8aYxYyAGiIaBDEU+BaDzMWuprxFE/Cll0KeSFo8K4BzIGIgR4ETGQZApmWGaaNg3AcMJeZx5A/wAPWOxXZz0vPADBSDwX4QU8NROvi+Q7LIqKbzFnX0EyGXrvZT7ECNE+KDoHSNCTrFcI/Q9hNLJ8yG1w8AoYaxBgJ2+g2igF4HZJR97RcWIAF2jvJ7CXKHgiGKocdpUALjuhYaHAyI8hKK9dHrPsLQiiJIWGN5doR9eJJLY2KCUwsV2sXYsV3c/f+AfDlmNasGJkBiu5H4Qj3kFpKLXjqXgAXFfXjLwoiiAMAuDSbNU8+RJCRgWXRvlP/9oACAEBAgE/EPlMhPsJ3JcWkRX11vTvGxT5mPY4+CnoP8zIA5NEetHrLFOtaAQfAOGxWkiLaaCvVx2ViBqr9NJBcCTuLFUfv7AgfOJtQGbGCoebwaGX+EIGNXg2KEPuH1ua3J5cYYsWcWfKdPV7MkXvZOkH3uLa6iipgSww9BUiPkJrc3BrEy2bcREk07lU4nFD/kEuR2JkBEwTJ3AAC6F5MUUsACSBwIDdoaMhRX5mcHoE/ovTS9Q4eGRJSfnQD4R1mGyWiR6YA6Kxvc+HfBr+2F/9QU0Dj4BXIAKDej0w2tEN4S8Ec6jWFsoTwduD6BlggB14HZvcp2EjOGPAo7gZRY3BBg/3oUiEQYEef5/RqM5FezFK7ajxX4ufISjISATIxO8XTo1diE1HdYyIqAAvDA4kPM3uUIrIbQMxIACaT6G6IousUj84GDDcQho3Eg266S6QlgIr01BO0VWvktFY9EZcUOmAWeiHgMQV4OHDOpjBkmwvIG49IZQyrEGNYVQMgy7oRw5Bww5JAQUHHkWILBQFjbnas5rBKSyJEi5zUljkuGwLAc6sqmh0mqIT4lCmk/VUQcg4HSrCytfA4cPFygNSy/Uu8oFlAc4eYNgkoP4DUohnFoLMk8uQPvjGjHJ/y9gRzXXG5mRcOuAfvrrEYxKZMn0AhYLFSDzbJiyRSEkOLwJQymLprKhWQ3khN67YG6GTgmk1EGPIKxRWQHgEM4Gd4XoMmCC5daO6WOgfl9o1GjiDYUzHn00sTHsDuJ/HgLrvCKiKItCKU7kXAy4BIuAzX9kxqMoWI6U6V0GaMAU4/TW6pCmMx0Xfqiiq4QslcI2KGheCdgpAeLEZzkVX0jA8laniZW3uhCB3qcKNq1mLzqEOgr+rCQ9pOPTdGiMONUl+DoQEFNXGNCyI+8kSnD5KKjZYxMBZUTJPeJxBQaJKJaDZMQUgBUU8rInYLLrVXjQsjCaoBEKKOgdJXiCccVIRbtN/0rgLMi3Q1k/Veh3hk7oxktQPQ32g6wN6qPxI1VopCkQF+dxAXQxWHIwGQvkc8o310CRuZkyImZWVUiABoHMtUcgjIxSIPLQKSKUi6tmkrk57QaEER0CRgymhETMoruU5ugxUAahGBwyMY51xmdxQB1OAOk8ke01wG05f0SpA2IOQLKCVtWWEHQoSI04A09olGROOiEQglIPIhhdzBS10KtCNPgQksWLmmwTP8YNykgbq9KQhQICsxLyokcSLAAR5o8h8ePO2oS2PRIohlMhASQSY5pdzB64EzBPnKaTqJDdoQRhESyQyTZYpIetGv/BaghizCmcdVaVBrSeDbEUCMyHjuIHLvanMLbEQAPBQBVDo4qCLjMUSe0jomDKZNUlCMs3uRRePXWKyDFcEYWzxhxcppBYCHRRikMRgVhm4iX2wIZgB1xpAyAVILhgkjehyhPoWIToFHrKGgkxmnPm/oXiQeip+M+wOsiNBxmCNESoP+T/lQGHeuoUCWertJZOd8CXDo8SaMRJqifIXDolQeBvIqaC5cCDoRZvmiWzXYHT6euG4k6dOnTp0IqJKQewtUHjB3ENmatOl7i6QQh6d/Pk0IKx5B3NYKcD/AEH8CjfLSfwl0OmEnfrixbqNIEgcI31v4Un4QFWcAgXbG66tCCR7ipC4QMAP2JuT+tiH+AARIEFiEPFAlOrSJtkYGG5NITugAE7xMoIIFJ5h42kqMOGivuKqPICgewdxRzcnJ/zdQYNWQNHJzd2eBO4cscirkZPUn+f/2Q==" alt="IL BARBIERE" />
+      <img class="logo" src="data:image/jpeg;base64,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" alt="IL BARBIERE" />
       <div class="brand">IL BARBIERE</div>
     </div>
 
@@ -227,6 +243,8 @@
     <div class="subtitle-line"></div>
 
     <div class="steps">
+
+      <!-- STEP 1 -->
       <div class="step">
         <div class="step-left">
           <div class="step-num">1</div>
@@ -235,9 +253,51 @@
         <div class="step-content">
           <div class="step-title">Abrí la app</div>
           <div class="step-desc">Elegí barbero y horario</div>
+          <div class="step-screen">
+            <svg viewBox="0 0 260 155" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+              <defs>
+                <linearGradient id="btn1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#00f3ff"/>
+                  <stop offset="100%" stop-color="#bc00ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="260" height="155" fill="#111"/>
+              <!-- label -->
+              <text x="14" y="20" fill="rgba(255,255,255,0.3)" font-size="7.5" letter-spacing="2" font-weight="700">ELEGÍ TU BARBERO</text>
+              <!-- Fede card -->
+              <rect x="14" y="26" width="106" height="48" rx="8" fill="#1a1a1a" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+              <circle cx="34" cy="50" r="11" fill="#2a2a2a"/>
+              <text x="50" y="46" fill="white" font-size="11" font-weight="700">Fede</text>
+              <text x="50" y="59" fill="rgba(255,255,255,0.35)" font-size="9">Barbero</text>
+              <!-- Santi card selected -->
+              <rect x="128" y="26" width="118" height="48" rx="8" fill="rgba(0,243,255,0.05)" stroke="#00f3ff" stroke-width="1.5"/>
+              <circle cx="148" cy="50" r="11" fill="#2a2a2a"/>
+              <text x="164" y="46" fill="white" font-size="11" font-weight="700">Santi</text>
+              <text x="164" y="59" fill="rgba(255,255,255,0.35)" font-size="9">Barbero</text>
+              <circle cx="236" cy="33" r="9" fill="#00f3ff"/>
+              <text x="236" y="37" fill="#000" font-size="10" font-weight="700" text-anchor="middle">✓</text>
+              <!-- label -->
+              <text x="14" y="90" fill="rgba(255,255,255,0.3)" font-size="7.5" letter-spacing="2" font-weight="700">HORARIO DISPONIBLE</text>
+              <!-- time pills -->
+              <rect x="14" y="96" width="40" height="22" rx="11" fill="#1a1a1a" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+              <text x="34" y="111" fill="rgba(255,255,255,0.4)" font-size="9" text-anchor="middle">9:00</text>
+              <rect x="60" y="96" width="46" height="22" rx="11" fill="rgba(0,243,255,0.12)" stroke="#00f3ff" stroke-width="1.5"/>
+              <text x="83" y="111" fill="#00f3ff" font-size="9" text-anchor="middle">10:00</text>
+              <rect x="112" y="96" width="46" height="22" rx="11" fill="#1a1a1a" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+              <text x="135" y="111" fill="rgba(255,255,255,0.4)" font-size="9" text-anchor="middle">11:00</text>
+              <rect x="164" y="96" width="46" height="22" rx="11" fill="#1a1a1a" stroke="rgba(200,0,0,0.2)" stroke-width="1"/>
+              <text x="187" y="111" fill="rgba(200,50,50,0.55)" font-size="9" text-anchor="middle">14:00</text>
+              <rect x="216" y="96" width="30" height="22" rx="11" fill="#1a1a1a" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+              <text x="231" y="111" fill="rgba(255,255,255,0.4)" font-size="9" text-anchor="middle">···</text>
+              <!-- button -->
+              <rect x="14" y="126" width="232" height="20" rx="10" fill="url(#btn1)"/>
+              <text x="130" y="140" fill="#000" font-size="9" font-weight="700" text-anchor="middle" letter-spacing="2">RESERVAR</text>
+            </svg>
+          </div>
         </div>
       </div>
 
+      <!-- STEP 2 -->
       <div class="step">
         <div class="step-left">
           <div class="step-num">2</div>
@@ -246,9 +306,37 @@
         <div class="step-content">
           <div class="step-title">Señá tu turno</div>
           <div class="step-desc">Aseguralo con una seña</div>
+          <div class="step-screen">
+            <svg viewBox="0 0 260 155" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+              <defs>
+                <linearGradient id="btn2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#00f3ff"/>
+                  <stop offset="100%" stop-color="#bc00ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="260" height="155" fill="#111"/>
+              <!-- summary card -->
+              <rect x="14" y="12" width="232" height="66" rx="10" fill="#1a1a1a" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+              <text x="26" y="30" fill="rgba(255,255,255,0.3)" font-size="7.5" letter-spacing="2" font-weight="700">TU RESERVA</text>
+              <text x="26" y="49" fill="white" font-size="13" font-weight="700">Santi</text>
+              <text x="26" y="64" fill="rgba(255,255,255,0.45)" font-size="9.5">Miércoles · 10:00 hs</text>
+              <text x="176" y="49" fill="#00f3ff" font-size="12" font-weight="700">$1.400</text>
+              <text x="176" y="64" fill="rgba(255,255,255,0.3)" font-size="8">precio total</text>
+              <!-- seña label -->
+              <text x="14" y="100" fill="rgba(255,255,255,0.3)" font-size="7.5" letter-spacing="2" font-weight="700">IMPORTE DE SEÑA</text>
+              <!-- input -->
+              <rect x="14" y="106" width="232" height="26" rx="7" fill="#1a1a1a" stroke="rgba(0,243,255,0.3)" stroke-width="1"/>
+              <text x="26" y="123" fill="white" font-size="12">$ 700</text>
+              <rect x="70" y="112" width="1" height="14" fill="#00f3ff" opacity="0.8"/>
+              <!-- button -->
+              <rect x="14" y="140" width="232" height="10" rx="5" fill="url(#btn2)"/>
+              <text x="130" y="148.5" fill="#000" font-size="7" font-weight="700" text-anchor="middle" letter-spacing="1.5">PAGAR SEÑA</text>
+            </svg>
+          </div>
         </div>
       </div>
 
+      <!-- STEP 3 -->
       <div class="step">
         <div class="step-left">
           <div class="step-num">3</div>
@@ -257,9 +345,66 @@
         <div class="step-content">
           <div class="step-title">Recibí tu QR</div>
           <div class="step-desc">Te llega al instante</div>
+          <div class="step-screen">
+            <svg viewBox="0 0 260 155" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+              <defs>
+                <linearGradient id="glow3" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00f3ff"/>
+                  <stop offset="100%" stop-color="#bc00ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="260" height="155" fill="#111"/>
+              <!-- check badge -->
+              <circle cx="130" cy="26" r="14" fill="rgba(0,243,255,0.1)" stroke="#00f3ff" stroke-width="1.5"/>
+              <text x="130" y="31" fill="#00f3ff" font-size="14" text-anchor="middle">✓</text>
+              <text x="130" y="53" fill="white" font-size="10.5" font-weight="700" text-anchor="middle" letter-spacing="1">TURNO CONFIRMADO</text>
+              <!-- QR code area -->
+              <rect x="85" y="62" width="90" height="78" rx="6" fill="white"/>
+              <!-- TL finder -->
+              <rect x="91" y="68" width="20" height="20" fill="#111"/>
+              <rect x="93" y="70" width="16" height="16" fill="white"/>
+              <rect x="95" y="72" width="12" height="12" fill="#111"/>
+              <!-- TR finder -->
+              <rect x="149" y="68" width="20" height="20" fill="#111"/>
+              <rect x="151" y="70" width="16" height="16" fill="white"/>
+              <rect x="153" y="72" width="12" height="12" fill="#111"/>
+              <!-- BL finder -->
+              <rect x="91" y="104" width="20" height="20" fill="#111"/>
+              <rect x="93" y="106" width="16" height="16" fill="white"/>
+              <rect x="95" y="108" width="12" height="12" fill="#111"/>
+              <!-- data dots (simplified) -->
+              <rect x="117" y="68" width="4" height="4" fill="#111"/>
+              <rect x="123" y="68" width="4" height="4" fill="#111"/>
+              <rect x="131" y="68" width="4" height="4" fill="#111"/>
+              <rect x="139" y="68" width="4" height="4" fill="#111"/>
+              <rect x="117" y="74" width="4" height="4" fill="#111"/>
+              <rect x="131" y="74" width="4" height="4" fill="#111"/>
+              <rect x="139" y="78" width="4" height="4" fill="#111"/>
+              <rect x="117" y="80" width="4" height="4" fill="#111"/>
+              <rect x="123" y="80" width="4" height="4" fill="#111"/>
+              <rect x="131" y="80" width="4" height="4" fill="#111"/>
+              <rect x="117" y="86" width="4" height="4" fill="#111"/>
+              <rect x="139" y="86" width="4" height="4" fill="#111"/>
+              <rect x="117" y="92" width="4" height="4" fill="#111"/>
+              <rect x="123" y="92" width="4" height="4" fill="#111"/>
+              <rect x="131" y="92" width="4" height="4" fill="#111"/>
+              <rect x="139" y="92" width="4" height="4" fill="#111"/>
+              <rect x="117" y="98" width="4" height="4" fill="#111"/>
+              <rect x="131" y="98" width="4" height="4" fill="#111"/>
+              <rect x="117" y="104" width="4" height="4" fill="#111"/>
+              <rect x="117" y="110" width="4" height="4" fill="#111"/>
+              <rect x="123" y="110" width="4" height="4" fill="#111"/>
+              <rect x="131" y="104" width="4" height="4" fill="#111"/>
+              <rect x="139" y="104" width="4" height="4" fill="#111"/>
+              <rect x="139" y="110" width="4" height="4" fill="#111"/>
+              <!-- hash -->
+              <text x="130" y="148" fill="rgba(255,255,255,0.3)" font-size="8" text-anchor="middle" letter-spacing="1">S-MIER-1000 · SANTI</text>
+            </svg>
+          </div>
         </div>
       </div>
 
+      <!-- STEP 4 -->
       <div class="step">
         <div class="step-left">
           <div class="step-num">4</div>
@@ -268,9 +413,33 @@
         <div class="step-content">
           <div class="step-title">Presentate</div>
           <div class="step-desc">Fede o Santi escanean tu QR</div>
+          <div class="step-screen">
+            <svg viewBox="0 0 260 155" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+              <rect width="260" height="155" fill="#080808"/>
+              <!-- dark overlay sides -->
+              <rect x="0" y="0" width="260" height="30" fill="rgba(0,0,0,0.7)"/>
+              <rect x="0" y="125" width="260" height="30" fill="rgba(0,0,0,0.7)"/>
+              <rect x="0" y="30" width="50" height="95" fill="rgba(0,0,0,0.7)"/>
+              <rect x="210" y="30" width="50" height="95" fill="rgba(0,0,0,0.7)"/>
+              <!-- scan area border -->
+              <rect x="50" y="30" width="160" height="95" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+              <!-- corner brackets cyan -->
+              <path d="M50,50 L50,30 L70,30" stroke="#00f3ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M190,30 L210,30 L210,50" stroke="#00f3ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M50,105 L50,125 L70,125" stroke="#00f3ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M210,105 L210,125 L190,125" stroke="#00f3ff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- scan line animation hint -->
+              <rect x="52" y="74" width="156" height="1.5" fill="rgba(0,243,255,0.4)" rx="1"/>
+              <!-- top label -->
+              <text x="130" y="18" fill="rgba(255,255,255,0.5)" font-size="9" text-anchor="middle" letter-spacing="1.5" font-weight="700">ESCÁNER QR</text>
+              <!-- bottom label -->
+              <text x="130" y="143" fill="rgba(255,255,255,0.5)" font-size="9" text-anchor="middle" letter-spacing="1">Mostrá tu QR al barbero</text>
+            </svg>
+          </div>
         </div>
       </div>
 
+      <!-- STEP 5 -->
       <div class="step">
         <div class="step-left">
           <div class="step-num">5</div>
@@ -278,12 +447,36 @@
         <div class="step-content">
           <div class="step-title">¡A disfrutar!</div>
           <div class="step-desc">Sentate y relajate</div>
+          <div class="step-screen">
+            <svg viewBox="0 0 260 130" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+              <defs>
+                <radialGradient id="glow5" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,243,255,0.15)"/>
+                  <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <linearGradient id="check5" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00f3ff"/>
+                  <stop offset="100%" stop-color="#bc00ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="260" height="130" fill="#111"/>
+              <!-- glow -->
+              <ellipse cx="130" cy="55" rx="70" ry="60" fill="url(#glow5)"/>
+              <!-- big check circle -->
+              <circle cx="130" cy="50" r="30" fill="none" stroke="url(#check5)" stroke-width="2"/>
+              <text x="130" y="58" fill="#00f3ff" font-size="28" text-anchor="middle">✓</text>
+              <!-- texts -->
+              <text x="130" y="96" fill="white" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="1">¡QUE LA ROMPAS!</text>
+              <text x="130" y="112" fill="rgba(255,255,255,0.35)" font-size="9" text-anchor="middle">Santi · Miércoles 10:00 hs</text>
+            </svg>
+          </div>
         </div>
       </div>
+
     </div>
 
     <div class="cta-wrap">
-      <a class="cta-btn" href="https://il-barbiere-10-i9699kne2-adrielias-projects.vercel.app/reservar" target="_blank">
+      <a class="cta-btn" href="https://il-barbiere-10-57g81q9en-adrielias-projects.vercel.app/reservar" target="_blank">
         ABRIR APP
       </a>
       <div class="footer">

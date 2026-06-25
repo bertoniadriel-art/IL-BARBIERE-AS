@@ -2,7 +2,9 @@
 
 import { createAppointment } from '@/features/admin/services/appointmentService';
 import { format, startOfToday } from 'date-fns';
+import { Download } from 'lucide-react';
 import { useState } from 'react';
+import QRCode from 'react-qr-code';
 
 interface QuickAddModalProps {
   barber: { id: string; name: string };
@@ -25,6 +27,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
   const [depositPaid, setDepositPaid] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmedQrHash, setConfirmedQrHash] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -35,7 +38,13 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     setTime(getNextRoundHour());
     setDepositPaid(true);
     setError(null);
+    setConfirmedQrHash(null);
     onClose();
+  };
+
+  const handleConfirmedClose = () => {
+    onSuccess();
+    handleClose();
   };
 
   const handleSubmit = async () => {
@@ -47,7 +56,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     setLoading(true);
     setError(null);
 
-    const { error: submitError } = await createAppointment({
+    const { error: submitError, qr_hash } = await createAppointment({
       barber_id: barber.id,
       client_name: clientName.trim(),
       client_phone: '0000000000',
@@ -64,9 +73,72 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       return;
     }
 
-    onSuccess();
-    handleClose();
+    setConfirmedQrHash(qr_hash);
   };
+
+  const handleDownloadQR = () => {
+    const svgEl = document.getElementById('quick-add-qr-svg') as SVGSVGElement | null;
+    if (!svgEl) return;
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `turno-${confirmedQrHash}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Success screen — show QR after creating the appointment
+  if (confirmedQrHash) {
+    return (
+      <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm'>
+        <div className='absolute bottom-0 left-0 right-0 bg-[#111114] rounded-t-3xl px-6 pt-6 pb-10 animate-in slide-in-from-bottom duration-300'>
+          <div className='w-10 h-1 bg-white/20 rounded-full mx-auto mb-6' />
+
+          <p className='text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 text-center'>
+            Turno creado
+          </p>
+          <h2 className='text-2xl font-black mb-6 text-center'>{clientName} · {time} hs</h2>
+
+          <div className='flex justify-center mb-4'>
+            <div className='bg-white p-4 rounded-2xl'>
+              <QRCode
+                id='quick-add-qr-svg'
+                value={confirmedQrHash}
+                size={180}
+                style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+              />
+            </div>
+          </div>
+
+          <p className='text-center text-white/40 font-mono text-sm tracking-[0.3em] mb-6'>
+            {confirmedQrHash}
+          </p>
+
+          <button
+            type='button'
+            onClick={handleDownloadQR}
+            className='w-full py-4 rounded-2xl bg-white/10 border border-white/20 text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-white/15 transition-colors mb-3'
+          >
+            <Download className='w-4 h-4' />
+            Descargar QR
+          </button>
+
+          <button
+            type='button'
+            onClick={handleConfirmedClose}
+            className='w-full py-3 rounded-2xl text-white/40 text-sm font-bold hover:text-white/70 transition-colors'
+          >
+            Listo
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm'>

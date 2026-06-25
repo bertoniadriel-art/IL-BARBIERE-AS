@@ -3,6 +3,7 @@ import { getAvailableTimesForBarber } from '../barbers';
 
 // Base times: 30-min slots from 09:00 to 20:00
 // Matches the time grid used in the booking wizard
+// Individual barber schedules may end earlier (e.g. Fede weekday 19:00, Saturday 16:00)
 const BASE_TIMES = [
   '09:00',
   '09:30',
@@ -40,7 +41,7 @@ const saturday = new Date('2026-05-30T12:00:00'); // day 6
 const sunday = new Date('2026-05-31T12:00:00'); // day 0
 
 describe('getAvailableTimesForBarber', () => {
-  describe('Fede Diaz schedule — Mar–Sáb 09:00–20:00, Lun+Dom off', () => {
+  describe('Fede Diaz schedule — Mar–Vie 09:00–19:00, Sáb 09:00–16:00, Lun+Dom off', () => {
     it('returns [] for Fede on Monday (day off)', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', monday, BASE_TIMES);
       expect(result).toEqual([]);
@@ -51,23 +52,23 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns times from 09:00 to 20:00 for Fede on Tuesday', () => {
+    it('returns times from 09:00 to 19:00 for Fede on Tuesday', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', tuesday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('20:00');
+      expect(result[result.length - 1]).toBe('19:00');
     });
 
-    it('returns times from 09:00 to 20:00 for Fede on Wednesday', () => {
+    it('returns times from 09:00 to 19:00 for Fede on Wednesday', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', wednesday, BASE_TIMES);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('20:00');
+      expect(result[result.length - 1]).toBe('19:00');
     });
 
-    it('returns times from 09:00 to 20:00 for Fede on Saturday', () => {
+    it('returns times from 09:00 to 16:00 for Fede on Saturday', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', saturday, BASE_TIMES);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('20:00');
+      expect(result[result.length - 1]).toBe('16:00');
     });
 
     it('does not include times before 09:00 for Fede', () => {
