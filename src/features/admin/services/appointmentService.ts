@@ -57,7 +57,7 @@ export async function createAppointment(payload: {
   barber_id: string;
   service_id: string;
   client_name: string;
-  client_phone: string | null;
+  client_phone: string;
   appointment_date: string;
   appointment_time: string;
   final_price: number | null;

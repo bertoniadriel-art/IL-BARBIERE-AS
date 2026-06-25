@@ -105,7 +105,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       barber_id: barber.id,
       service_id: serviceId,
       client_name: clientName.trim(),
-      client_phone: null,
+      client_phone: '',
       appointment_date: date,
       appointment_time: time,
       final_price: price ? Number(price) : null,
