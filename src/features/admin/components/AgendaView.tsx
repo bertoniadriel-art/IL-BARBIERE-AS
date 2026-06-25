@@ -23,6 +23,7 @@ interface AppointmentRow {
   client_name: string | null;
   appointment_date: string;
   appointment_time: string;
+  services: { name: string } | null;
 }
 
 interface AgendaViewProps {
@@ -57,11 +58,16 @@ function AppointmentRow({
         <p className='font-bold text-white text-sm truncate'>
           {row.client_name || 'Cliente sin nombre'}
         </p>
-        <div className='flex items-center gap-2 mt-0.5'>
+        <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
           {row.deposit_paid ? (
             <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
           ) : (
             <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>
+          )}
+          {row.services?.name && (
+            <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
+              {row.services.name}
+            </span>
           )}
           {row.final_price != null && (
             <span className='text-[10px] text-white/30'>
@@ -138,7 +144,7 @@ export function AgendaView({ barber, refetchKey }: AgendaViewProps) {
         const { data } = await supabase
           .from('appointments')
           .select(
-            'id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time'
+            'id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, services(name)'
           )
           .eq('barber_id', barber.id)
           .gte('appointment_date', today)
