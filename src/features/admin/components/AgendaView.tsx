@@ -16,9 +16,10 @@ import {
   startOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, ChevronDown, ChevronUp, Download, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, Download, Lock, PlusCircle, X } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BlockTurnModal } from './BlockTurnModal';
 
 // 30-min slots 08:00–20:00
 const BASE_TIMES = Array.from({ length: 25 }, (_, i) => {
@@ -81,15 +82,73 @@ function LiveTicker({ notifications }: { notifications: IncomingAppointment[] })
   );
 }
 
+// ── Day turn row (compact for expanded day) ───────────────────────────────────
+function DayTurnRow({
+  row,
+  onStatusChange,
+}: {
+  row: AppointmentRow;
+  onStatusChange: (id: string, next: AppointmentStatus) => void;
+}) {
+  const time = row.appointment_time?.slice(0, 5) ?? '';
+  const { label, color } = statusLabel(row.status);
+  const isActive = row.status === 'pending' || row.status === 'confirmed';
+
+  return (
+    <div className='flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors'>
+      <div className='w-12 text-right flex-shrink-0'>
+        <span className='text-sm font-black text-neon-cyan tabular-nums'>{time}</span>
+      </div>
+      <div className='flex-1 min-w-0'>
+        <p className='font-bold text-white text-xs truncate'>
+          {row.client_name || 'Cliente sin nombre'}
+        </p>
+        <div className='flex items-center gap-1.5 mt-0.5'>
+          {row.services?.name && (
+            <span className='text-[9px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
+              {row.services.name}
+            </span>
+          )}
+          {row.final_price != null && (
+            <span className='text-[9px] text-white/30'>
+              · ${row.final_price.toLocaleString('es-AR')}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className='flex items-center gap-1.5 flex-shrink-0'>
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${color}`}>{label}</span>
+        {row.status === 'pending' && (
+          <button type='button' onClick={() => onStatusChange(row.id, 'confirmed')}
+            className='px-2 py-0.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[9px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
+            Confirmar
+          </button>
+        )}
+        {row.status === 'confirmed' && (
+          <button type='button' onClick={() => onStatusChange(row.id, 'attended')}
+            className='px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
+            Presente
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Mini calendar ─────────────────────────────────────────────────────────────
 function MiniCalendar({
   barberName,
   rows,
+  onStatusChange,
+  onBlockTurn,
 }: {
   barberName: string;
   rows: AppointmentRow[];
+  onStatusChange: (id: string, next: AppointmentStatus) => void;
+  onBlockTurn: (date: string, time?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   const days = useMemo(() => {
     return Array.from({ length: 14 }, (_, i) => {
@@ -97,8 +156,9 @@ function MiniCalendar({
       const dateStr = format(date, 'yyyy-MM-dd');
       const total = getAvailableTimesForBarber(barberName, date, BASE_TIMES).length;
       const booked = rows.filter((r) => r.appointment_date === dateStr).length;
+      const dayRows = rows.filter((r) => r.appointment_date === dateStr);
       const pct = total > 0 ? booked / total : 0;
-      return { date, dateStr, total, booked, pct };
+      return { date, dateStr, total, booked, pct, dayRows };
     });
   }, [barberName, rows]);
 
@@ -116,6 +176,10 @@ function MiniCalendar({
     if (pct < 0.8) return { text: 'Llenándose', color: 'text-yellow-400' };
     if (pct < 1) return { text: 'Casi lleno', color: 'text-orange-400' };
     return { text: 'Completo', color: 'text-red-400' };
+  }
+
+  function toggleDay(dateStr: string) {
+    setExpandedDay((prev) => (prev === dateStr ? null : dateStr));
   }
 
   return (
@@ -139,40 +203,101 @@ function MiniCalendar({
       </button>
 
       {open && (
-        <div className='mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-2 duration-300'>
-          {days.map(({ date, dateStr, total, booked, pct }) => {
-            if (total === 0) return null;
-            const { text, color } = occupancyLabel(pct, total);
-            return (
-              <div
-                key={dateStr}
-                className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
-              >
-                <div className='flex justify-between items-start mb-2'>
-                  <div>
-                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
-                      {format(date, 'EEE', { locale: es })}
-                    </p>
-                    <p className='text-base font-black text-white leading-none'>
-                      {format(date, 'd MMM', { locale: es })}
-                    </p>
+        <div className='mt-2 animate-in fade-in slide-in-from-top-2 duration-300'>
+          <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
+            {days.map(({ date, dateStr, total, booked, pct, dayRows }) => {
+              if (total === 0) return null;
+              const { text, color } = occupancyLabel(pct, total);
+              const isExpanded = expandedDay === dateStr;
+              return (
+                <button
+                  key={dateStr}
+                  type='button'
+                  onClick={() => toggleDay(dateStr)}
+                  className={`p-3 rounded-2xl bg-white/[0.03] border text-left transition-all ${
+                    isExpanded
+                      ? 'border-neon-cyan/40 shadow-[0_0_12px_rgba(0,255,200,0.1)]'
+                      : pct >= 0.8
+                        ? 'border-red-500/20 hover:border-red-500/30'
+                        : pct >= 0.5
+                          ? 'border-yellow-400/15 hover:border-yellow-400/25'
+                          : 'border-white/5 hover:border-white/15'
+                  }`}
+                >
+                  <div className='flex justify-between items-start mb-2'>
+                    <div>
+                      <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
+                        {format(date, 'EEE', { locale: es })}
+                      </p>
+                      <p className='text-base font-black text-white leading-none'>
+                        {format(date, 'd MMM', { locale: es })}
+                      </p>
+                    </div>
+                    <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
+                      <span className='text-white/70 text-sm font-black'>{booked}</span>
+                      <span className='text-white/30'>/{total}</span>
+                    </span>
                   </div>
-                  <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
-                    <span className='text-white/70 text-sm font-black'>{booked}</span>
-                    <span className='text-white/30'>/{total}</span>
-                  </span>
+                  {/* Occupancy bar */}
+                  <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
+                    <div
+                      className={`h-full rounded-full transition-all ${occupancyColor(pct)}`}
+                      style={{ width: `${Math.min(pct * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <p className={`text-[9px] font-bold ${color}`}>{text}</p>
+                    {dayRows.length > 0 && (
+                      <span className='text-[9px] text-white/30'>
+                        {isExpanded ? '▲' : '▼'}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Expanded day turns */}
+          {expandedDay && (() => {
+            const dayData = days.find((d) => d.dateStr === expandedDay);
+            if (!dayData) return null;
+            return (
+              <div className='mt-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 animate-in fade-in slide-in-from-top-1 duration-200'>
+                <div className='flex items-center justify-between mb-2'>
+                  <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/40'>
+                    Turnos · {format(dayData.date, "d 'de' MMMM", { locale: es })}
+                  </p>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-[10px] font-bold text-white/30'>
+                      {dayData.dayRows.length} turno{dayData.dayRows.length !== 1 ? 's' : ''}
+                    </span>
+                    <button
+                      type='button'
+                      onClick={() => onBlockTurn(dayData.dateStr)}
+                      className='inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[9px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
+                    >
+                      <Lock className='w-3 h-3' />
+                      Bloquear
+                    </button>
+                  </div>
                 </div>
-                {/* Occupancy bar */}
-                <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
-                  <div
-                    className={`h-full rounded-full transition-all ${occupancyColor(pct)}`}
-                    style={{ width: `${Math.min(pct * 100, 100)}%` }}
-                  />
+                <div className='flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1'>
+                  {dayData.dayRows.length === 0 ? (
+                    <div className='text-center py-6 text-white/20 text-xs'>
+                      Sin turnos — {format(dayData.date, "EEEE", { locale: es })}
+                    </div>
+                  ) : (
+                    dayData.dayRows
+                      .sort((a, b) => (a.appointment_time ?? '').localeCompare(b.appointment_time ?? ''))
+                      .map((row) => (
+                        <DayTurnRow key={row.id} row={row} onStatusChange={onStatusChange} />
+                      ))
+                  )}
                 </div>
-                <p className={`text-[9px] font-bold ${color}`}>{text}</p>
               </div>
             );
-          })}
+          })()}
         </div>
       )}
     </div>
@@ -394,6 +519,9 @@ function DayGroup({ label, rows, onStatusChange, onMoved }: {
 export function AgendaView({ barber, refetchKey, recentNotifications = [] }: AgendaViewProps) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockModalDate, setBlockModalDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [blockModalTime, setBlockModalTime] = useState<string>('10:00');
 
   const fetchAgenda = useCallback(async () => {
     try {
@@ -465,8 +593,17 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
         ))}
       </div>
 
-      {/* Collapsible mini-calendar */}
-      <MiniCalendar barberName={barber.name} rows={rows} />
+      {/* Collapsible mini-calendar with expandable days */}
+      <MiniCalendar
+        barberName={barber.name}
+        rows={rows}
+        onStatusChange={handleStatusChange}
+        onBlockTurn={(date, time) => {
+          setBlockModalDate(date);
+          setBlockModalTime(time || '10:00');
+          setIsBlockModalOpen(true);
+        }}
+      />
 
       {/* Appointment lists */}
       {loading ? (
@@ -485,6 +622,16 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
           )}
         </>
       )}
+
+      {/* Block Turn Modal */}
+      <BlockTurnModal
+        barber={barber}
+        isOpen={isBlockModalOpen}
+        initialDate={blockModalDate}
+        initialTime={blockModalTime}
+        onClose={() => setIsBlockModalOpen(false)}
+        onSuccess={fetchAgenda}
+      />
     </div>
   );
 }

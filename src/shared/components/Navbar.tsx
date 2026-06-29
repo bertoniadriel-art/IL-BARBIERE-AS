@@ -47,10 +47,36 @@ export function Navbar() {
             >
               RESERVAR
             </Link>
+            <a
+              href='https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-neon-cyan/50 hover:shadow-neon-glow transition-all flex-shrink-0'
+              title='Il Barbiere — Deploy'
+            >
+              <img
+                src='/assets/logo/logo-official.jpg'
+                alt='Il Barbiere'
+                className='w-full h-full object-cover'
+              />
+            </a>
           </div>
 
-          {/* Mobile Button */}
-          <div className='md:hidden'>
+          {/* Mobile Button + Logo */}
+          <div className='md:hidden flex items-center gap-3'>
+            <a
+              href='https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='w-9 h-9 rounded-full overflow-hidden border border-white/20 hover:border-neon-cyan/50 transition-all flex-shrink-0'
+              title='Il Barbiere — Deploy'
+            >
+              <img
+                src='/assets/logo/logo-official.jpg'
+                alt='Il Barbiere'
+                className='w-full h-full object-cover'
+              />
+            </a>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className='p-2 text-white hover:text-neon-cyan transition-colors'
