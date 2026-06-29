@@ -3,6 +3,7 @@
 import {
   BadgeDollarSign,
   CalendarDays,
+  Crown,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -48,6 +49,12 @@ export function AdminLayout({
       key: 'finanzas',
       label: 'Finanzas',
       icon: <BadgeDollarSign className='w-5 h-5 flex-shrink-0' />,
+      badge: 0,
+    },
+    {
+      key: 'vip',
+      label: 'Turnos VIP',
+      icon: <Crown className='w-5 h-5 flex-shrink-0' />,
       badge: 0,
     },
   ];

@@ -73,7 +73,8 @@ export async function getBlockedSlotsForDay(barberId: string, date: string): Pro
     .from('blocked_slots')
     .select('slot_time')
     .eq('barber_id', barberId)
-    .eq('day_of_week', dayOfWeek);
+    .eq('day_of_week', dayOfWeek)
+    .eq('enabled', true);
 
   if (error) {
     console.error('getBlockedSlotsForDay error', error);

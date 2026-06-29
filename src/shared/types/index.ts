@@ -76,6 +76,8 @@ export interface BlockedSlot {
   day_of_week: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   slot_time: string; // "HH:MM"
   reason: 'personal' | 'vip_reserved';
+  label: string | null;
+  enabled: boolean;
   created_at?: string;
 }
 

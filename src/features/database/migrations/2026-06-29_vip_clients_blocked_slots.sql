@@ -27,13 +27,16 @@ create policy "VipClients: authenticated full access"
   using (true)
   with check (true);
 
--- 2. BLOCKED_SLOTS — permanent unavailable slots (personal time + weekly VIP reservations)
+-- 2. BLOCKED_SLOTS — permanent unavailable slots (personal time + VIP reservations)
+-- enabled=false lets barbers temporarily unlock a slot without deleting it
 create table if not exists public.blocked_slots (
   id uuid primary key default uuid_generate_v4(),
   barber_id uuid references public.barbers(id) on delete cascade,
   day_of_week smallint not null check (day_of_week between 0 and 6),
   slot_time time not null,
   reason text default 'personal', -- 'personal' | 'vip_reserved'
+  label text,                      -- client name for vip_reserved slots
+  enabled boolean not null default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   constraint blocked_slots_unique unique (barber_id, day_of_week, slot_time)
 );
@@ -57,12 +60,14 @@ create policy "BlockedSlots: authenticated manage"
 -- Wed (3) + Sat (6) at 12:00 and 12:30 — both barbers
 -- ==========================================
 
-insert into public.blocked_slots (barber_id, day_of_week, slot_time, reason)
+insert into public.blocked_slots (barber_id, day_of_week, slot_time, reason, label, enabled)
 select
   b.id,
   d.dow,
   t.slot_time::time,
-  'personal'
+  'personal',
+  null,
+  true
 from public.barbers b
 cross join (values (3), (6)) as d(dow)
 cross join (values ('12:00'), ('12:30')) as t(slot_time)
@@ -193,32 +198,18 @@ values
   ('Joni Barba',       (select id from public.barbers where name = 'Santi Ducca'), null, null, null, 'weekly', 10);
 
 -- ==========================================
--- SEED: BLOCKED SLOTS — WEEKLY VIP reservations
--- Only weekly clients (biweekly managed manually by barbers)
+-- SEED: BLOCKED SLOTS — ALL VIP reservations with a known slot_time
+-- Includes both weekly and biweekly (barbers unlock biweekly slots manually)
 -- ==========================================
 
--- FEDE weekly VIP blocks
-insert into public.blocked_slots (barber_id, day_of_week, slot_time, reason)
+insert into public.blocked_slots (barber_id, day_of_week, slot_time, reason, label, enabled)
 select
-  (select id from public.barbers where name = 'Fede Diaz'),
+  v.barber_id,
   v.day_of_week,
   v.slot_time,
-  'vip_reserved'
+  'vip_reserved',
+  v.client_name,
+  true
 from public.vip_clients v
-where v.barber_id = (select id from public.barbers where name = 'Fede Diaz')
-  and v.frequency = 'weekly'
-  and v.slot_time is not null
-on conflict on constraint blocked_slots_unique do nothing;
-
--- SANTI weekly VIP blocks
-insert into public.blocked_slots (barber_id, day_of_week, slot_time, reason)
-select
-  (select id from public.barbers where name = 'Santi Ducca'),
-  v.day_of_week,
-  v.slot_time,
-  'vip_reserved'
-from public.vip_clients v
-where v.barber_id = (select id from public.barbers where name = 'Santi Ducca')
-  and v.frequency = 'weekly'
-  and v.slot_time is not null
+where v.slot_time is not null
 on conflict on constraint blocked_slots_unique do nothing;
