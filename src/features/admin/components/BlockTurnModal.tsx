@@ -2,18 +2,21 @@
 
 import { createAppointment } from '@/features/admin/services/appointmentService';
 import { supabase } from '@/shared/lib/supabase';
-import { addDays, addWeeks, format } from 'date-fns';
-import { Lock, X } from 'lucide-react';
+import { addDays, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Crown, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-interface BlockTurnModalProps {
-  barber: { id: string; name: string };
-  isOpen: boolean;
-  initialDate?: string;
-  initialTime?: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
+const MODAL_TIMES: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 8; h <= 20; h++) {
+    slots.push(`${String(h).padStart(2, '0')}:00`);
+    if (h < 20) slots.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return slots;
+})();
+
+type Recurrence = 'once' | 'weekly' | 'biweekly';
 
 interface ServiceOption {
   id: string;
@@ -22,34 +25,48 @@ interface ServiceOption {
   duration_min: number;
 }
 
-type Recurrence = 'none' | 'weekly' | 'biweekly';
-
-function getNextRoundHour(): string {
-  const now = new Date();
-  now.setMinutes(0, 0, 0);
-  now.setHours(now.getHours() + 1);
-  return `${String(now.getHours()).padStart(2, '0')}:00`;
+interface Props {
+  barber: { id: string; name: string };
+  initialDate?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-export function BlockTurnModal({
-  barber,
-  isOpen,
-  initialDate,
-  initialTime,
-  onClose,
-  onSuccess,
-}: BlockTurnModalProps) {
-  const [date, setDate] = useState<string>(initialDate || format(new Date(), 'yyyy-MM-dd'));
-  const [time, setTime] = useState<string>(initialTime || getNextRoundHour);
+function todayStr() {
+  return format(new Date(), 'yyyy-MM-dd');
+}
+
+function getDatesForRecurrence(start: string, type: Recurrence): string[] {
+  if (type === 'once') return [start];
+  const step = type === 'weekly' ? 7 : 14;
+  const dates: string[] = [];
+  let current = new Date(`${start}T12:00:00`);
+  const end = new Date(current);
+  end.setMonth(end.getMonth() + 3);
+  while (current <= end) {
+    dates.push(format(current, 'yyyy-MM-dd'));
+    current = addDays(current, step);
+  }
+  return dates;
+}
+
+export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess }: Props) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [serviceId, setServiceId] = useState('');
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [serviceId, setServiceId] = useState('');
+  const [date, setDate] = useState(initialDate ?? todayStr());
+  const [time, setTime] = useState('10:00');
   const [isVip, setIsVip] = useState(false);
-  const [recurrence, setRecurrence] = useState<Recurrence>('none');
+  const [recurrence, setRecurrence] = useState<Recurrence>('once');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdCount, setCreatedCount] = useState(0);
+  const [result, setResult] = useState<{ ok: number; failed: number } | null>(null);
+
+  useEffect(() => {
+    if (initialDate) setDate(initialDate);
+  }, [initialDate]);
 
   useEffect(() => {
     if (!isOpen || !supabase) return;
@@ -60,318 +77,248 @@ export function BlockTurnModal({
       .then(({ data }: { data: ServiceOption[] | null }) => {
         if (data) {
           setServices(data);
-          if (data.length > 0 && !serviceId) {
-            setServiceId(data[0].id);
-          }
+          if (!serviceId && data.length > 0) setServiceId(data[0].id);
         }
       });
   }, [isOpen, serviceId]);
 
-  useEffect(() => {
-    if (initialDate) setDate(initialDate);
-    if (initialTime) setTime(initialTime);
-  }, [initialDate, initialTime]);
-
   if (!isOpen) return null;
 
-  function getSelectedService(): ServiceOption | undefined {
-    return services.find((s) => s.id === serviceId);
-  }
+  const selectedService = services.find((s) => s.id === serviceId);
+  const basePrice = selectedService?.price ?? 0;
+  const finalPrice = isVip ? Math.round(basePrice * 0.9) : basePrice;
 
-  function calculatePrice(): number | null {
-    const svc = getSelectedService();
-    if (!svc) return null;
-    const base = svc.price;
-    return isVip ? Math.round(base * 0.9) : base;
-  }
+  const recurrenceDates = getDatesForRecurrence(date, recurrence);
+  const isRecurring = recurrence !== 'once';
 
-  function getRecurrenceDates(): string[] {
-    const dates: string[] = [date];
-    if (recurrence === 'none') return dates;
+  const handleClose = () => {
+    if (loading) return;
+    setClientName('');
+    setClientPhone('');
+    setServiceId(services[0]?.id ?? '');
+    setDate(initialDate ?? todayStr());
+    setTime('10:00');
+    setIsVip(false);
+    setRecurrence('once');
+    setError(null);
+    setResult(null);
+    onClose();
+  };
 
-    const startDate = new Date(date + 'T12:00:00');
-    const weeksToAdd = recurrence === 'biweekly' ? 2 : 1;
-
-    // Generate for next 3 months
-    let current = startDate;
-    for (let i = 0; i < 6; i++) {
-      current = addWeeks(current, weeksToAdd);
-      dates.push(format(current, 'yyyy-MM-dd'));
-    }
-    return dates;
-  }
-
-  async function handleSubmit() {
-    if (!clientName.trim()) {
-      setError('El nombre del cliente es requerido.');
-      return;
-    }
-    if (!serviceId) {
-      setError('Seleccioná un servicio.');
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!clientName.trim()) { setError('El nombre del cliente es requerido.'); return; }
+    if (!serviceId) { setError('Seleccioná un servicio.'); return; }
 
     setLoading(true);
     setError(null);
 
-    const dates = getRecurrenceDates();
-    const finalPrice = calculatePrice();
-    let successCount = 0;
-    let lastError: string | null = null;
+    const dates = recurrenceDates;
+    let ok = 0;
+    let failed = 0;
 
-    for (const appointmentDate of dates) {
-      const { error: submitError } = await createAppointment({
+    for (const d of dates) {
+      const { error: err } = await createAppointment({
         barber_id: barber.id,
         service_id: serviceId,
         client_name: clientName.trim(),
-        client_phone: clientPhone || '',
-        appointment_date: appointmentDate,
+        client_phone: clientPhone.trim(),
+        appointment_date: d,
         appointment_time: time,
         final_price: finalPrice,
-        deposit_paid: true,
+        deposit_paid: false,
       });
-
-      if (submitError) {
-        lastError = submitError.message;
-        // If it's a collision, skip this date and continue
-        if (submitError.message.includes('23505') || submitError.message.includes('duplicate')) {
-          continue;
-        }
-      } else {
-        successCount++;
-      }
+      if (err) failed++; else ok++;
     }
 
     setLoading(false);
 
-    if (successCount === 0 && lastError) {
-      setError(lastError);
+    if (ok === 0) {
+      setError(`No se pudo crear ningún turno. Es posible que los horarios ya estén ocupados.`);
       return;
     }
 
-    setCreatedCount(successCount);
-    setTimeout(() => {
-      onSuccess();
-      handleClose();
-      onClose();
-    }, 1500);
-  }
+    setResult({ ok, failed });
+  };
 
-  function handleClose() {
-    if (loading) return;
-    setClientName('');
-    setClientPhone('');
-    setTime(getNextRoundHour());
-    setDate(format(new Date(), 'yyyy-MM-dd'));
-    setIsVip(false);
-    setRecurrence('none');
-    setError(null);
-    setCreatedCount(0);
-    setServiceId(services[0]?.id ?? '');
-  }
-
-  if (createdCount > 0) {
+  if (result) {
     return (
-      <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'>
-        <div className='w-full max-w-sm mx-4 bg-[#111114] border border-neon-cyan/40 rounded-3xl p-6 text-center animate-in zoom-in-95 duration-300'>
-          <div className='w-16 h-16 rounded-full bg-neon-cyan/20 flex items-center justify-center mx-auto mb-4'>
-            <Lock className='w-8 h-8 text-neon-cyan' />
+      <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center px-4'>
+        <div className='w-full max-w-sm bg-[#111114] border border-white/10 rounded-3xl p-6 text-center animate-in zoom-in-95 duration-300'>
+          <div className='w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4'>
+            <span className='text-2xl'>✓</span>
           </div>
-          <p className='text-[10px] uppercase tracking-widest text-neon-cyan font-bold mb-1'>
-            Turnos bloqueados
+          <p className='text-white font-black text-xl mb-1'>
+            {result.ok} turno{result.ok !== 1 ? 's' : ''} creado{result.ok !== 1 ? 's' : ''}
           </p>
-          <h2 className='text-2xl font-black mb-2'>{createdCount} turno{createdCount > 1 ? 's' : ''}</h2>
-          <p className='text-white/40 text-sm'>
-            {clientName} · {recurrence !== 'none' ? `Recurrente ${recurrence === 'biweekly' ? 'quincenal' : 'semanal'}` : 'Turno único'}
+          {result.failed > 0 && (
+            <p className='text-orange-400 text-sm mb-1'>
+              {result.failed} no pudo{result.failed !== 1 ? 'n' : ''} crearse (horario ocupado)
+            </p>
+          )}
+          <p className='text-white/40 text-xs mb-6'>
+            {clientName} · {time} hs{isVip ? ' · VIP 10% off' : ''}
           </p>
+          <button
+            type='button'
+            onClick={() => { onSuccess(); handleClose(); }}
+            className='w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-sm'
+          >
+            Listo
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'>
-      <div className='w-full max-w-md mx-4 bg-[#111114] border border-neon-cyan/30 rounded-3xl p-6 relative animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto'>
-        <button
-          type='button'
-          onClick={() => { handleClose(); onClose(); }}
-          className='absolute top-4 right-4 text-white/30 hover:text-white transition-colors'
-        >
-          <X className='w-5 h-5' />
-        </button>
-
-        <div className='mb-6'>
-          <div className='flex items-center gap-2 mb-1'>
-            <Lock className='w-4 h-4 text-neon-cyan' />
-            <p className='text-[10px] uppercase tracking-widest text-neon-cyan font-bold'>
-              Bloquear Turno
-            </p>
+    <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm'>
+      <div className='absolute bottom-0 left-0 right-0 bg-[#111114] rounded-t-3xl px-5 pt-5 pb-10 animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto'>
+        <div className='flex items-center justify-between mb-5'>
+          <div>
+            <p className='text-[10px] uppercase tracking-widest text-white/30 font-bold'>Nuevo turno</p>
+            <h2 className='text-xl font-black'>{barber.name}</h2>
           </div>
-          <h2 className='text-xl font-black'>{barber.name}</h2>
+          <button type='button' onClick={handleClose} className='text-white/30 hover:text-white transition-colors'>
+            <X className='w-5 h-5' />
+          </button>
         </div>
 
         <div className='space-y-4'>
           {/* Client name */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-              Nombre del cliente
-            </label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Nombre</label>
             <input
               type='text'
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder='Ej: Juan Pérez'
-              className='w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan'
+              placeholder='Nombre del cliente'
+              className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none text-sm'
             />
           </div>
 
-          {/* Phone */}
+          {/* WhatsApp */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-              WhatsApp (opcional)
-            </label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>WhatsApp</label>
             <input
               type='tel'
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
-              placeholder='Sin 0 ni 15'
-              className='w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan'
+              placeholder='Ej: 3402123456'
+              className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none text-sm'
             />
           </div>
 
-          {/* Service selector */}
+          {/* Service */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-              Servicio
-            </label>
-            {services.length === 0 ? (
-              <p className='text-white/30 text-xs py-3'>Cargando servicios...</p>
-            ) : (
-              <div className='grid grid-cols-2 gap-2'>
-                {services.map((svc) => (
-                  <button
-                    key={svc.id}
-                    type='button'
-                    onClick={() => setServiceId(svc.id)}
-                    className={`py-3 px-3 rounded-xl text-left text-sm font-bold border transition-colors ${
-                      serviceId === svc.id
-                        ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
-                        : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20'
-                    }`}
-                  >
-                    <span className='block truncate'>{svc.name}</span>
-                    <span className='text-[10px] font-normal opacity-60'>
-                      ${svc.price.toLocaleString('es-AR')} · {svc.duration_min}min
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Servicio</label>
+            <div className='grid grid-cols-2 gap-2'>
+              {services.map((svc) => (
+                <button
+                  key={svc.id}
+                  type='button'
+                  onClick={() => setServiceId(svc.id)}
+                  className={`py-2.5 px-3 rounded-xl text-left text-xs font-bold border transition-colors ${
+                    serviceId === svc.id
+                      ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
+                      : 'border-white/10 bg-[#18181c] text-white/50 hover:border-white/20'
+                  }`}
+                >
+                  <span className='block truncate'>{svc.name}</span>
+                  <span className='text-[10px] font-normal opacity-60'>${svc.price.toLocaleString('es-AR')}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Date & Time */}
+          {/* Date + Time */}
           <div className='grid grid-cols-2 gap-3'>
             <div>
-              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-                Fecha
-              </label>
+              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Fecha</label>
               <input
                 type='date'
                 value={date}
-                min={format(new Date(), 'yyyy-MM-dd')}
+                min={todayStr()}
                 onChange={(e) => setDate(e.target.value)}
-                className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
+                className='w-full bg-[#18181c] border border-white/10 rounded-xl px-3 py-3 text-white focus:border-neon-cyan outline-none text-sm'
               />
             </div>
             <div>
-              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-                Hora
-              </label>
-              <input
-                type='time'
+              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Hora</label>
+              <select
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
-              />
+                className='w-full bg-[#18181c] border border-white/10 rounded-xl px-3 py-3 text-white focus:border-neon-cyan outline-none text-sm'
+              >
+                {MODAL_TIMES.map((t) => (
+                  <option key={t} value={t}>{t} hs</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* VIP Toggle */}
-          <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-              Cliente VIP
-            </label>
+          {/* VIP toggle */}
+          <div className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${isVip ? 'border-yellow-400/40 bg-yellow-400/5' : 'border-white/10 bg-white/[0.02]'}`}>
+            <div className='flex items-center gap-2'>
+              <Crown className={`w-4 h-4 ${isVip ? 'text-yellow-400' : 'text-white/20'}`} />
+              <div>
+                <p className={`text-xs font-bold ${isVip ? 'text-yellow-400' : 'text-white/40'}`}>Cliente VIP</p>
+                {isVip && basePrice > 0 && (
+                  <p className='text-[10px] text-white/40'>
+                    ${basePrice.toLocaleString('es-AR')} → <span className='text-yellow-400 font-bold'>${finalPrice.toLocaleString('es-AR')}</span> (−10%)
+                  </p>
+                )}
+              </div>
+            </div>
             <button
               type='button'
-              onClick={() => setIsVip(!isVip)}
-              className={`w-full py-3 rounded-xl text-sm font-bold border transition-colors ${
-                isVip
-                  ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400'
-                  : 'border-white/10 bg-white/5 text-white/40'
-              }`}
+              onClick={() => setIsVip((v) => !v)}
+              className={`w-11 h-6 rounded-full transition-all relative ${isVip ? 'bg-yellow-400' : 'bg-white/10'}`}
             >
-              {isVip ? '⭐ VIP — 10% descuento' : 'Marcar como VIP (10% off)'}
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${isVip ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
-            {isVip && calculatePrice() !== null && (
-              <p className='mt-1.5 text-[10px] text-yellow-400/70'>
-                Precio con descuento: ${calculatePrice()?.toLocaleString('es-AR')}
-              </p>
-            )}
           </div>
 
           {/* Recurrence */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
-              Recurrencia
-            </label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold'>Recurrencia</label>
             <div className='grid grid-cols-3 gap-2'>
-              {[
-                { value: 'none' as Recurrence, label: 'Único' },
-                { value: 'weekly' as Recurrence, label: 'Semanal' },
-                { value: 'biweekly' as Recurrence, label: 'Quincenal' },
-              ].map((opt) => (
+              {(['once', 'weekly', 'biweekly'] as Recurrence[]).map((r) => (
                 <button
-                  key={opt.value}
+                  key={r}
                   type='button'
-                  onClick={() => setRecurrence(opt.value)}
+                  onClick={() => setRecurrence(r)}
                   className={`py-2.5 rounded-xl text-xs font-bold border transition-colors ${
-                    recurrence === opt.value
+                    recurrence === r
                       ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
-                      : 'border-white/10 bg-white/5 text-white/40 hover:border-white/20'
+                      : 'border-white/10 bg-[#18181c] text-white/40 hover:border-white/20'
                   }`}
                 >
-                  {opt.label}
+                  {r === 'once' ? 'Único' : r === 'weekly' ? '🔄 Semanal' : '🔄 Quincenal'}
                 </button>
               ))}
             </div>
-            {recurrence !== 'none' && (
-              <p className='mt-1.5 text-[10px] text-white/30'>
-                Se crearán turnos por los próximos 3 meses
+            {isRecurring && (
+              <p className='text-[10px] text-white/30 mt-2 leading-relaxed'>
+                Se crearán <span className='text-neon-cyan font-bold'>{recurrenceDates.length} turnos</span> por los próximos 3 meses
+                {' '}({format(new Date(`${date}T12:00:00`), "d MMM", { locale: es })} → {format(new Date(`${recurrenceDates[recurrenceDates.length - 1]}T12:00:00`), "d MMM", { locale: es })})
               </p>
             )}
           </div>
         </div>
 
-        {error && (
-          <p className='mt-4 text-xs text-red-400 font-bold text-center'>{error}</p>
-        )}
-
-        <button
-          type='button'
-          disabled={loading || !clientName.trim() || !serviceId}
-          onClick={handleSubmit}
-          className='mt-6 w-full py-4 rounded-2xl bg-gradient-to-r from-neon-cyan to-[#bc00ff] text-black font-black uppercase tracking-widest text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity'
-        >
-          {loading ? 'Bloqueando...' : recurrence !== 'none' ? 'Bloquear turnos recurrentes' : 'Bloquear turno'}
-        </button>
+        {error && <p className='mt-4 text-xs text-red-400 font-bold text-center'>{error}</p>}
 
         <button
           type='button'
           disabled={loading}
-          onClick={() => { handleClose(); onClose(); }}
-          className='mt-3 w-full py-3 rounded-2xl text-white/40 text-sm font-bold hover:text-white/70 transition-colors disabled:opacity-50'
+          onClick={handleSubmit}
+          className='mt-5 w-full py-4 rounded-2xl bg-gradient-to-r from-neon-cyan to-[#bc00ff] text-black font-black uppercase tracking-widest text-sm disabled:opacity-50'
         >
-          Cancelar
+          {loading
+            ? 'Creando turnos...'
+            : isRecurring
+              ? `Crear ${recurrenceDates.length} turnos`
+              : 'Confirmar turno'}
         </button>
       </div>
     </div>

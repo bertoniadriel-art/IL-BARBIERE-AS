@@ -12,12 +12,12 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
     auth_user_id: null,
     paymentAlias: 'santi.ducca',
     whatsappPhone: '3402503244',
-    // Mar–Vie 10:00–19:00; Sáb 10:00–14:00; Lun + Dom off
+    // Mar–Vie 10:00–18:30 (invierno); Sáb 10:00–14:00; Lun + Dom off
     schedule: {
-      2: { from: '10:00', to: '19:00' }, // Tue
-      3: { from: '10:00', to: '19:00' }, // Wed
-      4: { from: '10:00', to: '19:00' }, // Thu
-      5: { from: '10:00', to: '19:00' }, // Fri
+      2: { from: '10:00', to: '18:30' }, // Tue
+      3: { from: '10:00', to: '18:30' }, // Wed
+      4: { from: '10:00', to: '18:30' }, // Thu
+      5: { from: '10:00', to: '18:30' }, // Fri
       6: { from: '10:00', to: '14:00' }, // Sat
       // 0 = Sun — omitted means off
       // 1 = Mon — omitted means off

@@ -4,7 +4,7 @@ import { addDays, format, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useEffect, useState } from 'react';
 import { useBookingStore } from '../bookingStore';
-import { getBookedSlots } from '../services/availabilityService';
+import { getBlockedSlotsForDay, getBookedSlots } from '../services/availabilityService';
 import { filterAvailableSlots } from '../services/timeSelectorHelpers';
 
 const BASE_TIMES = [
@@ -61,8 +61,11 @@ export function TimeSelector() {
       return;
     }
     setLoadingBooked(true);
-    getBookedSlots(barberId, selectedDate)
-      .then((slots) => setBookedTimes(slots))
+    Promise.all([
+      getBookedSlots(barberId, selectedDate),
+      getBlockedSlotsForDay(barberId, selectedDate),
+    ])
+      .then(([booked, blocked]) => setBookedTimes([...booked, ...blocked]))
       .finally(() => setLoadingBooked(false));
   }, [barberId, selectedDate]);
 

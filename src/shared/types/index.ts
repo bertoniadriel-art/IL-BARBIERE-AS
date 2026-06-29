@@ -70,6 +70,32 @@ export interface BookingState {
   reset: () => void;
 }
 
+export interface BlockedSlot {
+  id: string;
+  barber_id: string;
+  day_of_week: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  slot_time: string; // "HH:MM"
+  reason: 'personal' | 'vip_reserved';
+  label: string | null;
+  enabled: boolean;
+  created_at?: string;
+}
+
+export interface VipClient {
+  id: string;
+  client_name: string;
+  client_phone: string | null;
+  barber_id: string | null;
+  service_id: string | null;
+  day_of_week: (0 | 1 | 2 | 3 | 4 | 5 | 6) | null;
+  slot_time: string | null; // "HH:MM"
+  frequency: 'weekly' | 'biweekly';
+  discount_percent: number;
+  notes: string | null;
+  active: boolean;
+  created_at?: string;
+}
+
 export interface DashboardStats {
   monthlyCashFlow: number;
   pendingDeposits: number;

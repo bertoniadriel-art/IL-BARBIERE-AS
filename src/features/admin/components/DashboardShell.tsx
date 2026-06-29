@@ -13,12 +13,13 @@ import { AdminLayout } from './AdminLayout';
 import { AgendaView } from './AgendaView';
 import { FinanzasView } from './FinanzasView';
 import { QuickAddModal } from './QuickAddModal';
+import { VipSlotsView } from './VipSlotsView';
 
 const ScannerModule = dynamic(() => import('./ScannerModule').then((mod) => mod.ScannerModule), {
   ssr: false,
 });
 
-type AdminTab = 'agenda' | 'scanner' | 'finanzas';
+type AdminTab = 'agenda' | 'scanner' | 'finanzas' | 'vip';
 
 interface Props {
   barber: Barber;
@@ -57,6 +58,7 @@ export function DashboardShell({ barber }: Props) {
     agenda: 'Agenda',
     scanner: 'Escáner QR',
     finanzas: 'Finanzas',
+    vip: 'Turnos VIP',
   };
 
   return (
@@ -141,6 +143,11 @@ export function DashboardShell({ barber }: Props) {
           {activeTab === 'finanzas' && (
             <div className='animate-in fade-in duration-500'>
               <FinanzasView barber={barber} />
+            </div>
+          )}
+          {activeTab === 'vip' && (
+            <div className='animate-in fade-in duration-500'>
+              <VipSlotsView barberId={barber.id} />
             </div>
           )}
         </div>

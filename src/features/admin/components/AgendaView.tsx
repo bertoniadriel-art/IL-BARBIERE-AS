@@ -6,17 +6,9 @@ import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import { supabase } from '@/shared/lib/supabase';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import type { AppointmentStatus } from '@/shared/types';
-import {
-  addDays,
-  format,
-  isToday,
-  isTomorrow,
-  isWithinInterval,
-  parseISO,
-  startOfDay,
-} from 'date-fns';
+import { addDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, ChevronDown, ChevronUp, Download, Lock, PlusCircle, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, Crown, Download, Lock, X } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BlockTurnModal } from './BlockTurnModal';
@@ -41,6 +33,8 @@ interface AppointmentRow {
   qr_hash: string | null;
   barber_id: string;
   services: { name: string } | null;
+  is_fixed_weekly: boolean;
+  frequency?: 'weekly' | 'biweekly';
 }
 
 interface AgendaViewProps {
@@ -49,15 +43,35 @@ interface AgendaViewProps {
   recentNotifications?: IncomingAppointment[];
 }
 
-function statusLabel(status: string) {
-  if (status === 'pending') return { label: 'Pendiente', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' };
-  if (status === 'confirmed') return { label: 'Confirmado', color: 'text-sky-400 bg-sky-400/10 border-sky-400/30' };
-  if (status === 'attended') return { label: 'Atendido', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' };
-  if (status === 'debt') return { label: 'Fiado', color: 'text-orange-400 bg-orange-400/10 border-orange-400/30' };
-  return { label: status, color: 'text-white/40 bg-white/5 border-white/10' };
+// ── Mock data ─────────────────────────────────────────────────────────────────
+function getMockRows(barberId: string): AppointmentRow[] {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const fri = new Date();
+  while (fri.getDay() !== 5) fri.setDate(fri.getDate() + 1);
+  const nextFri = format(fri, 'yyyy-MM-dd');
+  const nextFri2 = format(addDays(fri, 14), 'yyyy-MM-dd');
+
+  return [
+    { id: 'mock-1', client_name: 'Joaquin Ferreyra', appointment_date: today, appointment_time: '10:00', status: 'pending', deposit_paid: false, final_price: 14000, qr_hash: 'MOCK-001', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: false },
+    { id: 'mock-2', client_name: 'Fabri Kosic', appointment_date: today, appointment_time: '10:30', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-002', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
+    { id: 'mock-3', client_name: 'Pedro Gimenez', appointment_date: today, appointment_time: '14:30', status: 'confirmed', deposit_paid: true, final_price: 14000, qr_hash: 'MOCK-003', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: false },
+    { id: 'mock-4', client_name: 'Bruno Santamaria', appointment_date: nextFri, appointment_time: '16:30', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-004', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
+    { id: 'mock-5', client_name: 'Tomas Santamaria', appointment_date: nextFri, appointment_time: '17:00', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-005', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
+    { id: 'mock-6', client_name: 'Walter Chapista', appointment_date: nextFri, appointment_time: '14:00', status: 'pending', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-006', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'biweekly' },
+    { id: 'mock-7', client_name: 'Javi Orru', appointment_date: nextFri2, appointment_time: '09:00', status: 'confirmed', deposit_paid: true, final_price: 18000, qr_hash: 'MOCK-007', barber_id: barberId, services: { name: 'Corte + Barba' }, is_fixed_weekly: true, frequency: 'biweekly' },
+  ];
 }
 
-// ── Live ticker ──────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function statusInfo(status: string) {
+  if (status === 'pending')   return { label: 'Pendiente',  cls: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' };
+  if (status === 'confirmed') return { label: 'Confirmado', cls: 'text-sky-400 bg-sky-400/10 border-sky-400/30' };
+  if (status === 'attended')  return { label: 'Atendido',   cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' };
+  if (status === 'debt')      return { label: 'Fiado',      cls: 'text-orange-400 bg-orange-400/10 border-orange-400/30' };
+  return { label: status, cls: 'text-white/40 bg-white/5 border-white/10' };
+}
+
+// ── Live ticker ───────────────────────────────────────────────────────────────
 function LiveTicker({ notifications }: { notifications: IncomingAppointment[] }) {
   if (notifications.length === 0) return null;
   return (
@@ -69,10 +83,7 @@ function LiveTicker({ notifications }: { notifications: IncomingAppointment[] })
       <div className='flex-1 overflow-x-auto scrollbar-none'>
         <div className='flex gap-2 w-max animate-in slide-in-from-right duration-500'>
           {notifications.map((n, i) => (
-            <span
-              key={i}
-              className='flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 text-white/70 whitespace-nowrap'
-            >
+            <span key={i} className='flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 text-white/70 whitespace-nowrap'>
               {n.client_name || 'Cliente'} · {n.appointment_time?.slice(0, 5)} hs
             </span>
           ))}
@@ -82,73 +93,9 @@ function LiveTicker({ notifications }: { notifications: IncomingAppointment[] })
   );
 }
 
-// ── Day turn row (compact for expanded day) ───────────────────────────────────
-function DayTurnRow({
-  row,
-  onStatusChange,
-}: {
-  row: AppointmentRow;
-  onStatusChange: (id: string, next: AppointmentStatus) => void;
-}) {
-  const time = row.appointment_time?.slice(0, 5) ?? '';
-  const { label, color } = statusLabel(row.status);
-  const isActive = row.status === 'pending' || row.status === 'confirmed';
-
-  return (
-    <div className='flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors'>
-      <div className='w-12 text-right flex-shrink-0'>
-        <span className='text-sm font-black text-neon-cyan tabular-nums'>{time}</span>
-      </div>
-      <div className='flex-1 min-w-0'>
-        <p className='font-bold text-white text-xs truncate'>
-          {row.client_name || 'Cliente sin nombre'}
-        </p>
-        <div className='flex items-center gap-1.5 mt-0.5'>
-          {row.services?.name && (
-            <span className='text-[9px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
-              {row.services.name}
-            </span>
-          )}
-          {row.final_price != null && (
-            <span className='text-[9px] text-white/30'>
-              · ${row.final_price.toLocaleString('es-AR')}
-            </span>
-          )}
-        </div>
-      </div>
-      <div className='flex items-center gap-1.5 flex-shrink-0'>
-        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${color}`}>{label}</span>
-        {row.status === 'pending' && (
-          <button type='button' onClick={() => onStatusChange(row.id, 'confirmed')}
-            className='px-2 py-0.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[9px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
-            Confirmar
-          </button>
-        )}
-        {row.status === 'confirmed' && (
-          <button type='button' onClick={() => onStatusChange(row.id, 'attended')}
-            className='px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
-            Presente
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Mini calendar ─────────────────────────────────────────────────────────────
-function MiniCalendar({
-  barberName,
-  rows,
-  onStatusChange,
-  onBlockTurn,
-}: {
-  barberName: string;
-  rows: AppointmentRow[];
-  onStatusChange: (id: string, next: AppointmentStatus) => void;
-  onBlockTurn: (date: string, time?: string) => void;
-}) {
+// ── Availability bar (collapsible) ────────────────────────────────────────────
+function AvailabilityBar({ barberName, rows }: { barberName: string; rows: AppointmentRow[] }) {
   const [open, setOpen] = useState(false);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   const days = useMemo(() => {
     return Array.from({ length: 14 }, (_, i) => {
@@ -156,34 +103,29 @@ function MiniCalendar({
       const dateStr = format(date, 'yyyy-MM-dd');
       const total = getAvailableTimesForBarber(barberName, date, BASE_TIMES).length;
       const booked = rows.filter((r) => r.appointment_date === dateStr).length;
-      const dayRows = rows.filter((r) => r.appointment_date === dateStr);
       const pct = total > 0 ? booked / total : 0;
-      return { date, dateStr, total, booked, pct, dayRows };
+      return { date, dateStr, total, booked, pct };
     });
   }, [barberName, rows]);
 
-  function occupancyColor(pct: number) {
-    if (pct === 0) return 'bg-white/10';
-    if (pct < 0.5) return 'bg-emerald-500';
-    if (pct < 0.8) return 'bg-yellow-400';
+  function barColor(pct: number) {
+    if (pct === 0)   return 'bg-white/10';
+    if (pct < 0.5)  return 'bg-emerald-500';
+    if (pct < 0.8)  return 'bg-yellow-400';
     return 'bg-red-500';
   }
 
-  function occupancyLabel(pct: number, total: number) {
-    if (total === 0) return { text: 'Libre', color: 'text-white/20' };
-    if (pct === 0) return { text: 'Vacío — ¡publicar!', color: 'text-white/30' };
-    if (pct < 0.5) return { text: 'Disponible', color: 'text-emerald-400' };
-    if (pct < 0.8) return { text: 'Llenándose', color: 'text-yellow-400' };
-    if (pct < 1) return { text: 'Casi lleno', color: 'text-orange-400' };
-    return { text: 'Completo', color: 'text-red-400' };
-  }
-
-  function toggleDay(dateStr: string) {
-    setExpandedDay((prev) => (prev === dateStr ? null : dateStr));
+  function statusText(pct: number, total: number) {
+    if (total === 0)  return { text: 'Libre',          cls: 'text-white/20' };
+    if (pct === 0)    return { text: 'Vacío',           cls: 'text-white/30' };
+    if (pct < 0.5)   return { text: 'Disponible',      cls: 'text-emerald-400' };
+    if (pct < 0.8)   return { text: 'Llenándose',      cls: 'text-yellow-400' };
+    if (pct < 1)     return { text: 'Casi lleno',      cls: 'text-orange-400' };
+    return           { text: 'Completo',               cls: 'text-red-400' };
   }
 
   return (
-    <div className='mb-8'>
+    <div className='mb-6'>
       <button
         type='button'
         onClick={() => setOpen((v) => !v)}
@@ -195,117 +137,41 @@ function MiniCalendar({
             Disponibilidad próximos 14 días
           </span>
         </div>
-        {open ? (
-          <ChevronUp className='w-4 h-4 text-white/30' />
-        ) : (
-          <ChevronDown className='w-4 h-4 text-white/30' />
-        )}
+        {open ? <ChevronUp className='w-4 h-4 text-white/30' /> : <ChevronDown className='w-4 h-4 text-white/30' />}
       </button>
 
       {open && (
-        <div className='mt-2 animate-in fade-in slide-in-from-top-2 duration-300'>
-          <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-            {days.map(({ date, dateStr, total, booked, pct, dayRows }) => {
-              if (total === 0) return null;
-              const { text, color } = occupancyLabel(pct, total);
-              const isExpanded = expandedDay === dateStr;
-              return (
-                <button
-                  key={dateStr}
-                  type='button'
-                  onClick={() => toggleDay(dateStr)}
-                  className={`p-3 rounded-2xl bg-white/[0.03] border text-left transition-all ${
-                    isExpanded
-                      ? 'border-neon-cyan/40 shadow-[0_0_12px_rgba(0,255,200,0.1)]'
-                      : pct >= 0.8
-                        ? 'border-red-500/20 hover:border-red-500/30'
-                        : pct >= 0.5
-                          ? 'border-yellow-400/15 hover:border-yellow-400/25'
-                          : 'border-white/5 hover:border-white/15'
-                  }`}
-                >
-                  <div className='flex justify-between items-start mb-2'>
-                    <div>
-                      <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
-                        {format(date, 'EEE', { locale: es })}
-                      </p>
-                      <p className='text-base font-black text-white leading-none'>
-                        {format(date, 'd MMM', { locale: es })}
-                      </p>
-                    </div>
-                    <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
-                      <span className='text-white/70 text-sm font-black'>{booked}</span>
-                      <span className='text-white/30'>/{total}</span>
-                    </span>
-                  </div>
-                  {/* Occupancy bar */}
-                  <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
-                    <div
-                      className={`h-full rounded-full transition-all ${occupancyColor(pct)}`}
-                      style={{ width: `${Math.min(pct * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className='flex items-center justify-between'>
-                    <p className={`text-[9px] font-bold ${color}`}>{text}</p>
-                    {dayRows.length > 0 && (
-                      <span className='text-[9px] text-white/30'>
-                        {isExpanded ? '▲' : '▼'}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Expanded day turns */}
-          {expandedDay && (() => {
-            const dayData = days.find((d) => d.dateStr === expandedDay);
-            if (!dayData) return null;
+        <div className='mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-2 duration-300'>
+          {days.map(({ date, dateStr, total, booked, pct }) => {
+            if (total === 0) return null;
+            const { text, cls } = statusText(pct, total);
             return (
-              <div className='mt-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 animate-in fade-in slide-in-from-top-1 duration-200'>
-                <div className='flex items-center justify-between mb-2'>
-                  <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/40'>
-                    Turnos · {format(dayData.date, "d 'de' MMMM", { locale: es })}
-                  </p>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-[10px] font-bold text-white/30'>
-                      {dayData.dayRows.length} turno{dayData.dayRows.length !== 1 ? 's' : ''}
-                    </span>
-                    <button
-                      type='button'
-                      onClick={() => onBlockTurn(dayData.dateStr)}
-                      className='inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[9px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
-                    >
-                      <Lock className='w-3 h-3' />
-                      Bloquear
-                    </button>
+              <div key={dateStr} className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}>
+                <div className='flex justify-between items-start mb-2'>
+                  <div>
+                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>{format(date, 'EEE', { locale: es })}</p>
+                    <p className='text-base font-black text-white leading-none'>{format(date, 'd MMM', { locale: es })}</p>
                   </div>
+                  <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
+                    <span className='text-white/70 text-sm font-black'>{booked}</span>
+                    <span className='text-white/30'>/{total}</span>
+                  </span>
                 </div>
-                <div className='flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1'>
-                  {dayData.dayRows.length === 0 ? (
-                    <div className='text-center py-6 text-white/20 text-xs'>
-                      Sin turnos — {format(dayData.date, "EEEE", { locale: es })}
-                    </div>
-                  ) : (
-                    dayData.dayRows
-                      .sort((a, b) => (a.appointment_time ?? '').localeCompare(b.appointment_time ?? ''))
-                      .map((row) => (
-                        <DayTurnRow key={row.id} row={row} onStatusChange={onStatusChange} />
-                      ))
-                  )}
+                <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
+                  <div className={`h-full rounded-full ${barColor(pct)}`} style={{ width: `${Math.min(pct * 100, 100)}%` }} />
                 </div>
+                <p className={`text-[9px] font-bold ${cls}`}>{text}</p>
               </div>
             );
-          })()}
+          })}
         </div>
       )}
     </div>
   );
 }
 
-// ── AppointmentRow ────────────────────────────────────────────────────────────
-function AppointmentRow({
+// ── AppointmentCard ───────────────────────────────────────────────────────────
+function AppointmentCard({
   row,
   onStatusChange,
   onMoved,
@@ -315,15 +181,16 @@ function AppointmentRow({
   onMoved: () => void;
 }) {
   const time = row.appointment_time?.slice(0, 5) ?? '';
-  const { label, color } = statusLabel(row.status);
+  const { label, cls } = statusInfo(row.status);
+  const isMock = row.id.startsWith('mock-');
 
-  const [qrOpen, setQrOpen] = useState(false);
+  const [qrOpen, setQrOpen]     = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveDate, setMoveDate] = useState(row.appointment_date);
   const [moveTime, setMoveTime] = useState(time);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [moveError, setMoveError] = useState<string | null>(null);
-  const [isMoving, setIsMoving] = useState(false);
+  const [moveError, setMoveError]     = useState<string | null>(null);
+  const [isMoving, setIsMoving]       = useState(false);
   const moveReqId = useRef(0);
 
   async function openMove() {
@@ -376,56 +243,64 @@ function AppointmentRow({
   }
 
   const isActive = row.status === 'pending' || row.status === 'confirmed';
+  const isVip = row.is_fixed_weekly && row.final_price != null;
 
   return (
     <>
-      <div className='flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors'>
+      <div className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}>
+        {/* Time */}
         <div className='w-14 text-right flex-shrink-0'>
-          <span className='text-lg font-black text-neon-cyan tabular-nums'>{time}</span>
+          <span className='text-xl font-black text-neon-cyan tabular-nums'>{time}</span>
         </div>
+
+        {/* Client + meta */}
         <div className='flex-1 min-w-0'>
-          <p className='font-bold text-white text-sm truncate'>
-            {row.client_name || 'Cliente sin nombre'}
-          </p>
+          <div className='flex items-center gap-1.5'>
+            <p className='font-bold text-white text-sm truncate'>{row.client_name || 'Cliente sin nombre'}</p>
+            {isVip && <Crown className='w-3.5 h-3.5 text-yellow-400 flex-shrink-0' />}
+          </div>
           <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
             {row.deposit_paid
               ? <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
               : <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>}
             {row.services?.name && (
-              <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
-                {row.services.name}
-              </span>
+              <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>{row.services.name}</span>
             )}
             {row.final_price != null && (
-              <span className='text-[10px] text-white/30'>
-                · ${row.final_price.toLocaleString('es-AR')}
+              <span className='text-[10px] text-white/30'>· ${row.final_price.toLocaleString('es-AR')}</span>
+            )}
+            {row.is_fixed_weekly && (
+              <span className='text-[10px] text-purple-400 font-bold'>
+                🔄 {row.frequency === 'biweekly' ? 'Quincenal' : 'Semanal'}
               </span>
             )}
           </div>
         </div>
-        <div className='flex items-center gap-2 flex-shrink-0 flex-wrap justify-end'>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}`}>{label}</span>
-          {row.status === 'pending' && (
+
+        {/* Actions */}
+        <div className='flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end'>
+          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>{label}</span>
+          {!isMock && row.status === 'pending' && (
             <button type='button' onClick={() => onStatusChange(row.id, 'confirmed')}
-              className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
+              className='px-2.5 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
               Confirmar
             </button>
           )}
-          {row.status === 'confirmed' && (
+          {!isMock && row.status === 'confirmed' && (
             <button type='button' onClick={() => onStatusChange(row.id, 'attended')}
-              className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
+              className='px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
               Presente
             </button>
           )}
-          {isActive && (
+          {!isMock && isActive && (
             <button type='button' onClick={openMove}
-              className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'>
+              className='px-2.5 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'>
               Mover
             </button>
           )}
           {row.qr_hash && (
             <button type='button' onClick={() => setQrOpen(true)}
-              className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'>
+              className='px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'>
               QR
             </button>
           )}
@@ -491,26 +366,68 @@ function AppointmentRow({
   );
 }
 
-// ── DayGroup ──────────────────────────────────────────────────────────────────
-function DayGroup({ label, rows, onStatusChange, onMoved }: {
-  label: string;
+// ── DaySection ────────────────────────────────────────────────────────────────
+function DaySection({
+  dateStr,
+  rows,
+  barber,
+  onStatusChange,
+  onMoved,
+}: {
+  dateStr: string;
   rows: AppointmentRow[];
+  barber: { id: string; name: string };
   onStatusChange: (id: string, next: AppointmentStatus) => void;
   onMoved: () => void;
 }) {
-  if (rows.length === 0) return null;
+  const [blockOpen, setBlockOpen] = useState(false);
+  const date = parseISO(dateStr);
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  const prefix =
+    dateStr === today    ? 'Hoy' :
+    dateStr === tomorrow ? 'Mañana' :
+    null;
+
+  const dayLabel = format(date, "EEEE d 'de' MMMM", { locale: es });
+  const headerLabel = prefix
+    ? `${prefix} · ${format(date, "d 'de' MMMM", { locale: es })}`
+    : dayLabel;
+
   return (
     <div className='mb-8'>
-      <div className='flex items-center gap-3 mb-3'>
-        <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30'>{label}</p>
-        <span className='text-[10px] font-bold text-white/20'>{rows.length}</span>
-        <div className='flex-1 h-px bg-white/5' />
+      {/* Day header */}
+      <div className='flex items-center justify-between mb-3'>
+        <div className='flex items-center gap-3'>
+          <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30 capitalize'>{headerLabel}</p>
+          <span className='text-[10px] font-bold text-white/20'>{rows.length}</span>
+          <div className='flex-1 h-px bg-white/5 w-8' />
+        </div>
+        <button
+          type='button'
+          onClick={() => setBlockOpen(true)}
+          className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors'
+        >
+          <Lock className='w-3 h-3' />
+          Bloquear
+        </button>
       </div>
+
+      {/* Cards */}
       <div className='flex flex-col gap-2'>
         {rows.map((row) => (
-          <AppointmentRow key={row.id} row={row} onStatusChange={onStatusChange} onMoved={onMoved} />
+          <AppointmentCard key={row.id} row={row} onStatusChange={onStatusChange} onMoved={onMoved} />
         ))}
       </div>
+
+      <BlockTurnModal
+        barber={barber}
+        initialDate={dateStr}
+        isOpen={blockOpen}
+        onClose={() => setBlockOpen(false)}
+        onSuccess={() => { setBlockOpen(false); onMoved(); }}
+      />
     </div>
   );
 }
@@ -519,9 +436,6 @@ function DayGroup({ label, rows, onStatusChange, onMoved }: {
 export function AgendaView({ barber, refetchKey, recentNotifications = [] }: AgendaViewProps) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
-  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
-  const [blockModalDate, setBlockModalDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [blockModalTime, setBlockModalTime] = useState<string>('10:00');
 
   const fetchAgenda = useCallback(async () => {
     try {
@@ -530,14 +444,19 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       const limit = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const { data } = await supabase
         .from('appointments')
-        .select('id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, services(name)')
+        .select('id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)')
         .eq('barber_id', barber.id)
         .gte('appointment_date', today)
         .lte('appointment_date', limit)
         .not('status', 'eq', 'cancelled')
         .order('appointment_date', { ascending: true })
         .order('appointment_time', { ascending: true });
-      setRows((data as AppointmentRow[]) ?? []);
+
+      const realRows = (data as AppointmentRow[]) ?? [];
+      const realDates = new Set(realRows.map((r) => r.appointment_date));
+      const mockRows = getMockRows(barber.id).filter((m) => !realDates.has(m.appointment_date));
+
+      setRows([...realRows, ...mockRows]);
     } finally {
       setLoading(false);
     }
@@ -546,44 +465,36 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
   useEffect(() => { fetchAgenda(); }, [barber.id, refetchKey, fetchAgenda]);
 
   async function handleStatusChange(id: string, next: AppointmentStatus) {
+    if (id.startsWith('mock-')) return;
     const prev = rows;
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
     const { error } = await updateAppointmentStatus(id, next);
     if (error) setRows(prev);
   }
 
-  const todayRows = rows.filter((r) => isToday(parseISO(r.appointment_date)));
-  const tomorrowRows = rows.filter((r) => isTomorrow(parseISO(r.appointment_date)));
-  const weekRows = rows.filter((r) => {
-    const d = parseISO(r.appointment_date);
-    return isWithinInterval(d, {
-      start: startOfDay(addDays(new Date(), 2)),
-      end: startOfDay(addDays(new Date(), 7)),
-    });
-  });
+  // Group by date, sorted ascending
+  const byDate = useMemo(() => {
+    const map: Record<string, AppointmentRow[]> = {};
+    for (const r of rows) {
+      if (!map[r.appointment_date]) map[r.appointment_date] = [];
+      map[r.appointment_date].push(r);
+    }
+    return map;
+  }, [rows]);
 
-  const nextWeeksRows = rows.filter((r) => {
-    const d = parseISO(r.appointment_date);
-    return isWithinInterval(d, {
-      start: startOfDay(addDays(new Date(), 8)),
-      end: startOfDay(addDays(new Date(), 14)),
-    });
-  });
-
-  const todayLabel = `Hoy · ${format(new Date(), "d 'de' MMMM", { locale: es })}`;
-  const tomorrowLabel = `Mañana · ${format(addDays(new Date(), 1), "d 'de' MMMM", { locale: es })}`;
+  const sortedDates = Object.keys(byDate).sort();
+  const todayRows = byDate[format(new Date(), 'yyyy-MM-dd')] ?? [];
 
   return (
     <div>
-      {/* Live ticker */}
       <LiveTicker notifications={recentNotifications} />
 
       {/* Stats strip */}
       <div className='grid grid-cols-3 gap-3 mb-6'>
         {[
-          { label: 'Hoy', value: todayRows.length, sub: 'turnos' },
-          { label: 'Pendientes', value: todayRows.filter((r) => r.status === 'pending').length, sub: 'sin confirmar' },
-          { label: 'Atendidos', value: todayRows.filter((r) => r.status === 'attended').length, sub: 'esta jornada' },
+          { label: 'Hoy',       value: todayRows.length,                                        sub: 'turnos' },
+          { label: 'Pendientes', value: todayRows.filter((r) => r.status === 'pending').length,  sub: 'sin confirmar' },
+          { label: 'Atendidos',  value: todayRows.filter((r) => r.status === 'attended').length, sub: 'esta jornada' },
         ].map((m) => (
           <div key={m.label} className='glass-card rounded-2xl p-4 border border-white/5 text-center'>
             <p className='text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1'>{m.label}</p>
@@ -593,45 +504,26 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
         ))}
       </div>
 
-      {/* Collapsible mini-calendar with expandable days */}
-      <MiniCalendar
-        barberName={barber.name}
-        rows={rows}
-        onStatusChange={handleStatusChange}
-        onBlockTurn={(date, time) => {
-          setBlockModalDate(date);
-          setBlockModalTime(time || '10:00');
-          setIsBlockModalOpen(true);
-        }}
-      />
+      {/* Availability bar */}
+      <AvailabilityBar barberName={barber.name} rows={rows} />
 
-      {/* Appointment lists */}
+      {/* Appointment list grouped by day */}
       {loading ? (
         <div className='py-16 text-center text-white/30 text-xs uppercase tracking-[0.3em]'>Cargando...</div>
-      ) : rows.length === 0 ? (
+      ) : sortedDates.length === 0 ? (
         <div className='py-16 text-center text-white/20 text-sm'>Sin turnos próximos</div>
       ) : (
-        <>
-          <DayGroup label={todayLabel} rows={todayRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
-          <DayGroup label={tomorrowLabel} rows={tomorrowRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
-          {weekRows.length > 0 && (
-            <DayGroup label='Esta semana' rows={weekRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
-          )}
-          {nextWeeksRows.length > 0 && (
-            <DayGroup label='Próximas semanas' rows={nextWeeksRows} onStatusChange={handleStatusChange} onMoved={fetchAgenda} />
-          )}
-        </>
+        sortedDates.map((dateStr) => (
+          <DaySection
+            key={dateStr}
+            dateStr={dateStr}
+            rows={byDate[dateStr]}
+            barber={barber}
+            onStatusChange={handleStatusChange}
+            onMoved={fetchAgenda}
+          />
+        ))
       )}
-
-      {/* Block Turn Modal */}
-      <BlockTurnModal
-        barber={barber}
-        isOpen={isBlockModalOpen}
-        initialDate={blockModalDate}
-        initialTime={blockModalTime}
-        onClose={() => setIsBlockModalOpen(false)}
-        onSuccess={fetchAgenda}
-      />
     </div>
   );
 }
