@@ -244,36 +244,36 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
       </button>
 
       {open && (
-        <div className='mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-2 duration-300'>
+        <div className='mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 animate-in fade-in slide-in-from-top-2 duration-300'>
           {days.map(({ date, dateStr, total, booked, pct }) => {
             if (total === 0) return null;
             const { text, cls } = statusText(pct, total);
             return (
               <div
                 key={dateStr}
-                className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
+                className={`p-2.5 rounded-xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
               >
-                <div className='flex justify-between items-start mb-2'>
+                <div className='flex justify-between items-center mb-1.5'>
                   <div>
-                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
+                    <p className='text-[9px] font-black uppercase tracking-wide text-white/40 leading-none'>
                       {format(date, 'EEE', { locale: es })}
                     </p>
-                    <p className='text-base font-black text-white leading-none'>
+                    <p className='text-sm font-black text-white leading-tight'>
                       {format(date, 'd MMM', { locale: es })}
                     </p>
                   </div>
-                  <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
-                    <span className='text-white/70 text-sm font-black'>{booked}</span>
-                    <span className='text-white/30'>/{total}</span>
+                  <span className='text-[9px] font-bold text-white/40 tabular-nums'>
+                    {booked}
+                    <span className='text-white/20'>/{total}</span>
                   </span>
                 </div>
-                <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
+                <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1'>
                   <div
                     className={`h-full rounded-full ${barColor(pct)}`}
                     style={{ width: `${Math.min(pct * 100, 100)}%` }}
                   />
                 </div>
-                <p className={`text-[9px] font-bold ${cls}`}>{text}</p>
+                <p className={`text-[9px] font-bold leading-none ${cls}`}>{text}</p>
               </div>
             );
           })}
