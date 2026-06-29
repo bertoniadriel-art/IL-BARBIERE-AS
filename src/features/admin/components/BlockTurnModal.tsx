@@ -3,6 +3,7 @@
 import { createAppointment } from '@/features/admin/services/appointmentService';
 import { supabase } from '@/shared/lib/supabase';
 import { addDays, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Crown, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
