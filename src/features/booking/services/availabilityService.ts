@@ -1,5 +1,9 @@
 import { supabase } from '@/shared/lib/supabase';
 
+interface BlockedSlotRow {
+  slot_time: string;
+}
+
 interface BookedRow {
   appointment_time: string;
   services: { duration_min: number } | null;
@@ -50,4 +54,31 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
     }
   }
   return [...blocked];
+}
+
+/**
+ * Fetches permanently blocked time slots for a barber on a given date's day-of-week.
+ * Covers barber personal time and weekly VIP reservations.
+ *
+ * @param barberId - UUID of the barber
+ * @param date     - date string in YYYY-MM-DD format
+ * @returns array of blocked time strings in "HH:MM" format
+ */
+export async function getBlockedSlotsForDay(barberId: string, date: string): Promise<string[]> {
+  if (!supabase) return [];
+
+  const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+
+  const { data, error } = await supabase
+    .from('blocked_slots')
+    .select('slot_time')
+    .eq('barber_id', barberId)
+    .eq('day_of_week', dayOfWeek);
+
+  if (error) {
+    console.error('getBlockedSlotsForDay error', error);
+    return [];
+  }
+
+  return (data ?? []).map((row: BlockedSlotRow) => row.slot_time.slice(0, 5));
 }
