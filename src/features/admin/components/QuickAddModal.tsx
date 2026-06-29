@@ -21,11 +21,22 @@ interface ServiceOption {
   duration_min: number;
 }
 
+const MODAL_TIMES: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 8; h <= 20; h++) {
+    slots.push(`${String(h).padStart(2, '0')}:00`);
+    if (h < 20) slots.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return slots;
+})();
+
 function getNextRoundHour(): string {
   const now = new Date();
-  now.setMinutes(0, 0, 0);
-  now.setHours(now.getHours() + 1);
-  return `${String(now.getHours()).padStart(2, '0')}:00`;
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  next.setHours(now.getHours() + 1);
+  const candidate = `${String(next.getHours()).padStart(2, '0')}:00`;
+  return MODAL_TIMES.includes(candidate) ? candidate : MODAL_TIMES[0];
 }
 
 function todayStr() {
@@ -240,12 +251,17 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
             <label className='block text-xs text-white/40 uppercase tracking-widest mb-1'>
               Hora
             </label>
-            <input
-              type='time'
+            <select
               value={time}
               onChange={(e) => setTime(e.target.value)}
               className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
-            />
+            >
+              {MODAL_TIMES.map((t) => (
+                <option key={t} value={t}>
+                  {t} hs
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Price */}
