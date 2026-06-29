@@ -17,7 +17,7 @@ export async function getVipBlockedSlots(barberId: string): Promise<BlockedSlot[
     return [];
   }
 
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row: Record<string, unknown>) => ({
     ...row,
     slot_time: row.slot_time.slice(0, 5),
   }));
