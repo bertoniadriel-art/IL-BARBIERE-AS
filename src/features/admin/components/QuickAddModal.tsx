@@ -136,7 +136,9 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
   const handleDownloadQR = () => {
     const svgEl = document.getElementById('quick-add-qr-svg') as SVGSVGElement | null;
     if (!svgEl) return;
-    const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], { type: 'image/svg+xml' });
+    const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], {
+      type: 'image/svg+xml',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -157,7 +159,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
           </p>
           <h2 className='text-2xl font-black mb-1 text-center'>{clientName}</h2>
           <p className='text-white/40 text-sm text-center mb-6'>
-            {format(new Date(date + 'T00:00'), "d MMM")} · {time} hs
+            {format(new Date(`${date}T00:00`), 'd MMM')} · {time} hs
           </p>
           <div className='flex justify-center mb-4'>
             <div className='bg-white p-4 rounded-2xl'>
@@ -338,7 +340,10 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
         <button
           type='button'
           disabled={loading}
-          onClick={() => { handleClose(); onClose(); }}
+          onClick={() => {
+            handleClose();
+            onClose();
+          }}
           className='mt-3 w-full py-3 rounded-2xl text-white/40 text-sm font-bold hover:text-white/70 transition-colors disabled:opacity-50'
         >
           Cancelar

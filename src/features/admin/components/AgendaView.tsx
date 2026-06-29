@@ -1,16 +1,19 @@
 'use client';
 
-import { moveAppointment, updateAppointmentStatus } from '@/features/admin/services/appointmentService';
+import {
+  moveAppointment,
+  updateAppointmentStatus,
+} from '@/features/admin/services/appointmentService';
 import { getBookedSlots } from '@/features/booking/services/availabilityService';
 import { getAvailableTimesForBarber } from '@/shared/config/barbers';
-import { supabase } from '@/shared/lib/supabase';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
+import { supabase } from '@/shared/lib/supabase';
 import type { AppointmentStatus } from '@/shared/types';
 import { addDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarDays, ChevronDown, ChevronUp, Crown, Download, Lock, X } from 'lucide-react';
-import QRCode from 'react-qr-code';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'react-qr-code';
 import { BlockTurnModal } from './BlockTurnModal';
 
 // 30-min slots 08:00–20:00
@@ -52,22 +55,115 @@ function getMockRows(barberId: string): AppointmentRow[] {
   const nextFri2 = format(addDays(fri, 14), 'yyyy-MM-dd');
 
   return [
-    { id: 'mock-1', client_name: 'Joaquin Ferreyra', appointment_date: today, appointment_time: '10:00', status: 'pending', deposit_paid: false, final_price: 14000, qr_hash: 'MOCK-001', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: false },
-    { id: 'mock-2', client_name: 'Fabri Kosic', appointment_date: today, appointment_time: '10:30', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-002', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
-    { id: 'mock-3', client_name: 'Pedro Gimenez', appointment_date: today, appointment_time: '14:30', status: 'confirmed', deposit_paid: true, final_price: 14000, qr_hash: 'MOCK-003', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: false },
-    { id: 'mock-4', client_name: 'Bruno Santamaria', appointment_date: nextFri, appointment_time: '16:30', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-004', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
-    { id: 'mock-5', client_name: 'Tomas Santamaria', appointment_date: nextFri, appointment_time: '17:00', status: 'confirmed', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-005', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'weekly' },
-    { id: 'mock-6', client_name: 'Walter Chapista', appointment_date: nextFri, appointment_time: '14:00', status: 'pending', deposit_paid: true, final_price: 12600, qr_hash: 'MOCK-006', barber_id: barberId, services: { name: 'Corte Premium' }, is_fixed_weekly: true, frequency: 'biweekly' },
-    { id: 'mock-7', client_name: 'Javi Orru', appointment_date: nextFri2, appointment_time: '09:00', status: 'confirmed', deposit_paid: true, final_price: 18000, qr_hash: 'MOCK-007', barber_id: barberId, services: { name: 'Corte + Barba' }, is_fixed_weekly: true, frequency: 'biweekly' },
+    {
+      id: 'mock-1',
+      client_name: 'Joaquin Ferreyra',
+      appointment_date: today,
+      appointment_time: '10:00',
+      status: 'pending',
+      deposit_paid: false,
+      final_price: 14000,
+      qr_hash: 'MOCK-001',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: false,
+    },
+    {
+      id: 'mock-2',
+      client_name: 'Fabri Kosic',
+      appointment_date: today,
+      appointment_time: '10:30',
+      status: 'confirmed',
+      deposit_paid: true,
+      final_price: 12600,
+      qr_hash: 'MOCK-002',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: true,
+      frequency: 'weekly',
+    },
+    {
+      id: 'mock-3',
+      client_name: 'Pedro Gimenez',
+      appointment_date: today,
+      appointment_time: '14:30',
+      status: 'confirmed',
+      deposit_paid: true,
+      final_price: 14000,
+      qr_hash: 'MOCK-003',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: false,
+    },
+    {
+      id: 'mock-4',
+      client_name: 'Bruno Santamaria',
+      appointment_date: nextFri,
+      appointment_time: '16:30',
+      status: 'confirmed',
+      deposit_paid: true,
+      final_price: 12600,
+      qr_hash: 'MOCK-004',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: true,
+      frequency: 'weekly',
+    },
+    {
+      id: 'mock-5',
+      client_name: 'Tomas Santamaria',
+      appointment_date: nextFri,
+      appointment_time: '17:00',
+      status: 'confirmed',
+      deposit_paid: true,
+      final_price: 12600,
+      qr_hash: 'MOCK-005',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: true,
+      frequency: 'weekly',
+    },
+    {
+      id: 'mock-6',
+      client_name: 'Walter Chapista',
+      appointment_date: nextFri,
+      appointment_time: '14:00',
+      status: 'pending',
+      deposit_paid: true,
+      final_price: 12600,
+      qr_hash: 'MOCK-006',
+      barber_id: barberId,
+      services: { name: 'Corte Premium' },
+      is_fixed_weekly: true,
+      frequency: 'biweekly',
+    },
+    {
+      id: 'mock-7',
+      client_name: 'Javi Orru',
+      appointment_date: nextFri2,
+      appointment_time: '09:00',
+      status: 'confirmed',
+      deposit_paid: true,
+      final_price: 18000,
+      qr_hash: 'MOCK-007',
+      barber_id: barberId,
+      services: { name: 'Corte + Barba' },
+      is_fixed_weekly: true,
+      frequency: 'biweekly',
+    },
   ];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function statusInfo(status: string) {
-  if (status === 'pending')   return { label: 'Pendiente',  cls: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' };
-  if (status === 'confirmed') return { label: 'Confirmado', cls: 'text-sky-400 bg-sky-400/10 border-sky-400/30' };
-  if (status === 'attended')  return { label: 'Atendido',   cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' };
-  if (status === 'debt')      return { label: 'Fiado',      cls: 'text-orange-400 bg-orange-400/10 border-orange-400/30' };
+  if (status === 'pending')
+    return { label: 'Pendiente', cls: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' };
+  if (status === 'confirmed')
+    return { label: 'Confirmado', cls: 'text-sky-400 bg-sky-400/10 border-sky-400/30' };
+  if (status === 'attended')
+    return { label: 'Atendido', cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' };
+  if (status === 'debt')
+    return { label: 'Fiado', cls: 'text-orange-400 bg-orange-400/10 border-orange-400/30' };
   return { label: status, cls: 'text-white/40 bg-white/5 border-white/10' };
 }
 
@@ -83,7 +179,10 @@ function LiveTicker({ notifications }: { notifications: IncomingAppointment[] })
       <div className='flex-1 overflow-x-auto scrollbar-none'>
         <div className='flex gap-2 w-max animate-in slide-in-from-right duration-500'>
           {notifications.map((n, i) => (
-            <span key={i} className='flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 text-white/70 whitespace-nowrap'>
+            <span
+              key={i}
+              className='flex-shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 text-white/70 whitespace-nowrap'
+            >
               {n.client_name || 'Cliente'} · {n.appointment_time?.slice(0, 5)} hs
             </span>
           ))}
@@ -109,19 +208,19 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
   }, [barberName, rows]);
 
   function barColor(pct: number) {
-    if (pct === 0)   return 'bg-white/10';
-    if (pct < 0.5)  return 'bg-emerald-500';
-    if (pct < 0.8)  return 'bg-yellow-400';
+    if (pct === 0) return 'bg-white/10';
+    if (pct < 0.5) return 'bg-emerald-500';
+    if (pct < 0.8) return 'bg-yellow-400';
     return 'bg-red-500';
   }
 
   function statusText(pct: number, total: number) {
-    if (total === 0)  return { text: 'Libre',          cls: 'text-white/20' };
-    if (pct === 0)    return { text: 'Vacío',           cls: 'text-white/30' };
-    if (pct < 0.5)   return { text: 'Disponible',      cls: 'text-emerald-400' };
-    if (pct < 0.8)   return { text: 'Llenándose',      cls: 'text-yellow-400' };
-    if (pct < 1)     return { text: 'Casi lleno',      cls: 'text-orange-400' };
-    return           { text: 'Completo',               cls: 'text-red-400' };
+    if (total === 0) return { text: 'Libre', cls: 'text-white/20' };
+    if (pct === 0) return { text: 'Vacío', cls: 'text-white/30' };
+    if (pct < 0.5) return { text: 'Disponible', cls: 'text-emerald-400' };
+    if (pct < 0.8) return { text: 'Llenándose', cls: 'text-yellow-400' };
+    if (pct < 1) return { text: 'Casi lleno', cls: 'text-orange-400' };
+    return { text: 'Completo', cls: 'text-red-400' };
   }
 
   return (
@@ -137,7 +236,11 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
             Disponibilidad próximos 14 días
           </span>
         </div>
-        {open ? <ChevronUp className='w-4 h-4 text-white/30' /> : <ChevronDown className='w-4 h-4 text-white/30' />}
+        {open ? (
+          <ChevronUp className='w-4 h-4 text-white/30' />
+        ) : (
+          <ChevronDown className='w-4 h-4 text-white/30' />
+        )}
       </button>
 
       {open && (
@@ -146,11 +249,18 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
             if (total === 0) return null;
             const { text, cls } = statusText(pct, total);
             return (
-              <div key={dateStr} className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}>
+              <div
+                key={dateStr}
+                className={`p-3 rounded-2xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
+              >
                 <div className='flex justify-between items-start mb-2'>
                   <div>
-                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>{format(date, 'EEE', { locale: es })}</p>
-                    <p className='text-base font-black text-white leading-none'>{format(date, 'd MMM', { locale: es })}</p>
+                    <p className='text-[10px] font-black uppercase tracking-wide text-white/50'>
+                      {format(date, 'EEE', { locale: es })}
+                    </p>
+                    <p className='text-base font-black text-white leading-none'>
+                      {format(date, 'd MMM', { locale: es })}
+                    </p>
                   </div>
                   <span className='text-[9px] font-bold flex items-baseline gap-0.5'>
                     <span className='text-white/70 text-sm font-black'>{booked}</span>
@@ -158,7 +268,10 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
                   </span>
                 </div>
                 <div className='h-1 rounded-full bg-white/10 overflow-hidden mb-1.5'>
-                  <div className={`h-full rounded-full ${barColor(pct)}`} style={{ width: `${Math.min(pct * 100, 100)}%` }} />
+                  <div
+                    className={`h-full rounded-full ${barColor(pct)}`}
+                    style={{ width: `${Math.min(pct * 100, 100)}%` }}
+                  />
                 </div>
                 <p className={`text-[9px] font-bold ${cls}`}>{text}</p>
               </div>
@@ -184,13 +297,13 @@ function AppointmentCard({
   const { label, cls } = statusInfo(row.status);
   const isMock = row.id.startsWith('mock-');
 
-  const [qrOpen, setQrOpen]     = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveDate, setMoveDate] = useState(row.appointment_date);
   const [moveTime, setMoveTime] = useState(time);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [moveError, setMoveError]     = useState<string | null>(null);
-  const [isMoving, setIsMoving]       = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
   const moveReqId = useRef(0);
 
   async function openMove() {
@@ -217,14 +330,23 @@ function AppointmentCard({
   }
 
   async function handleMoveConfirm() {
-    if (moveDate === row.appointment_date && moveTime === time) { setMoveOpen(false); return; }
-    if (bookedSlots.includes(moveTime)) { setMoveError('Ese horario ya está ocupado.'); return; }
+    if (moveDate === row.appointment_date && moveTime === time) {
+      setMoveOpen(false);
+      return;
+    }
+    if (bookedSlots.includes(moveTime)) {
+      setMoveError('Ese horario ya está ocupado.');
+      return;
+    }
     setIsMoving(true);
     const { error } = await moveAppointment(row.id, row.barber_id, moveDate, moveTime);
     setIsMoving(false);
     if (error) {
-      setMoveError(typeof error === 'object' && 'type' in error && error.type === 'slot_occupied'
-        ? 'Ese horario ya está ocupado.' : 'Error al mover el turno.');
+      setMoveError(
+        typeof error === 'object' && 'type' in error && error.type === 'slot_occupied'
+          ? 'Ese horario ya está ocupado.'
+          : 'Error al mover el turno.'
+      );
       return;
     }
     setMoveOpen(false);
@@ -234,11 +356,16 @@ function AppointmentCard({
   function handleDownloadQR() {
     const svgEl = document.getElementById(`qr-svg-${row.id}`) as SVGSVGElement | null;
     if (!svgEl) return;
-    const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], { type: 'image/svg+xml' });
+    const blob = new Blob([new XMLSerializer().serializeToString(svgEl)], {
+      type: 'image/svg+xml',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `turno-${row.qr_hash}.svg`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    a.href = url;
+    a.download = `turno-${row.qr_hash}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
@@ -247,7 +374,9 @@ function AppointmentCard({
 
   return (
     <>
-      <div className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}>
+      <div
+        className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}
+      >
         {/* Time */}
         <div className='w-14 text-right flex-shrink-0'>
           <span className='text-xl font-black text-neon-cyan tabular-nums'>{time}</span>
@@ -256,18 +385,26 @@ function AppointmentCard({
         {/* Client + meta */}
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-1.5'>
-            <p className='font-bold text-white text-sm truncate'>{row.client_name || 'Cliente sin nombre'}</p>
+            <p className='font-bold text-white text-sm truncate'>
+              {row.client_name || 'Cliente sin nombre'}
+            </p>
             {isVip && <Crown className='w-3.5 h-3.5 text-yellow-400 flex-shrink-0' />}
           </div>
           <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
-            {row.deposit_paid
-              ? <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
-              : <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>}
+            {row.deposit_paid ? (
+              <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
+            ) : (
+              <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>
+            )}
             {row.services?.name && (
-              <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>{row.services.name}</span>
+              <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
+                {row.services.name}
+              </span>
             )}
             {row.final_price != null && (
-              <span className='text-[10px] text-white/30'>· ${row.final_price.toLocaleString('es-AR')}</span>
+              <span className='text-[10px] text-white/30'>
+                · ${row.final_price.toLocaleString('es-AR')}
+              </span>
             )}
             {row.is_fixed_weekly && (
               <span className='text-[10px] text-purple-400 font-bold'>
@@ -279,28 +416,42 @@ function AppointmentCard({
 
         {/* Actions */}
         <div className='flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end'>
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>{label}</span>
+          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>
+            {label}
+          </span>
           {!isMock && row.status === 'pending' && (
-            <button type='button' onClick={() => onStatusChange(row.id, 'confirmed')}
-              className='px-2.5 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'>
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'confirmed')}
+              className='px-2.5 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
+            >
               Confirmar
             </button>
           )}
           {!isMock && row.status === 'confirmed' && (
-            <button type='button' onClick={() => onStatusChange(row.id, 'attended')}
-              className='px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'>
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'attended')}
+              className='px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
+            >
               Presente
             </button>
           )}
           {!isMock && isActive && (
-            <button type='button' onClick={openMove}
-              className='px-2.5 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'>
+            <button
+              type='button'
+              onClick={openMove}
+              className='px-2.5 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
+            >
               Mover
             </button>
           )}
           {row.qr_hash && (
-            <button type='button' onClick={() => setQrOpen(true)}
-              className='px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'>
+            <button
+              type='button'
+              onClick={() => setQrOpen(true)}
+              className='px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
+            >
               QR
             </button>
           )}
@@ -309,20 +460,43 @@ function AppointmentCard({
 
       {/* QR Modal */}
       {qrOpen && row.qr_hash && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm' onClick={() => setQrOpen(false)}>
-          <div className='bg-[#111114] border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl w-72' onClick={(e) => e.stopPropagation()}>
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'
+          onClick={() => setQrOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setQrOpen(false);
+          }}
+        >
+          <div
+            className='bg-[#111114] border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl w-72'
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <div className='w-full flex justify-between items-center'>
-              <p className='text-xs font-black uppercase tracking-widest text-white/40'>QR del turno</p>
-              <button type='button' onClick={() => setQrOpen(false)} className='text-white/30 hover:text-white'><X className='w-4 h-4' /></button>
+              <p className='text-xs font-black uppercase tracking-widest text-white/40'>
+                QR del turno
+              </p>
+              <button
+                type='button'
+                onClick={() => setQrOpen(false)}
+                className='text-white/30 hover:text-white'
+              >
+                <X className='w-4 h-4' />
+              </button>
             </div>
             <p className='font-bold text-white'>{row.client_name}</p>
-            <p className='text-white/40 text-xs'>{format(parseISO(row.appointment_date), "d MMM", { locale: es })} · {time} hs</p>
+            <p className='text-white/40 text-xs'>
+              {format(parseISO(row.appointment_date), 'd MMM', { locale: es })} · {time} hs
+            </p>
             <div className='bg-white p-4 rounded-2xl'>
               <QRCode id={`qr-svg-${row.id}`} value={row.qr_hash} size={180} />
             </div>
             <p className='text-white/30 font-mono text-[10px] tracking-widest'>{row.qr_hash}</p>
-            <button type='button' onClick={handleDownloadQR}
-              className='w-full py-3 rounded-2xl bg-white/8 border border-white/15 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-white/12 transition-colors'>
+            <button
+              type='button'
+              onClick={handleDownloadQR}
+              className='w-full py-3 rounded-2xl bg-white/8 border border-white/15 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-white/12 transition-colors'
+            >
               <Download className='w-3.5 h-3.5' /> Descargar SVG
             </button>
           </div>
@@ -333,30 +507,61 @@ function AppointmentCard({
       {moveOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm'>
           <div className='w-full max-w-sm mx-4 bg-[#111114] border border-neon-cyan/30 rounded-3xl p-6 relative animate-in zoom-in-95 duration-300'>
-            <button type='button' onClick={() => setMoveOpen(false)} className='absolute top-4 right-4 text-white/30 hover:text-white'><X className='w-4 h-4' /></button>
-            <p className='text-[10px] uppercase tracking-widest text-neon-cyan font-black mb-1'>Mover turno</p>
+            <button
+              type='button'
+              onClick={() => setMoveOpen(false)}
+              className='absolute top-4 right-4 text-white/30 hover:text-white'
+            >
+              <X className='w-4 h-4' />
+            </button>
+            <p className='text-[10px] uppercase tracking-widest text-neon-cyan font-black mb-1'>
+              Mover turno
+            </p>
             <p className='text-lg font-black mb-5'>{row.client_name}</p>
             <div className='space-y-4'>
               <div>
-                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>Nueva fecha</label>
-                <input type='date' value={moveDate} onChange={(e) => handleMoveDateChange(e.target.value)}
-                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan' />
+                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
+                  Nueva fecha
+                </label>
+                <input
+                  type='date'
+                  value={moveDate}
+                  onChange={(e) => handleMoveDateChange(e.target.value)}
+                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
+                />
               </div>
               <div>
-                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>Nuevo horario</label>
-                <select value={moveTime} onChange={(e) => setMoveTime(e.target.value)}
-                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'>
+                <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold'>
+                  Nuevo horario
+                </label>
+                <select
+                  value={moveTime}
+                  onChange={(e) => setMoveTime(e.target.value)}
+                  className='w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan'
+                >
                   {TIME_SLOTS.map((slot) => (
-                    <option key={slot} value={slot} disabled={bookedSlots.includes(slot) && !(slot === time && moveDate === row.appointment_date)}>
-                      {slot}{bookedSlots.includes(slot) ? ' (ocupado)' : ''}
+                    <option
+                      key={slot}
+                      value={slot}
+                      disabled={
+                        bookedSlots.includes(slot) &&
+                        !(slot === time && moveDate === row.appointment_date)
+                      }
+                    >
+                      {slot}
+                      {bookedSlots.includes(slot) ? ' (ocupado)' : ''}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
             {moveError && <p className='mt-3 text-xs text-red-400'>{moveError}</p>}
-            <button type='button' disabled={isMoving} onClick={handleMoveConfirm}
-              className='mt-5 w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-xs hover:opacity-90 disabled:opacity-40 transition-opacity'>
+            <button
+              type='button'
+              disabled={isMoving}
+              onClick={handleMoveConfirm}
+              className='mt-5 w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-xs hover:opacity-90 disabled:opacity-40 transition-opacity'
+            >
               {isMoving ? 'Moviendo...' : 'Confirmar'}
             </button>
           </div>
@@ -385,10 +590,7 @@ function DaySection({
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
-  const prefix =
-    dateStr === today    ? 'Hoy' :
-    dateStr === tomorrow ? 'Mañana' :
-    null;
+  const prefix = dateStr === today ? 'Hoy' : dateStr === tomorrow ? 'Mañana' : null;
 
   const dayLabel = format(date, "EEEE d 'de' MMMM", { locale: es });
   const headerLabel = prefix
@@ -400,7 +602,9 @@ function DaySection({
       {/* Day header */}
       <div className='flex items-center justify-between mb-3'>
         <div className='flex items-center gap-3'>
-          <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30 capitalize'>{headerLabel}</p>
+          <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30 capitalize'>
+            {headerLabel}
+          </p>
           <span className='text-[10px] font-bold text-white/20'>{rows.length}</span>
           <div className='flex-1 h-px bg-white/5 w-8' />
         </div>
@@ -417,7 +621,12 @@ function DaySection({
       {/* Cards */}
       <div className='flex flex-col gap-2'>
         {rows.map((row) => (
-          <AppointmentCard key={row.id} row={row} onStatusChange={onStatusChange} onMoved={onMoved} />
+          <AppointmentCard
+            key={row.id}
+            row={row}
+            onStatusChange={onStatusChange}
+            onMoved={onMoved}
+          />
         ))}
       </div>
 
@@ -426,7 +635,10 @@ function DaySection({
         initialDate={dateStr}
         isOpen={blockOpen}
         onClose={() => setBlockOpen(false)}
-        onSuccess={() => { setBlockOpen(false); onMoved(); }}
+        onSuccess={() => {
+          setBlockOpen(false);
+          onMoved();
+        }}
       />
     </div>
   );
@@ -444,7 +656,9 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       const limit = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const { data } = await supabase
         .from('appointments')
-        .select('id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)')
+        .select(
+          'id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)'
+        )
         .eq('barber_id', barber.id)
         .gte('appointment_date', today)
         .lte('appointment_date', limit)
@@ -462,7 +676,10 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     }
   }, [barber.id]);
 
-  useEffect(() => { fetchAgenda(); }, [barber.id, refetchKey, fetchAgenda]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refetchKey is a prop used intentionally to force re-fetch
+  useEffect(() => {
+    fetchAgenda();
+  }, [barber.id, refetchKey, fetchAgenda]);
 
   async function handleStatusChange(id: string, next: AppointmentStatus) {
     if (id.startsWith('mock-')) return;
@@ -492,12 +709,25 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       {/* Stats strip */}
       <div className='grid grid-cols-3 gap-3 mb-6'>
         {[
-          { label: 'Hoy',       value: todayRows.length,                                        sub: 'turnos' },
-          { label: 'Pendientes', value: todayRows.filter((r) => r.status === 'pending').length,  sub: 'sin confirmar' },
-          { label: 'Atendidos',  value: todayRows.filter((r) => r.status === 'attended').length, sub: 'esta jornada' },
+          { label: 'Hoy', value: todayRows.length, sub: 'turnos' },
+          {
+            label: 'Pendientes',
+            value: todayRows.filter((r) => r.status === 'pending').length,
+            sub: 'sin confirmar',
+          },
+          {
+            label: 'Atendidos',
+            value: todayRows.filter((r) => r.status === 'attended').length,
+            sub: 'esta jornada',
+          },
         ].map((m) => (
-          <div key={m.label} className='glass-card rounded-2xl p-4 border border-white/5 text-center'>
-            <p className='text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1'>{m.label}</p>
+          <div
+            key={m.label}
+            className='glass-card rounded-2xl p-4 border border-white/5 text-center'
+          >
+            <p className='text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1'>
+              {m.label}
+            </p>
             <p className='text-3xl font-black text-white'>{m.value}</p>
             <p className='text-[10px] text-white/20 mt-0.5'>{m.sub}</p>
           </div>
@@ -509,7 +739,9 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
 
       {/* Appointment list grouped by day */}
       {loading ? (
-        <div className='py-16 text-center text-white/30 text-xs uppercase tracking-[0.3em]'>Cargando...</div>
+        <div className='py-16 text-center text-white/30 text-xs uppercase tracking-[0.3em]'>
+          Cargando...
+        </div>
       ) : sortedDates.length === 0 ? (
         <div className='py-16 text-center text-white/20 text-sm'>Sin turnos próximos</div>
       ) : (

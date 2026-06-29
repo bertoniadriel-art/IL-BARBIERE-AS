@@ -40,6 +40,7 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
     setRefetchKey((k) => k + 1);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: supabase is stable; refetchKey is intentional trigger
   useEffect(() => {
     const barberId = barber?.id;
     if (!barberId) return;
