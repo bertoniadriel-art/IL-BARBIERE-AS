@@ -375,87 +375,91 @@ function AppointmentCard({
   return (
     <>
       <div
-        className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}
+        className={`py-3 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}
       >
-        {/* Time */}
-        <div className='w-14 text-right flex-shrink-0'>
-          <span className='text-xl font-black text-neon-cyan tabular-nums'>{time}</span>
+        {/* Row 1: time + name + status */}
+        <div className='flex items-center gap-3'>
+          <span className='text-lg font-black text-neon-cyan tabular-nums flex-shrink-0 w-12 text-right'>
+            {time}
+          </span>
+          <div className='flex-1 min-w-0'>
+            <div className='flex items-center gap-1.5 min-w-0'>
+              <p className='font-bold text-white text-sm truncate leading-tight'>
+                {row.client_name || 'Cliente sin nombre'}
+              </p>
+              {isVip && <Crown className='w-3 h-3 text-yellow-400 flex-shrink-0' />}
+            </div>
+            <div className='flex items-center gap-1.5 mt-0.5 flex-wrap'>
+              {row.deposit_paid ? (
+                <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
+              ) : (
+                <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>
+              )}
+              {row.services?.name && (
+                <span className='text-[10px] text-white/40 bg-white/5 border border-white/8 px-1.5 py-0.5 rounded-md truncate max-w-[120px]'>
+                  {row.services.name}
+                </span>
+              )}
+              {row.final_price != null && (
+                <span className='text-[10px] text-white/30 flex-shrink-0'>
+                  ${row.final_price.toLocaleString('es-AR')}
+                </span>
+              )}
+            </div>
+          </div>
+          <span
+            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${cls}`}
+          >
+            {label}
+          </span>
         </div>
 
-        {/* Client + meta */}
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-1.5'>
-            <p className='font-bold text-white text-sm truncate'>
-              {row.client_name || 'Cliente sin nombre'}
-            </p>
-            {isVip && <Crown className='w-3.5 h-3.5 text-yellow-400 flex-shrink-0' />}
-          </div>
-          <div className='flex items-center gap-2 mt-0.5 flex-wrap'>
-            {row.deposit_paid ? (
-              <span className='text-[10px] text-emerald-400 font-bold'>Seña ✓</span>
-            ) : (
-              <span className='text-[10px] text-red-400 font-bold'>Sin seña</span>
-            )}
-            {row.services?.name && (
-              <span className='text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md'>
-                {row.services.name}
-              </span>
-            )}
-            {row.final_price != null && (
-              <span className='text-[10px] text-white/30'>
-                · ${row.final_price.toLocaleString('es-AR')}
-              </span>
-            )}
+        {/* Row 2: action buttons (only when interactive) */}
+        {!isMock && (isActive || row.qr_hash) && (
+          <div className='flex items-center gap-1.5 mt-2.5 pl-[60px] flex-wrap'>
             {row.is_fixed_weekly && (
-              <span className='text-[10px] text-purple-400 font-bold'>
+              <span className='text-[10px] text-purple-400 font-bold mr-auto'>
                 🔄 {row.frequency === 'biweekly' ? 'Quincenal' : 'Semanal'}
               </span>
             )}
+            {row.status === 'pending' && (
+              <button
+                type='button'
+                onClick={() => onStatusChange(row.id, 'confirmed')}
+                className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
+              >
+                Confirmar
+              </button>
+            )}
+            {row.status === 'confirmed' && (
+              <button
+                type='button'
+                onClick={() => onStatusChange(row.id, 'attended')}
+                className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
+              >
+                Presente
+              </button>
+            )}
+            {isActive && (
+              <button
+                type='button'
+                onClick={openMove}
+                className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
+              >
+                Mover
+              </button>
+            )}
+            {row.qr_hash && (
+              <button
+                type='button'
+                onClick={() => setQrOpen(true)}
+                className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
+              >
+                QR
+              </button>
+            )}
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className='flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end'>
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>
-            {label}
-          </span>
-          {!isMock && row.status === 'pending' && (
-            <button
-              type='button'
-              onClick={() => onStatusChange(row.id, 'confirmed')}
-              className='px-2.5 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
-            >
-              Confirmar
-            </button>
-          )}
-          {!isMock && row.status === 'confirmed' && (
-            <button
-              type='button'
-              onClick={() => onStatusChange(row.id, 'attended')}
-              className='px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
-            >
-              Presente
-            </button>
-          )}
-          {!isMock && isActive && (
-            <button
-              type='button'
-              onClick={openMove}
-              className='px-2.5 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
-            >
-              Mover
-            </button>
-          )}
-          {row.qr_hash && (
-            <button
-              type='button'
-              onClick={() => setQrOpen(true)}
-              className='px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
-            >
-              QR
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* QR Modal */}
@@ -600,18 +604,17 @@ function DaySection({
   return (
     <div className='mb-8'>
       {/* Day header */}
-      <div className='flex items-center justify-between mb-3'>
-        <div className='flex items-center gap-3'>
-          <p className='text-[10px] font-black uppercase tracking-[0.2em] text-white/30 capitalize'>
+      <div className='flex items-center justify-between mb-3 gap-2'>
+        <div className='flex items-center gap-2 min-w-0'>
+          <p className='text-[10px] font-black uppercase tracking-[0.15em] text-white/30 capitalize truncate'>
             {headerLabel}
           </p>
-          <span className='text-[10px] font-bold text-white/20'>{rows.length}</span>
-          <div className='flex-1 h-px bg-white/5 w-8' />
+          <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>{rows.length}</span>
         </div>
         <button
           type='button'
           onClick={() => setBlockOpen(true)}
-          className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors'
+          className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors flex-shrink-0'
         >
           <Lock className='w-3 h-3' />
           Bloquear
