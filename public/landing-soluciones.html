@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Il Barbiere OS — Lanzamiento | Soluciones Adriel-IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'neon-cyan': '#00ffc8',
+            'neon-purple': '#bc00ff',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0a0a0c; }
+    .gradient-text { background: linear-gradient(135deg, #00ffc8, #bc00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+    .phone-mockup { background: #111114; border-radius: 2.5rem; border: 3px solid rgba(255,255,255,0.1); }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .float { animation: float 3s ease-in-out infinite; }
+  </style>
+</head>
+<body class="text-white min-h-screen">
+
+  <!-- Announcement Banner -->
+  <div class="bg-gradient-to-r from-neon-cyan/10 via-neon-purple/10 to-neon-cyan/10 border-b border-white/5">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-center gap-3">
+      <span class="w-2 h-2 rounded-full bg-neon-cyan animate-pulse"></span>
+      <p class="text-xs md:text-sm font-bold text-white/70">
+        <span class="text-neon-cyan">Nuevo proyecto</span> — Il Barbiere OS v2.0 lanzado
+      </p>
+      <a href="https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app" target="_blank" class="text-xs font-bold text-neon-cyan hover:underline">
+        Ver demo →
+      </a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="py-20 md:py-32">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Text -->
+        <div>
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neon-cyan/30 bg-neon-cyan/5 text-neon-cyan text-[10px] font-bold uppercase tracking-widest mb-6">
+            Caso de estudio
+          </span>
+          <h1 class="text-3xl md:text-5xl font-black leading-tight mb-6">
+            Il Barbiere <span class="gradient-text">OS</span>
+          </h1>
+          <p class="text-lg text-white/50 mb-4">
+            El sistema operativo de imagen personal para barberías. Una app completa que reemplaza WhatsApp, agenda papel y cobro manual.
+          </p>
+          <p class="text-sm text-white/40 mb-8">
+            Desarrollada con <span class="text-white/70 font-semibold">Next.js 16</span>, <span class="text-white/70 font-semibold">Supabase</span> y <span class="text-white/70 font-semibold">Vercel</span>. 124 tests, deploy automático, cero downtime.
+          </p>
+
+          <div class="flex flex-wrap gap-3 mb-8">
+            <span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">Next.js 16</span>
+            <span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">TypeScript</span>
+            <span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">Supabase</span>
+            <span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">Vercel</span>
+            <span class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-white/60">Vitest</span>
+          </div>
+
+          <div class="flex gap-4">
+            <a href="https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app" target="_blank" class="px-6 py-3 bg-neon-cyan text-black font-black rounded-lg hover:shadow-[0_0_30px_rgba(0,255,200,0.4)] transition-all text-xs uppercase tracking-widest">
+              Ver en producción
+            </a>
+            <a href="https://github.com/bertoniadriel-art/IL-BARBIERE-AS" target="_blank" class="px-6 py-3 border border-white/20 text-white font-bold rounded-lg hover:bg-white/5 transition-all text-xs uppercase tracking-widest">
+              Ver código
+            </a>
+          </div>
+        </div>
+
+        <!-- Phone mockup -->
+        <div class="flex justify-center">
+          <div class="phone-mockup w-[260px] p-4 float">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="text-[9px] text-white/40 uppercase tracking-widest">Il Barbiere</p>
+                <p class="text-xs font-black">Reservar turno</p>
+              </div>
+              <div class="w-7 h-7 rounded-full overflow-hidden border border-white/20">
+                <img src="/assets/logo/logo-official.jpg" alt="Logo" class="w-full h-full object-cover">
+              </div>
+            </div>
+
+            <div class="flex gap-1.5 mb-4">
+              <div class="flex-1 h-1 rounded-full bg-neon-cyan"></div>
+              <div class="flex-1 h-1 rounded-full bg-white/10"></div>
+              <div class="flex-1 h-1 rounded-full bg-white/10"></div>
+            </div>
+
+            <p class="text-[9px] text-white/40 uppercase tracking-widest mb-2">Barbero</p>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div class="p-2 rounded-xl border border-neon-cyan bg-neon-cyan/10 text-center">
+                <div class="w-8 h-8 rounded-full mx-auto mb-1 overflow-hidden border border-neon-cyan/50">
+                  <img src="/assets/barbers/fede.png" alt="Fede" class="w-full h-full object-cover">
+                </div>
+                <p class="text-[10px] font-bold text-neon-cyan">Fede</p>
+              </div>
+              <div class="p-2 rounded-xl border border-white/10 bg-white/5 text-center">
+                <div class="w-8 h-8 rounded-full mx-auto mb-1 overflow-hidden border border-white/20">
+                  <img src="/assets/barbers/santi.png" alt="Santi" class="w-full h-full object-cover">
+                </div>
+                <p class="text-[10px] font-bold text-white/60">Santi</p>
+              </div>
+            </div>
+
+            <p class="text-[9px] text-white/40 uppercase tracking-widest mb-2">Servicio</p>
+            <div class="space-y-1.5 mb-4">
+              <div class="p-2 rounded-lg border border-neon-cyan bg-neon-cyan/10 flex justify-between items-center">
+                <span class="text-[10px] font-bold text-neon-cyan">Corte + Barba</span>
+                <span class="text-[9px] text-neon-cyan font-bold">$6.500</span>
+              </div>
+              <div class="p-2 rounded-lg border border-white/10 bg-white/5 flex justify-between items-center">
+                <span class="text-[10px] font-bold text-white/60">Corte</span>
+                <span class="text-[9px] text-white/40 font-bold">$4.500</span>
+              </div>
+            </div>
+
+            <p class="text-[9px] text-white/40 uppercase tracking-widest mb-2">Horarios</p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <div class="py-1.5 rounded border border-white/10 bg-white/5 text-center text-[10px] text-white/40">10:00</div>
+              <div class="py-1.5 rounded border border-neon-cyan bg-neon-cyan/10 text-center text-[10px] font-bold text-neon-cyan">11:00</div>
+              <div class="py-1.5 rounded border border-white/10 bg-white/5 text-center text-[10px] text-white/40">12:00</div>
+            </div>
+
+            <div class="mt-4 p-3 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-purple text-center">
+              <p class="text-[10px] font-black text-black uppercase tracking-widest">Confirmar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What we built -->
+  <section class="py-16 border-t border-white/5">
+    <div class="max-w-5xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-black mb-10 text-center">Lo que construimos</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="glass rounded-2xl p-6">
+          <p class="text-3xl font-black gradient-text mb-2">124</p>
+          <p class="text-sm font-bold mb-1">Tests passing</p>
+          <p class="text-xs text-white/40">Cobertura completa: booking, admin, auth, scanner</p>
+        </div>
+        <div class="glass rounded-2xl p-6">
+          <p class="text-3xl font-black gradient-text mb-2">4</p>
+          <p class="text-sm font-bold mb-1">Features core</p>
+          <p class="text-xs text-white/40">Booking, Admin Dashboard, QR Scanner, Finanzas</p>
+        </div>
+        <div class="glass rounded-2xl p-6">
+          <p class="text-3xl font-black gradient-text mb-2">0</p>
+          <p className="text-sm font-bold mb-1">Downtime</p>
+          <p class="text-xs text-white/40">Deploy automático en Vercel, rollbacks instantáneos</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech stack -->
+  <section class="py-16 border-t border-white/5">
+    <div class="max-w-5xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-black mb-10 text-center">Stack técnico</h2>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { name: 'Next.js 16', role: 'Framework' },
+          { name: 'TypeScript', role: 'Lenguaje' },
+          { name: 'Supabase', role: 'DB + Auth' },
+          { name: 'Zustand', role: 'Estado' },
+          { name: 'Vitest', role: 'Testing' },
+        ].map(t => (
+          <div class="glass rounded-xl p-4 text-center">
+            <p class="text-sm font-black">{t.name}</p>
+            <p class="text-[10px] text-white/40 mt-1">{t.role}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-8 border-t border-white/5">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      <p class="text-xs text-white/30">
+        © 2026 Soluciones Adriel-IA · Arroyo Seco, Santa Fe
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
