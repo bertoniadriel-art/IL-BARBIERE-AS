@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Scissors, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -15,10 +15,11 @@ export function Navbar() {
           <div className='flex items-center gap-2'>
             <Link href='/' className='flex items-center gap-3 group'>
               <div className='relative w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform'>
+                <span className='absolute inset-0 rounded-full border border-neon-cyan shadow-neon-glow animate-pulse' />
                 <img
                   src='/assets/logo/logo-official.jpg'
                   alt='IL BARBIERE Logo'
-                  className='w-full h-full object-contain rounded-lg border border-white/10 shadow-neon-glow-sm'
+                  className='w-full h-full object-cover rounded-full'
                 />
               </div>
               <span className='text-xl font-black tracking-tighter text-white uppercase'>
@@ -47,36 +48,10 @@ export function Navbar() {
             >
               RESERVAR
             </Link>
-            <a
-              href='https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='w-10 h-10 rounded-full overflow-hidden border border-white/20 hover:border-neon-cyan/50 hover:shadow-neon-glow transition-all flex-shrink-0'
-              title='Il Barbiere — Deploy'
-            >
-              <img
-                src='/assets/logo/logo-official.jpg'
-                alt='Il Barbiere'
-                className='w-full h-full object-cover'
-              />
-            </a>
           </div>
 
-          {/* Mobile Button + Logo */}
+          {/* Mobile Button */}
           <div className='md:hidden flex items-center gap-3'>
-            <a
-              href='https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='w-9 h-9 rounded-full overflow-hidden border border-white/20 hover:border-neon-cyan/50 transition-all flex-shrink-0'
-              title='Il Barbiere — Deploy'
-            >
-              <img
-                src='/assets/logo/logo-official.jpg'
-                alt='Il Barbiere'
-                className='w-full h-full object-cover'
-              />
-            </a>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className='p-2 text-white hover:text-neon-cyan transition-colors'

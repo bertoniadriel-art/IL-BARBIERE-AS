@@ -22,6 +22,13 @@ export default function Home() {
     <div className='flex flex-col items-center bg-background'>
       {/* Hero Section */}
       <section className='relative w-full min-h-[90vh] flex flex-col items-center justify-center px-4 pt-20 pb-16 text-center overflow-hidden'>
+        {/* Barbershop background photo */}
+        <div
+          className='absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none'
+          style={{ backgroundImage: "url('/assets/barberia-hero.jpg')", opacity: 0.18 }}
+        />
+        {/* Gradient overlay to keep text readable */}
+        <div className='absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-transparent to-[#0a0a0a]/80 pointer-events-none' />
         {/* Background Effects */}
         <div className='absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-neon-cyan/5 rounded-full blur-[140px] pointer-events-none' />
         <div className='absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-neon-purple/5 rounded-full blur-[140px] pointer-events-none' />

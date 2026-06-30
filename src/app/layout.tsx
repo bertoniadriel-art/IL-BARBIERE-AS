@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     title: 'Il Barbiere',
   },
   icons: {
-    icon: '/icon-192.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/assets/logo/logo-official.jpg',
+    apple: '/assets/logo/logo-official.jpg',
   },
 };
 
