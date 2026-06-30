@@ -1,4 +1,4 @@
-import { Instagram, MapPin, Phone, Scissors } from 'lucide-react';
+import { HelpCircle, Instagram, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 export function Footer() {
@@ -25,11 +25,16 @@ export function Footer() {
           <ul className='space-y-4 text-white/50 text-sm'>
             <li className='flex items-start gap-3'>
               <MapPin className='w-5 h-5 text-white/20 shrink-0' />
-              <span>
+              <a
+                href='https://maps.google.com/?q=San+Martin+345,+Arroyo+Seco,+Santa+Fe'
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-neon-cyan transition-colors'
+              >
                 San Martin 345,
                 <br />
                 Arroyo Seco, Santa Fe
-              </span>
+              </a>
             </li>
           </ul>
         </div>
@@ -39,11 +44,25 @@ export function Footer() {
           <ul className='space-y-4 text-white/50 text-sm'>
             <li className='flex items-center gap-3'>
               <Phone className='w-5 h-5 text-white/20' />
-              <span>Santi: 3402503244</span>
+              <a
+                href='https://wa.me/543402503244'
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-green-400 transition-colors'
+              >
+                Santi: 3402503244
+              </a>
             </li>
             <li className='flex items-center gap-3'>
               <Phone className='w-5 h-5 text-white/20' />
-              <span>Fede: 3402417023</span>
+              <a
+                href='https://wa.me/543402417023'
+                target='_blank'
+                rel='noreferrer'
+                className='hover:text-green-400 transition-colors'
+              >
+                Fede: 3402417023
+              </a>
             </li>
           </ul>
         </div>
@@ -59,6 +78,13 @@ export function Footer() {
           >
             <Instagram className='w-5 h-5 group-hover:scale-110 transition-transform' />
           </a>
+          <Link
+            href='/'
+            className='p-3 bg-white/5 rounded-full hover:bg-neon-cyan/20 hover:text-neon-cyan transition-all group'
+            title='¿Cómo reservar?'
+          >
+            <HelpCircle className='w-5 h-5 group-hover:scale-110 transition-transform' />
+          </Link>
         </div>
 
         <div className='text-xs text-white/20 flex flex-col md:flex-row items-center gap-2 md:gap-4 uppercase tracking-[0.2em]'>
