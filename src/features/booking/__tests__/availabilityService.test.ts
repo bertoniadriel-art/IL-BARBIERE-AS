@@ -91,9 +91,7 @@ describe('getBookedSlots (T2.1)', () => {
 
   it('should fall back to 30-min duration when services is null', async () => {
     const { supabase } = await import('@/shared/lib/supabase');
-    (supabase as any).from = makeSupabaseMock([
-      { appointment_time: '12:00:00', services: null },
-    ]);
+    (supabase as any).from = makeSupabaseMock([{ appointment_time: '12:00:00', services: null }]);
 
     const result = await getBookedSlots('barber-001', '2026-06-01');
     expect(result).toEqual(['12:00']);

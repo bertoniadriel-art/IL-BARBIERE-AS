@@ -2,13 +2,7 @@
 
 import { registerPayment } from '@/features/admin/services/appointmentService';
 import { supabase } from '@/shared/lib/supabase';
-import {
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfMonth,
-  startOfWeek,
-} from 'date-fns';
+import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -54,7 +48,9 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
 
         const { data } = await supabase
           .from('appointments')
-          .select('id, status, final_price, deposit_paid, client_name, appointment_date, appointment_time')
+          .select(
+            'id, status, final_price, deposit_paid, client_name, appointment_date, appointment_time'
+          )
           .eq('barber_id', barber.id)
           .gte('appointment_date', from)
           .lte('appointment_date', to)
@@ -98,7 +94,9 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
 
   async function handlePayment(id: string, type: 'paid' | 'debt') {
     const prev = rows;
-    setRows(rows.map((r) => r.id === id ? { ...r, status: type === 'paid' ? 'attended' : 'debt' } : r));
+    setRows(
+      rows.map((r) => (r.id === id ? { ...r, status: type === 'paid' ? 'attended' : 'debt' } : r))
+    );
     const { error } = await registerPayment(id, type);
     if (error) setRows(prev);
   }
@@ -143,10 +141,7 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
       {/* Metric cards */}
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10'>
         {metricCards.map((m) => (
-          <div
-            key={m.label}
-            className={`glass-card rounded-2xl p-5 border ${m.border}`}
-          >
+          <div key={m.label} className={`glass-card rounded-2xl p-5 border ${m.border}`}>
             <p className='text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-0.5'>
               {m.label}
             </p>
@@ -155,7 +150,9 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
               {loading ? '—' : ARS.format(m.total)}
             </p>
             <p className='text-[10px] text-white/30'>
-              {loading ? '' : `${m.count} turno${m.count !== 1 ? 's' : ''} cobrado${m.count !== 1 ? 's' : ''}`}
+              {loading
+                ? ''
+                : `${m.count} turno${m.count !== 1 ? 's' : ''} cobrado${m.count !== 1 ? 's' : ''}`}
             </p>
           </div>
         ))}
@@ -189,7 +186,9 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
                 {row.client_name || '—'}
               </p>
               {row.final_price != null && (
-                <span className={`text-sm font-black flex-shrink-0 ${isPaid(row) ? 'text-emerald-400' : 'text-white/40'}`}>
+                <span
+                  className={`text-sm font-black flex-shrink-0 ${isPaid(row) ? 'text-emerald-400' : 'text-white/40'}`}
+                >
                   {ARS.format(row.final_price)}
                 </span>
               )}

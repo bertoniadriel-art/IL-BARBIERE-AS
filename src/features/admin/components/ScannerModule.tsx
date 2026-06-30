@@ -21,78 +21,82 @@ export function ScannerModule({ barberId }: Props) {
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
-      try { await scannerRef.current.stop(); } catch { /* already stopped */ }
+      try {
+        await scannerRef.current.stop();
+      } catch {
+        /* already stopped */
+      }
       scannerRef.current = null;
     }
   }, []);
 
-  const processQrResult = useCallback(async (decodedText: string) => {
-    setState('processing');
+  const processQrResult = useCallback(
+    async (decodedText: string) => {
+      setState('processing');
 
-    if (!supabase) {
-      setErrorMsg('Supabase no configurado');
-      setState('error');
-      return;
-    }
+      if (!supabase) {
+        setErrorMsg('Supabase no configurado');
+        setState('error');
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*, barbers(*)')
-      .eq('qr_hash', decodedText)
-      .eq('barber_id', barberId)
-      .single();
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*, barbers(*)')
+        .eq('qr_hash', decodedText)
+        .eq('barber_id', barberId)
+        .single();
 
-    if (error || !data) {
-      setErrorMsg('TURNO NO ENCONTRADO O INVÁLIDO');
-      setState('error');
-      return;
-    }
+      if (error || !data) {
+        setErrorMsg('TURNO NO ENCONTRADO O INVÁLIDO');
+        setState('error');
+        return;
+      }
 
-    const appointmentDate = parseISO(data.appointment_date);
-    if (!isToday(appointmentDate)) {
-      setErrorMsg(`ESTE QR ES PARA EL ${format(appointmentDate, 'dd/MM/yyyy')}, NO PARA HOY`);
-      setState('error');
-      return;
-    }
+      const appointmentDate = parseISO(data.appointment_date);
+      if (!isToday(appointmentDate)) {
+        setErrorMsg(`ESTE QR ES PARA EL ${format(appointmentDate, 'dd/MM/yyyy')}, NO PARA HOY`);
+        setState('error');
+        return;
+      }
 
-    const expiryTime = addHours(
-      parseISO(`${data.appointment_date}T${data.appointment_time}`),
-      2
-    );
-    if (isAfter(new Date(), expiryTime)) {
-      setErrorMsg('ESTE QR YA VENCIÓ (VÁLIDO POR 2 HORAS)');
-      setState('error');
-      return;
-    }
+      const expiryTime = addHours(parseISO(`${data.appointment_date}T${data.appointment_time}`), 2);
+      if (isAfter(new Date(), expiryTime)) {
+        setErrorMsg('ESTE QR YA VENCIÓ (VÁLIDO POR 2 HORAS)');
+        setState('error');
+        return;
+      }
 
-    if (data.status === 'attended') {
-      setErrorMsg('ESTE TURNO YA FUE REGISTRADO');
-      setState('error');
-      return;
-    }
+      if (data.status === 'attended') {
+        setErrorMsg('ESTE TURNO YA FUE REGISTRADO');
+        setState('error');
+        return;
+      }
 
-    const { data: updated, error: updateError } = await supabase
-      .from('appointments')
-      .update({ status: 'attended' })
-      .eq('id', data.id)
-      .in('status', ['confirmed', 'pending'])
-      .select('id');
+      const { data: updated, error: updateError } = await supabase
+        .from('appointments')
+        .update({ status: 'attended' })
+        .eq('id', data.id)
+        .in('status', ['confirmed', 'pending'])
+        .select('id');
 
-    if (updateError) {
-      setErrorMsg('ERROR AL REGISTRAR EL TURNO');
-      setState('error');
-      return;
-    }
+      if (updateError) {
+        setErrorMsg('ERROR AL REGISTRAR EL TURNO');
+        setState('error');
+        return;
+      }
 
-    if (!updated || updated.length === 0) {
-      setErrorMsg('ESTE TURNO YA FUE REGISTRADO');
-      setState('error');
-      return;
-    }
+      if (!updated || updated.length === 0) {
+        setErrorMsg('ESTE TURNO YA FUE REGISTRADO');
+        setState('error');
+        return;
+      }
 
-    setAppointment(data);
-    setState('success');
-  }, [barberId]);
+      setAppointment(data);
+      setState('success');
+    },
+    [barberId]
+  );
 
   const startScanner = useCallback(async () => {
     setState('scanning');
@@ -107,7 +111,9 @@ export function ScannerModule({ barberId }: Props) {
           await stopScanner();
           await processQrResult(decodedText);
         },
-        () => { /* ignore frame errors */ }
+        () => {
+          /* ignore frame errors */
+        }
       );
     } catch {
       setErrorMsg('No se pudo acceder a la cámara. Verificá los permisos del navegador.');
@@ -115,21 +121,24 @@ export function ScannerModule({ barberId }: Props) {
     }
   }, [processQrResult, stopScanner]);
 
-  const scanFromFile = useCallback(async (file: File) => {
-    await stopScanner();
-    setState('processing');
-    const qr = new Html5Qrcode('qr-reader');
-    scannerRef.current = qr;
-    try {
-      const result = await qr.scanFile(file, false);
-      scannerRef.current = null;
-      await processQrResult(result);
-    } catch {
-      scannerRef.current = null;
-      setErrorMsg('No se pudo leer el QR de la imagen. Probá con otra foto.');
-      setState('error');
-    }
-  }, [processQrResult, stopScanner]);
+  const scanFromFile = useCallback(
+    async (file: File) => {
+      await stopScanner();
+      setState('processing');
+      const qr = new Html5Qrcode('qr-reader');
+      scannerRef.current = qr;
+      try {
+        const result = await qr.scanFile(file, false);
+        scannerRef.current = null;
+        await processQrResult(result);
+      } catch {
+        scannerRef.current = null;
+        setErrorMsg('No se pudo leer el QR de la imagen. Probá con otra foto.');
+        setState('error');
+      }
+    },
+    [processQrResult, stopScanner]
+  );
 
   const reset = useCallback(async () => {
     await stopScanner();
@@ -138,7 +147,12 @@ export function ScannerModule({ barberId }: Props) {
     setState('idle');
   }, [stopScanner]);
 
-  useEffect(() => () => { stopScanner(); }, [stopScanner]);
+  useEffect(
+    () => () => {
+      stopScanner();
+    },
+    [stopScanner]
+  );
 
   return (
     <div className='w-full max-w-xl mx-auto flex flex-col items-center gap-6'>
@@ -198,7 +212,9 @@ export function ScannerModule({ barberId }: Props) {
             {state === 'success' && appointment && (
               <div className='w-full h-full flex flex-col items-center justify-center p-8 animate-in zoom-in-95 duration-400'>
                 <ShieldCheck className='w-16 h-16 text-neon-cyan mb-4' />
-                <p className='text-xs uppercase tracking-widest text-neon-cyan font-black mb-1'>Check-in exitoso</p>
+                <p className='text-xs uppercase tracking-widest text-neon-cyan font-black mb-1'>
+                  Check-in exitoso
+                </p>
                 <p className='text-2xl font-black text-white mb-1'>{appointment.client_name}</p>
                 <p className='text-white/40 text-sm mb-6'>
                   {appointment.appointment_date} · {appointment.appointment_time?.slice(0, 5)} hs
@@ -219,7 +235,9 @@ export function ScannerModule({ barberId }: Props) {
                 ) : (
                   <AlertCircle className='w-16 h-16 text-red-500 mb-4' />
                 )}
-                <p className={`text-sm font-bold text-center mb-6 ${errorMsg?.includes('DÍA') || errorMsg?.includes('VENCIÓ') ? 'text-yellow-400' : 'text-red-400'}`}>
+                <p
+                  className={`text-sm font-bold text-center mb-6 ${errorMsg?.includes('DÍA') || errorMsg?.includes('VENCIÓ') ? 'text-yellow-400' : 'text-red-400'}`}
+                >
                   {errorMsg}
                 </p>
                 <button
@@ -235,7 +253,10 @@ export function ScannerModule({ barberId }: Props) {
       </div>
 
       {state === 'scanning' && (
-        <button onClick={reset} className='text-white/30 text-xs hover:text-white/60 transition-colors'>
+        <button
+          onClick={reset}
+          className='text-white/30 text-xs hover:text-white/60 transition-colors'
+        >
           Cancelar
         </button>
       )}
