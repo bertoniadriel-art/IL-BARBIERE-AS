@@ -76,8 +76,8 @@ export function AdminLayout({
               />
             </div>
             <span
-              className={`font-bold tracking-tighter uppercase leading-none text-[10px] md:text-xs whitespace-nowrap transition-opacity duration-200
-                            ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+              className={`font-bold tracking-tighter uppercase leading-none text-[10px] md:text-xs whitespace-nowrap overflow-hidden transition-all duration-200
+                            ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}
             >
               EL BÚNKER <br />
               <span className='text-neon-cyan'>OS EDITION</span>
@@ -102,8 +102,8 @@ export function AdminLayout({
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key)}
-              className={`w-full flex items-center py-3 rounded-xl transition-all duration-200
-                          ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3 md:px-4'}
+              className={`w-full flex items-center justify-center py-3 rounded-xl transition-all duration-200
+                          ${isCollapsed ? 'px-0' : 'justify-start gap-3 px-3 md:px-4'}
                           ${
                             currentTab === tab.key
                               ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'
@@ -119,8 +119,8 @@ export function AdminLayout({
                 )}
               </div>
               <span
-                className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                              ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                className={`text-xs md:text-sm font-medium tracking-tight overflow-hidden whitespace-nowrap transition-all duration-200
+                              ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}
               >
                 {tab.label}
               </span>
@@ -130,12 +130,13 @@ export function AdminLayout({
 
         <button
           onClick={onLogout}
-          className='flex items-center gap-3 px-3 md:px-4 py-3 text-white/40 hover:text-red-500 transition-colors mt-auto'
+          className={`flex items-center py-3 text-white/40 hover:text-red-500 transition-colors mt-auto
+                      ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3 md:px-4'}`}
         >
           <LogOut className='w-5 h-5 flex-shrink-0' />
           <span
-            className={`text-xs md:text-sm font-medium tracking-tight transition-opacity duration-200
-                        ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`text-xs md:text-sm font-medium tracking-tight overflow-hidden whitespace-nowrap transition-all duration-200
+                        ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}
           >
             Salir
           </span>
