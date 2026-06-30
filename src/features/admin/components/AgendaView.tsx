@@ -308,15 +308,18 @@ function AppointmentCard({
   row,
   onStatusChange,
   onMoved,
+  isVip = false,
 }: {
   row: AppointmentRow;
   onStatusChange: (id: string, next: AppointmentStatus) => void;
   onMoved: () => void;
+  isVip?: boolean;
 }) {
   const time = row.appointment_time?.slice(0, 5) ?? '';
   const { label, cls } = statusInfo(row.status);
   const isMock = row.id.startsWith('mock-');
   const isBlocked = row.status === 'blocked';
+  // isVip comes from parent (cross-referenced against vip_clients table)
 
   const [qrOpen, setQrOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
@@ -391,7 +394,6 @@ function AppointmentCard({
   }
 
   const isActive = row.status === 'pending' || row.status === 'confirmed';
-  const isVip = row.is_fixed_weekly && row.final_price != null;
 
   return (
     <>
@@ -632,6 +634,7 @@ function DaySection({
   onStatusChange,
   onMoved,
   sectionRef,
+  vipNames,
 }: {
   dateStr: string;
   rows: AppointmentRow[];
@@ -639,6 +642,7 @@ function DaySection({
   onStatusChange: (id: string, next: AppointmentStatus) => void;
   onMoved: () => void;
   sectionRef?: (el: HTMLDivElement | null) => void;
+  vipNames: Set<string>;
 }) {
   const [blockOpen, setBlockOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -722,6 +726,7 @@ function DaySection({
                 row={row}
                 onStatusChange={onStatusChange}
                 onMoved={onMoved}
+                isVip={vipNames.has(row.client_name ?? '')}
               />
             ))}
           </div>
@@ -746,12 +751,25 @@ function DaySection({
 export function AgendaView({ barber, refetchKey, recentNotifications = [] }: AgendaViewProps) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
+  const [vipNames, setVipNames] = useState<Set<string>>(new Set());
   const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   function scrollToDay(dateStr: string) {
     const el = dayRefs.current[dateStr];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  useEffect(() => {
+    supabase
+      .from('vip_clients')
+      .select('client_name')
+      .eq('barber_id', barber.id)
+      .eq('active', true)
+      .not('slot_time', 'is', null)
+      .then(({ data }) => {
+        if (data) setVipNames(new Set(data.map((r) => r.client_name as string)));
+      });
+  }, [barber.id]);
 
   const fetchAgenda = useCallback(async () => {
     try {
@@ -857,6 +875,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
             barber={barber}
             onStatusChange={handleStatusChange}
             onMoved={fetchAgenda}
+            vipNames={vipNames}
             sectionRef={(el) => {
               dayRefs.current[dateStr] = el;
             }}
