@@ -27,14 +27,15 @@ const BASE_TIMES = [
 
 describe('filterAvailableSlots (T2.2)', () => {
   describe('schedule-aware filtering', () => {
-    it('returns slots within Fede Diaz schedule on a Tuesday (09:00–20:00)', () => {
+    it('returns slots within Fede Diaz schedule on a Tuesday (09:00–19:00)', () => {
       // Tuesday 2026-06-02
       const date = new Date('2026-06-02T12:00:00');
       const result = filterAvailableSlots('Fede Diaz', date, BASE_TIMES, []);
-      // Fede Tue: 09:00–20:00 — all BASE_TIMES qualify
+      // Fede Tue: 09:00–19:00
       expect(result).toContain('09:00');
-      expect(result).toContain('19:30');
-      expect(result).toContain('20:00');
+      expect(result).toContain('19:00');
+      expect(result).not.toContain('19:30');
+      expect(result).not.toContain('20:00');
     });
 
     it('returns [] for Fede Diaz on a Monday (off day)', () => {
@@ -44,15 +45,16 @@ describe('filterAvailableSlots (T2.2)', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns slots within Santi Ducca schedule on a Wednesday (10:00–19:00)', () => {
+    it('returns slots within Santi Ducca schedule on a Wednesday (10:00–18:30)', () => {
       // Wednesday 2026-06-03
       const date = new Date('2026-06-03T12:00:00');
       const result = filterAvailableSlots('Santi Ducca', date, BASE_TIMES, []);
-      // Santi Wed: 10:00–19:00
+      // Santi Wed: 10:00–18:30
       expect(result).not.toContain('09:00');
       expect(result).not.toContain('09:30');
       expect(result).toContain('10:00');
-      expect(result).toContain('19:00');
+      expect(result).toContain('18:00');
+      expect(result).not.toContain('19:00');
       expect(result).not.toContain('19:30');
       expect(result).not.toContain('20:00');
     });
@@ -81,15 +83,16 @@ describe('filterAvailableSlots (T2.2)', () => {
     it('returns all schedule slots when no slots are booked', () => {
       const date = new Date('2026-06-03T12:00:00');
       const result = filterAvailableSlots('Santi Ducca', date, BASE_TIMES, []);
-      // Should include all times within 10:00–19:00
+      // Should include all times within 10:00–18:30
       expect(result).toContain('10:00');
-      expect(result).toContain('19:00');
+      expect(result).toContain('18:00');
+      expect(result).not.toContain('19:00');
     });
 
     it('returns [] when all slots are booked', () => {
       const date = new Date('2026-06-03T12:00:00');
       // Book every slot that Santi has on Wed
-      const santiSlots = BASE_TIMES.filter((t) => t >= '10:00' && t <= '19:00');
+      const santiSlots = BASE_TIMES.filter((t) => t >= '10:00' && t <= '18:30');
       const result = filterAvailableSlots('Santi Ducca', date, BASE_TIMES, santiSlots);
       expect(result).toEqual([]);
     });
