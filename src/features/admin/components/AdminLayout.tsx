@@ -102,7 +102,8 @@ export function AdminLayout({
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key)}
-              className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl transition-all duration-200
+              className={`w-full flex items-center py-3 rounded-xl transition-all duration-200
+                          ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3 md:px-4'}
                           ${
                             currentTab === tab.key
                               ? 'bg-neon-cyan text-black font-bold shadow-neon-glow'

@@ -39,7 +39,7 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
     .select('appointment_time, services(duration_min)')
     .eq('barber_id', barberId)
     .eq('appointment_date', date)
-    .in('status', ['pending', 'confirmed', 'attended']);
+    .in('status', ['pending', 'confirmed', 'attended', 'blocked']);
 
   if (error) {
     console.error('getBookedSlots error', error);

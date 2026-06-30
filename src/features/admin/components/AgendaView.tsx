@@ -31,6 +31,7 @@ interface AppointmentRow {
   deposit_paid: boolean;
   final_price: number | null;
   client_name: string | null;
+  client_phone: string | null;
   appointment_date: string;
   appointment_time: string;
   qr_hash: string | null;
@@ -58,6 +59,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-1',
       client_name: 'Joaquin Ferreyra',
+      client_phone: null,
       appointment_date: today,
       appointment_time: '10:00',
       status: 'pending',
@@ -71,6 +73,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-2',
       client_name: 'Fabri Kosic',
+      client_phone: null,
       appointment_date: today,
       appointment_time: '10:30',
       status: 'confirmed',
@@ -85,6 +88,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-3',
       client_name: 'Pedro Gimenez',
+      client_phone: null,
       appointment_date: today,
       appointment_time: '14:30',
       status: 'confirmed',
@@ -98,6 +102,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-4',
       client_name: 'Bruno Santamaria',
+      client_phone: null,
       appointment_date: nextFri,
       appointment_time: '16:30',
       status: 'confirmed',
@@ -112,6 +117,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-5',
       client_name: 'Tomas Santamaria',
+      client_phone: null,
       appointment_date: nextFri,
       appointment_time: '17:00',
       status: 'confirmed',
@@ -126,6 +132,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-6',
       client_name: 'Walter Chapista',
+      client_phone: null,
       appointment_date: nextFri,
       appointment_time: '14:00',
       status: 'pending',
@@ -140,6 +147,7 @@ function getMockRows(barberId: string): AppointmentRow[] {
     {
       id: 'mock-7',
       client_name: 'Javi Orru',
+      client_phone: null,
       appointment_date: nextFri2,
       appointment_time: '09:00',
       status: 'confirmed',
@@ -164,6 +172,8 @@ function statusInfo(status: string) {
     return { label: 'Atendido', cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' };
   if (status === 'debt')
     return { label: 'Fiado', cls: 'text-orange-400 bg-orange-400/10 border-orange-400/30' };
+  if (status === 'blocked')
+    return { label: 'Bloqueado', cls: 'text-red-400 bg-red-400/10 border-red-400/30' };
   return { label: status, cls: 'text-white/40 bg-white/5 border-white/10' };
 }
 
@@ -193,7 +203,15 @@ function LiveTicker({ notifications }: { notifications: IncomingAppointment[] })
 }
 
 // ── Availability bar (collapsible) ────────────────────────────────────────────
-function AvailabilityBar({ barberName, rows }: { barberName: string; rows: AppointmentRow[] }) {
+function AvailabilityBar({
+  barberName,
+  rows,
+  onDayClick,
+}: {
+  barberName: string;
+  rows: AppointmentRow[];
+  onDayClick: (dateStr: string) => void;
+}) {
   const [open, setOpen] = useState(false);
 
   const days = useMemo(() => {
@@ -249,9 +267,11 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
             if (total === 0) return null;
             const { text, cls } = statusText(pct, total);
             return (
-              <div
+              <button
                 key={dateStr}
-                className={`p-2.5 rounded-xl bg-white/[0.03] border ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
+                type='button'
+                onClick={() => onDayClick(dateStr)}
+                className={`p-2.5 rounded-xl bg-white/[0.03] border text-left w-full transition-colors hover:border-white/20 active:scale-95 ${pct >= 0.8 ? 'border-red-500/20' : pct >= 0.5 ? 'border-yellow-400/15' : 'border-white/5'}`}
               >
                 <div className='flex justify-between items-center mb-1.5'>
                   <div>
@@ -274,7 +294,7 @@ function AvailabilityBar({ barberName, rows }: { barberName: string; rows: Appoi
                   />
                 </div>
                 <p className={`text-[9px] font-bold leading-none ${cls}`}>{text}</p>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -296,6 +316,7 @@ function AppointmentCard({
   const time = row.appointment_time?.slice(0, 5) ?? '';
   const { label, cls } = statusInfo(row.status);
   const isMock = row.id.startsWith('mock-');
+  const isBlocked = row.status === 'blocked';
 
   const [qrOpen, setQrOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
@@ -414,10 +435,10 @@ function AppointmentCard({
           </span>
         </div>
 
-        {/* Row 2: action buttons (only when interactive) */}
-        {!isMock && (isActive || row.qr_hash) && (
+        {/* Row 2: action buttons */}
+        {!isMock && (
           <div className='flex items-center gap-1.5 mt-2.5 pl-[60px] flex-wrap'>
-            {row.is_fixed_weekly && (
+            {row.is_fixed_weekly && !isBlocked && (
               <span className='text-[10px] text-purple-400 font-bold mr-auto'>
                 🔄 {row.frequency === 'biweekly' ? 'Quincenal' : 'Semanal'}
               </span>
@@ -449,7 +470,7 @@ function AppointmentCard({
                 Mover
               </button>
             )}
-            {row.qr_hash && (
+            {row.qr_hash && !isBlocked && (
               <button
                 type='button'
                 onClick={() => setQrOpen(true)}
@@ -457,6 +478,34 @@ function AppointmentCard({
               >
                 QR
               </button>
+            )}
+            {!isBlocked && (
+              <button
+                type='button'
+                onClick={() => onStatusChange(row.id, 'blocked')}
+                className='px-3 py-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/20 transition-colors'
+              >
+                🔒 Bloquear
+              </button>
+            )}
+            {isBlocked && (
+              <button
+                type='button'
+                onClick={() => onStatusChange(row.id, 'pending')}
+                className='px-3 py-1 rounded-xl bg-white/5 border border-white/20 text-white/50 text-[10px] font-bold uppercase hover:bg-white/10 transition-colors'
+              >
+                🔓 Desbloquear
+              </button>
+            )}
+            {row.client_phone && !isBlocked && (
+              <a
+                href={`https://wa.me/54${row.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${row.client_name ?? ''}, te recordamos tu turno a las ${time} hs en Il Barbiere ✂️`)}`}
+                target='_blank'
+                rel='noreferrer'
+                className='px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/20 transition-colors'
+              >
+                WhatsApp
+              </a>
             )}
           </div>
         )}
@@ -582,14 +631,17 @@ function DaySection({
   barber,
   onStatusChange,
   onMoved,
+  sectionRef,
 }: {
   dateStr: string;
   rows: AppointmentRow[];
   barber: { id: string; name: string };
   onStatusChange: (id: string, next: AppointmentStatus) => void;
   onMoved: () => void;
+  sectionRef?: (el: HTMLDivElement | null) => void;
 }) {
   const [blockOpen, setBlockOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const date = parseISO(dateStr);
 
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -601,37 +653,80 @@ function DaySection({
     ? `${prefix} · ${format(date, "d 'de' MMMM", { locale: es })}`
     : dayLabel;
 
+  const availableSlots = useMemo(() => {
+    const allSlots = getAvailableTimesForBarber(barber.name, date, BASE_TIMES);
+    const bookedTimes = new Set(
+      rows.filter((r) => r.status !== 'cancelled').map((r) => r.appointment_time.slice(0, 5))
+    );
+    return allSlots.filter((t) => !bookedTimes.has(t));
+  }, [barber.name, date, rows]);
+
   return (
-    <div className='mb-8'>
-      {/* Day header */}
-      <div className='flex items-center justify-between mb-3 gap-2'>
+    <div className='mb-6' ref={sectionRef}>
+      {/* Day header — clickable to collapse */}
+      <button
+        type='button'
+        onClick={() => setCollapsed((v) => !v)}
+        className='w-full flex items-center justify-between mb-2 gap-2 group'
+      >
         <div className='flex items-center gap-2 min-w-0'>
-          <p className='text-[10px] font-black uppercase tracking-[0.15em] text-white/30 capitalize truncate'>
+          {collapsed ? (
+            <ChevronDown className='w-3.5 h-3.5 text-white/20 flex-shrink-0' />
+          ) : (
+            <ChevronUp className='w-3.5 h-3.5 text-white/20 flex-shrink-0' />
+          )}
+          <p className='text-[10px] font-black uppercase tracking-[0.15em] text-white/30 capitalize truncate group-hover:text-white/50 transition-colors'>
             {headerLabel}
           </p>
           <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>{rows.length}</span>
         </div>
-        <button
-          type='button'
-          onClick={() => setBlockOpen(true)}
+        <div
           className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors flex-shrink-0'
+          onClick={(e) => {
+            e.stopPropagation();
+            setBlockOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              setBlockOpen(true);
+            }
+          }}
         >
           <Lock className='w-3 h-3' />
           Bloquear
-        </button>
-      </div>
+        </div>
+      </button>
 
-      {/* Cards */}
-      <div className='flex flex-col gap-2'>
-        {rows.map((row) => (
-          <AppointmentCard
-            key={row.id}
-            row={row}
-            onStatusChange={onStatusChange}
-            onMoved={onMoved}
-          />
-        ))}
-      </div>
+      {!collapsed && (
+        <>
+          {/* Available slots strip */}
+          {availableSlots.length > 0 && (
+            <div className='flex gap-1.5 flex-wrap mb-3 px-1'>
+              {availableSlots.map((slot) => (
+                <span
+                  key={slot}
+                  className='text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                >
+                  {slot}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Appointment cards */}
+          <div className='flex flex-col gap-2'>
+            {rows.map((row) => (
+              <AppointmentCard
+                key={row.id}
+                row={row}
+                onStatusChange={onStatusChange}
+                onMoved={onMoved}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <BlockTurnModal
         barber={barber}
@@ -651,6 +746,12 @@ function DaySection({
 export function AgendaView({ barber, refetchKey, recentNotifications = [] }: AgendaViewProps) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AppointmentRow[]>([]);
+  const dayRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  function scrollToDay(dateStr: string) {
+    const el = dayRefs.current[dateStr];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   const fetchAgenda = useCallback(async () => {
     try {
@@ -660,7 +761,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       const { data } = await supabase
         .from('appointments')
         .select(
-          'id, status, deposit_paid, final_price, client_name, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)'
+          'id, status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)'
         )
         .eq('barber_id', barber.id)
         .gte('appointment_date', today)
@@ -738,7 +839,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       </div>
 
       {/* Availability bar */}
-      <AvailabilityBar barberName={barber.name} rows={rows} />
+      <AvailabilityBar barberName={barber.name} rows={rows} onDayClick={scrollToDay} />
 
       {/* Appointment list grouped by day */}
       {loading ? (
@@ -756,6 +857,9 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
             barber={barber}
             onStatusChange={handleStatusChange}
             onMoved={fetchAgenda}
+            sectionRef={(el) => {
+              dayRefs.current[dateStr] = el;
+            }}
           />
         ))
       )}
