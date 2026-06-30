@@ -47,121 +47,6 @@ interface AgendaViewProps {
   recentNotifications?: IncomingAppointment[];
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-function getMockRows(barberId: string): AppointmentRow[] {
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const fri = new Date();
-  while (fri.getDay() !== 5) fri.setDate(fri.getDate() + 1);
-  const nextFri = format(fri, 'yyyy-MM-dd');
-  const nextFri2 = format(addDays(fri, 14), 'yyyy-MM-dd');
-
-  return [
-    {
-      id: 'mock-1',
-      client_name: 'Joaquin Ferreyra',
-      client_phone: null,
-      appointment_date: today,
-      appointment_time: '10:00',
-      status: 'pending',
-      deposit_paid: false,
-      final_price: 14000,
-      qr_hash: 'MOCK-001',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: false,
-    },
-    {
-      id: 'mock-2',
-      client_name: 'Fabri Kosic',
-      client_phone: null,
-      appointment_date: today,
-      appointment_time: '10:30',
-      status: 'confirmed',
-      deposit_paid: true,
-      final_price: 12600,
-      qr_hash: 'MOCK-002',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: true,
-      frequency: 'weekly',
-    },
-    {
-      id: 'mock-3',
-      client_name: 'Pedro Gimenez',
-      client_phone: null,
-      appointment_date: today,
-      appointment_time: '14:30',
-      status: 'confirmed',
-      deposit_paid: true,
-      final_price: 14000,
-      qr_hash: 'MOCK-003',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: false,
-    },
-    {
-      id: 'mock-4',
-      client_name: 'Bruno Santamaria',
-      client_phone: null,
-      appointment_date: nextFri,
-      appointment_time: '16:30',
-      status: 'confirmed',
-      deposit_paid: true,
-      final_price: 12600,
-      qr_hash: 'MOCK-004',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: true,
-      frequency: 'weekly',
-    },
-    {
-      id: 'mock-5',
-      client_name: 'Tomas Santamaria',
-      client_phone: null,
-      appointment_date: nextFri,
-      appointment_time: '17:00',
-      status: 'confirmed',
-      deposit_paid: true,
-      final_price: 12600,
-      qr_hash: 'MOCK-005',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: true,
-      frequency: 'weekly',
-    },
-    {
-      id: 'mock-6',
-      client_name: 'Walter Chapista',
-      client_phone: null,
-      appointment_date: nextFri,
-      appointment_time: '14:00',
-      status: 'pending',
-      deposit_paid: true,
-      final_price: 12600,
-      qr_hash: 'MOCK-006',
-      barber_id: barberId,
-      services: { name: 'Corte Premium' },
-      is_fixed_weekly: true,
-      frequency: 'biweekly',
-    },
-    {
-      id: 'mock-7',
-      client_name: 'Javi Orru',
-      client_phone: null,
-      appointment_date: nextFri2,
-      appointment_time: '09:00',
-      status: 'confirmed',
-      deposit_paid: true,
-      final_price: 18000,
-      qr_hash: 'MOCK-007',
-      barber_id: barberId,
-      services: { name: 'Corte + Barba' },
-      is_fixed_weekly: true,
-      frequency: 'biweekly',
-    },
-  ];
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function statusInfo(status: string) {
   if (status === 'pending')
@@ -317,9 +202,7 @@ function AppointmentCard({
 }) {
   const time = row.appointment_time?.slice(0, 5) ?? '';
   const { label, cls } = statusInfo(row.status);
-  const isMock = row.id.startsWith('mock-');
   const isBlocked = row.status === 'blocked';
-  // isVip comes from parent (cross-referenced against vip_clients table)
 
   const [qrOpen, setQrOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
@@ -397,9 +280,7 @@ function AppointmentCard({
 
   return (
     <>
-      <div
-        className={`py-3 px-4 rounded-2xl border transition-colors ${isMock ? 'border-white/5 bg-white/[0.015] opacity-60' : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}
-      >
+      <div className='py-3 px-4 rounded-2xl border transition-colors bg-white/[0.03] border-white/5 hover:border-white/10'>
         {/* Row 1: time + name + status */}
         <div className='flex items-center gap-3'>
           <span className='text-lg font-black text-neon-cyan tabular-nums flex-shrink-0 w-12 text-right'>
@@ -438,79 +319,77 @@ function AppointmentCard({
         </div>
 
         {/* Row 2: action buttons */}
-        {!isMock && (
-          <div className='flex items-center gap-1.5 mt-2.5 pl-[60px] flex-wrap'>
-            {row.is_fixed_weekly && !isBlocked && (
-              <span className='text-[10px] text-purple-400 font-bold mr-auto'>
-                🔄 {row.frequency === 'biweekly' ? 'Quincenal' : 'Semanal'}
-              </span>
-            )}
-            {row.status === 'pending' && (
-              <button
-                type='button'
-                onClick={() => onStatusChange(row.id, 'confirmed')}
-                className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
-              >
-                Confirmar
-              </button>
-            )}
-            {row.status === 'confirmed' && (
-              <button
-                type='button'
-                onClick={() => onStatusChange(row.id, 'attended')}
-                className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
-              >
-                Presente
-              </button>
-            )}
-            {isActive && (
-              <button
-                type='button'
-                onClick={openMove}
-                className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
-              >
-                Mover
-              </button>
-            )}
-            {row.qr_hash && !isBlocked && (
-              <button
-                type='button'
-                onClick={() => setQrOpen(true)}
-                className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
-              >
-                QR
-              </button>
-            )}
-            {!isBlocked && (
-              <button
-                type='button'
-                onClick={() => onStatusChange(row.id, 'blocked')}
-                className='px-3 py-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/20 transition-colors'
-              >
-                🔒 Bloquear
-              </button>
-            )}
-            {isBlocked && (
-              <button
-                type='button'
-                onClick={() => onStatusChange(row.id, 'pending')}
-                className='px-3 py-1 rounded-xl bg-white/5 border border-white/20 text-white/50 text-[10px] font-bold uppercase hover:bg-white/10 transition-colors'
-              >
-                🔓 Desbloquear
-              </button>
-            )}
-            {row.client_phone && !isBlocked && (
-              <a
-                href={`https://wa.me/54${row.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${row.client_name ?? ''}, te recordamos tu turno a las ${time} hs en Il Barbiere ✂️`)}`}
-                target='_blank'
-                rel='noreferrer'
-                className='px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/20 transition-colors'
-              >
-                WhatsApp
-              </a>
-            )}
-          </div>
-        )}
+        <div className='flex items-center gap-1.5 mt-2.5 pl-[60px] flex-wrap'>
+          {row.is_fixed_weekly && !isBlocked && (
+            <span className='text-[10px] text-purple-400 font-bold mr-auto'>
+              🔄 {row.frequency === 'biweekly' ? 'Quincenal' : 'Semanal'}
+            </span>
+          )}
+          {row.status === 'pending' && (
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'confirmed')}
+              className='px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors'
+            >
+              Confirmar
+            </button>
+          )}
+          {row.status === 'confirmed' && (
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'attended')}
+              className='px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors'
+            >
+              Presente
+            </button>
+          )}
+          {isActive && (
+            <button
+              type='button'
+              onClick={openMove}
+              className='px-3 py-1 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors'
+            >
+              Mover
+            </button>
+          )}
+          {row.qr_hash && !isBlocked && (
+            <button
+              type='button'
+              onClick={() => setQrOpen(true)}
+              className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
+            >
+              QR
+            </button>
+          )}
+          {!isBlocked && (
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'blocked')}
+              className='px-3 py-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase hover:bg-red-500/20 transition-colors'
+            >
+              🔒 Bloquear
+            </button>
+          )}
+          {isBlocked && (
+            <button
+              type='button'
+              onClick={() => onStatusChange(row.id, 'pending')}
+              className='px-3 py-1 rounded-xl bg-white/5 border border-white/20 text-white/50 text-[10px] font-bold uppercase hover:bg-white/10 transition-colors'
+            >
+              🔓 Desbloquear
+            </button>
+          )}
+          {row.client_phone && !isBlocked && (
+            <a
+              href={`https://wa.me/54${row.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${row.client_name ?? ''}, te recordamos tu turno a las ${time} hs en Il Barbiere ✂️`)}`}
+              target='_blank'
+              rel='noreferrer'
+              className='px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/20 transition-colors'
+            >
+              WhatsApp
+            </a>
+          )}
+        </div>
       </div>
 
       {/* QR Modal */}
@@ -788,11 +667,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
         .order('appointment_date', { ascending: true })
         .order('appointment_time', { ascending: true });
 
-      const realRows = (data as AppointmentRow[]) ?? [];
-      const realDates = new Set(realRows.map((r) => r.appointment_date));
-      const mockRows = getMockRows(barber.id).filter((m) => !realDates.has(m.appointment_date));
-
-      setRows([...realRows, ...mockRows]);
+      setRows((data as AppointmentRow[]) ?? []);
     } finally {
       setLoading(false);
     }
