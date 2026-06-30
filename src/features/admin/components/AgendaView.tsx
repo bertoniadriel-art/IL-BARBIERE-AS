@@ -766,8 +766,8 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       .eq('barber_id', barber.id)
       .eq('active', true)
       .not('slot_time', 'is', null)
-      .then(({ data }) => {
-        if (data) setVipNames(new Set(data.map((r) => r.client_name as string)));
+      .then(({ data }: { data: { client_name: string }[] | null }) => {
+        if (data) setVipNames(new Set(data.map((r) => r.client_name)));
       });
   }, [barber.id]);
 
