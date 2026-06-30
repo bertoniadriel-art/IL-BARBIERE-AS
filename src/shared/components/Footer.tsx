@@ -78,13 +78,15 @@ export function Footer() {
           >
             <Instagram className='w-5 h-5 group-hover:scale-110 transition-transform' />
           </a>
-          <Link
-            href='/'
+          <a
+            href='/landing.html'
+            target='_blank'
+            rel='noreferrer'
             className='p-3 bg-white/5 rounded-full hover:bg-neon-cyan/20 hover:text-neon-cyan transition-all group'
             title='¿Cómo reservar?'
           >
             <HelpCircle className='w-5 h-5 group-hover:scale-110 transition-transform' />
-          </Link>
+          </a>
         </div>
 
         <div className='text-xs text-white/20 flex flex-col md:flex-row items-center gap-2 md:gap-4 uppercase tracking-[0.2em]'>
