@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://il-barbiere-10-mfl2fbdea-adrielias-projects.vercel.app/">
+  <a href="https://il-barbiere-10-5r4p8m8l4-adrielias-projects.vercel.app/">
     <img src="https://img.shields.io/badge/Live-Demo-blue?style=for-the-badge" alt="Live Demo" />
   </a>
   <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Supabase-3-black?style=for-the-badge&logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Supabase-2-black?style=for-the-badge&logo=supabase" alt="Supabase" />
 </p>
 
 ---
@@ -44,7 +44,7 @@ pnpm dev
 | Categoría | Tecnología |
 |-----------|------------|
 | Framework | Next.js 16 (App Router) |
-| Lenguaje | TypeScript |
+| Lenguaje | TypeScript 5 |
 | Estilos | TailwindCSS 3 |
 | Base de datos | Supabase (PostgreSQL) |
 | Auth | Supabase Auth |
@@ -60,29 +60,30 @@ pnpm dev
 
 ```
 src/
-├── app/                      # Páginas Next.js (App Router)
-│   ├── page.tsx             # Landing page
-│   ├── reservar/            # Flow de reservas
-│   ├── admin/               # Dashboard admin
-│   └── layout.tsx           # Root layout
+├── app/                        # Páginas Next.js (App Router)
+│   ├── page.tsx               # Landing page
+│   ├── reservar/              # Flow de reservas (wizard)
+│   ├── mi-turno/[hash]/       # Auto-cancelación de turno (cliente)
+│   ├── admin/                 # Dashboard admin
+│   └── layout.tsx             # Root layout
 │
-├── features/                # Módulos por funcionalidad
-│   ├── booking/             # Reserva de turnos
-│   │   ├── components/      # Componentes del wizard
-│   │   ├── services/        # Servicios de disponibilidad
-│   │   └── bookingStore.ts  # Estado Zustand
-│   ├── admin/               # Panel admin
-│   │   ├── components/      # Componentes admin
-│   │   └── services/        # Servicios admin
-│   └── auth/                # Autenticación
+├── features/                  # Módulos por funcionalidad
+│   ├── booking/               # Reserva de turnos
+│   │   ├── components/        # Wizard, Confirmación, CancelAppointment
+│   │   ├── services/          # Disponibilidad (bloquea slots y VIPs)
+│   │   └── bookingStore.ts    # Estado Zustand
+│   ├── admin/                 # Panel admin
+│   │   ├── components/        # AgendaView, AdminLayout, DaySection
+│   │   └── services/          # Servicios admin
+│   └── auth/                  # Autenticación
 │
-├── shared/                  # Código compartido
-│   ├── components/          # Componentes reutilizables
-│   ├── hooks/               # Custom hooks
-│   ├── lib/                 # Utilidades (Supabase, etc)
-│   └── types/               # Tipos globales
+├── shared/                    # Código compartido
+│   ├── components/            # Componentes reutilizables
+│   ├── hooks/                 # Custom hooks
+│   ├── lib/                   # Supabase client (server + browser)
+│   └── types/                 # Tipos globales (AppointmentStatus, VipClient, etc.)
 │
-└── test/                    # Configuración de tests
+└── test/                      # Configuración de tests
 ```
 
 ---
@@ -94,7 +95,6 @@ src/
 | `pnpm dev` | Iniciar servidor de desarrollo |
 | `pnpm build` | Build de producción |
 | `pnpm start` | Iniciar producción |
-| `pnpm lint` | ESLint |
 | `pnpm typecheck` | Verificación de tipos |
 | `pnpm biome:check` | Lint + Format check |
 | `pnpm biome:write` | Corregir lint + format |
@@ -134,15 +134,38 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
 
 ### Reserva Online
 - ✅ Wizard de 3 pasos (Barbero → Servicio → Horario)
-- ✅ Servicios cargados desde Supabase
+- ✅ Servicios y horarios cargados desde Supabase
 - ✅ Validación de disponibilidad en tiempo real
 - ✅ Prevención de colisiones (23505)
 - ✅ QR único por turno
 - ✅ Compartir por WhatsApp
+- ✅ Link post-reserva para ver o cancelar el turno
+
+### Auto-cancelación de Turno (Cliente)
+- ✅ Página `/mi-turno/[hash]` accesible sin login
+- ✅ Muestra datos del turno (fecha, hora, barbero, servicio)
+- ✅ Botón de cancelación disponible hasta 4 horas antes del turno
+- ✅ Mensaje de advertencia cuando el plazo de cancelación vence
+- ✅ Identificación por QR hash — sin auth requerida
+
+### Agenda Admin (AgendaView)
+- ✅ Vista diaria colapsable por día
+- ✅ Barra de disponibilidad visual con porcentaje
+- ✅ Slots disponibles por día
+- ✅ Corona 👑 para clientes VIP (cross-reference contra tabla `vip_clients`)
+- ✅ Botones de bloqueo de slot y contacto por WhatsApp
+- ✅ Estados de turno: pending, confirmed, attended, cancelled, debt, blocked
+- ✅ Sidebar colapsable con navegación por íconos
+
+### Clientes VIP
+- ✅ Tabla `vip_clients` con slots reservados por día/hora
+- ✅ Frecuencia semanal o quincenal
+- ✅ Descuento configurable por cliente
+- ✅ Bloqueo automático de slot en `blocked_slots`
+- ✅ Badge de corona en AgendaView por nombre de cliente
 
 ### Dashboard Admin
 - ✅ Métricas en tiempo real (flujo de caja, clientes)
-- ✅ Resumen del día
 - ✅ Quick actions (Confirmar/Presente)
 - ✅ Estado de conexión a Supabase
 - ✅ Calendario visual por barbero
@@ -197,7 +220,10 @@ pnpm scanner:fixtures
 | PR3 | ✅ | Auth SSR (middleware, sesiones) |
 | PR4 | ✅ | Dashboard Status (métricas, conexión, quick actions) |
 | PR5 | ✅ | Integration Tests (124 tests) |
-| Scanner | ✅ | QR Scanner con expiración 2h |
+| PR6 | ✅ | QR Scanner con expiración 2h |
+| PR7 | ✅ | AgendaView UI — 10 features (VIP, slots, colapso, barra) |
+| PR8 | ✅ | VIP Clients — tabla, slots bloqueados, corona badge |
+| PR9 | ✅ | Auto-cancelación de turno con cutoff de 4 horas |
 
 ---
 
