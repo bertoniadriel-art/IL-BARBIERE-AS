@@ -105,7 +105,14 @@ export function CancelAppointment({
     <div className='min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6'>
       <div className='w-full max-w-sm'>
         <div className='text-center mb-8'>
-          <Scissors className='w-8 h-8 text-neon-cyan mx-auto mb-3' />
+          <div className='relative w-16 h-16 mx-auto mb-4'>
+            <span className='absolute inset-0 rounded-full border border-neon-cyan shadow-neon-glow animate-pulse' />
+            <img
+              src='/assets/logo/logo-official.jpg'
+              alt='Il Barbiere'
+              className='w-16 h-16 rounded-full object-cover'
+            />
+          </div>
           <h1 className='text-2xl font-black tracking-tighter text-white'>IL BARBIERE</h1>
           <p className='text-white/30 text-xs uppercase tracking-widest mt-1'>Mi turno</p>
         </div>
