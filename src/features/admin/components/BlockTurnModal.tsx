@@ -52,7 +52,14 @@ function getDatesForRecurrence(start: string, type: Recurrence): string[] {
   return dates;
 }
 
-export function BlockTurnModal({ barber, initialDate, initialTime, isOpen, onClose, onSuccess }: Props) {
+export function BlockTurnModal({
+  barber,
+  initialDate,
+  initialTime,
+  isOpen,
+  onClose,
+  onSuccess,
+}: Props) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [services, setServices] = useState<ServiceOption[]>([]);

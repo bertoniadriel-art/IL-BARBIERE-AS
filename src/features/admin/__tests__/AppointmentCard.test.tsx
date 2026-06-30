@@ -291,7 +291,12 @@ describe('AppointmentCard — T4.2: Slot validation in MoveModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() => {
-      expect(mocks.mockMoveAppointment).toHaveBeenCalledWith('apt-1', 'barber-1', '2026-07-15', '11:00');
+      expect(mocks.mockMoveAppointment).toHaveBeenCalledWith(
+        'apt-1',
+        'barber-1',
+        '2026-07-15',
+        '11:00'
+      );
     });
   });
 });

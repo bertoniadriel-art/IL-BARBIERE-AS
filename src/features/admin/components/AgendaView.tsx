@@ -4,7 +4,10 @@ import {
   moveAppointment,
   updateAppointmentStatus,
 } from '@/features/admin/services/appointmentService';
-import { getBlockedSlotsForDay, getBookedSlots } from '@/features/booking/services/availabilityService';
+import {
+  getBlockedSlotsForDay,
+  getBookedSlots,
+} from '@/features/booking/services/availabilityService';
 import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import { supabase } from '@/shared/lib/supabase';
@@ -582,7 +585,9 @@ function DaySection({
           <p className='text-[10px] font-black uppercase tracking-[0.15em] text-white/30 capitalize truncate group-hover:text-white/50 transition-colors'>
             {headerLabel}
           </p>
-          <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>{availableSlots.length}</span>
+          <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>
+            {availableSlots.length}
+          </span>
         </div>
         <div
           className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors flex-shrink-0'
@@ -611,7 +616,10 @@ function DaySection({
                 <button
                   key={slot}
                   type='button'
-                  onClick={() => { setBlockTime(slot); setBlockOpen(true); }}
+                  onClick={() => {
+                    setBlockTime(slot);
+                    setBlockOpen(true);
+                  }}
                   className='text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors'
                 >
                   {slot}
@@ -640,7 +648,10 @@ function DaySection({
         initialDate={dateStr}
         initialTime={blockTime}
         isOpen={blockOpen}
-        onClose={() => { setBlockOpen(false); setBlockTime(undefined); }}
+        onClose={() => {
+          setBlockOpen(false);
+          setBlockTime(undefined);
+        }}
         onSuccess={() => {
           setBlockOpen(false);
           setBlockTime(undefined);
