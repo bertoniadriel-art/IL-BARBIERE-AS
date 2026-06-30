@@ -4,11 +4,17 @@ import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { Navbar } from '@/shared/components/Navbar';
 
 export const metadata: Metadata = {
-  title: 'IL BARBIERE OS | Reservas Premium',
-  description: 'Sistema Operativo de Reservas para IL BARBIERE Arroyo Seco',
+  title: 'Il Barbiere OS',
+  description: 'Sistema de reservas Il Barbiere Arroyo Seco',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Il Barbiere',
+  },
   icons: {
-    icon: '/assets/logo/logo-official.jpg',
-    apple: '/assets/logo/logo-official.jpg',
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
   },
 };
 

@@ -80,7 +80,7 @@ export function DashboardShell({ barber }: Props) {
                 </p>
                 <p className='text-white/40 text-xs mt-0.5'>
                   {notification.appointment_date
-                    ? format(parseISO(notification.appointment_date), "d MMM", { locale: es })
+                    ? format(parseISO(notification.appointment_date), 'd MMM', { locale: es })
                     : ''}{' '}
                   · {notification.appointment_time?.slice(0, 5)} hs
                 </p>
@@ -136,7 +136,11 @@ export function DashboardShell({ barber }: Props) {
 
           {activeTab === 'agenda' && (
             <div className='animate-in fade-in duration-500'>
-              <AgendaView barber={barber} refetchKey={refetchKey} recentNotifications={recentNotifications} />
+              <AgendaView
+                barber={barber}
+                refetchKey={refetchKey}
+                recentNotifications={recentNotifications}
+              />
             </div>
           )}
           {activeTab === 'scanner' && <ScannerModule barberId={barber.id} />}

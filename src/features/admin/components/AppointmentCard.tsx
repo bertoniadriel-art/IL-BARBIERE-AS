@@ -223,10 +223,14 @@ export function AppointmentCard({ app, currencyFormatter, onMutated }: Appointme
         <div
           className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'
           onClick={() => setIsQRModalOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setIsQRModalOpen(false);
+          }}
         >
           <div
             className='bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl'
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <QRCode value={app.qr_hash} size={200} />
             <p className='text-black font-bold text-sm'>{app.client_name}</p>

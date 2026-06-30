@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Il Barbiere — Admin UI Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'neon-cyan': '#00ffc8',
+            'neon-purple': '#bc00ff',
+          },
+          boxShadow: {
+            'neon-glow': '0 0 20px rgba(0, 255, 200, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    body { font-family: 'Inter', sans-serif; background: #0a0a0c; }
+    .glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    .animate-slide-up { animation: slideUp 0.3s ease-out; }
+    .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen text-white p-4 md:p-8">
+
+  <!-- Header -->
+  <div class="max-w-6xl mx-auto mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-black">Il Barbiere <span class="text-neon-cyan">OS</span></h1>
+        <p class="text-xs text-white/40 mt-1">Panel de administración — Preview UI</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="px-3 py-1.5 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[10px] font-bold uppercase tracking-widest">
+          ✅ Nuevo UI
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto">
+
+    <!-- Stats Strip -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <div class="glass-card rounded-2xl p-4 border border-white/5 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1">Hoy</p>
+        <p class="text-3xl font-black text-white">4</p>
+        <p class="text-[10px] text-white/20 mt-0.5">turnos</p>
+      </div>
+      <div class="glass-card rounded-2xl p-4 border border-white/5 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1">Pendientes</p>
+        <p class="text-3xl font-black text-white">1</p>
+        <p class="text-[10px] text-white/20 mt-0.5">sin confirmar</p>
+      </div>
+      <div class="glass-card rounded-2xl p-4 border border-white/5 text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-1">Atendidos</p>
+        <p class="text-3xl font-black text-white">2</p>
+        <p class="text-[10px] text-white/20 mt-0.5">esta jornada</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- MINI CALENDAR — 14 DÍAS EXPANDIBLE -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="mb-8">
+      <!-- Toggle Button -->
+      <button id="calendarToggle" onclick="toggleCalendar()" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-colors">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span class="text-xs font-bold text-white/50 uppercase tracking-widest">Disponibilidad próximos 14 días</span>
+        </div>
+        <svg id="calendarChevron" class="w-4 h-4 text-white/30 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+
+      <!-- Calendar Grid + Expanded Day -->
+      <div id="calendarContent" class="mt-2 animate-fade-in">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" id="dayGrid">
+          <!-- Days will be rendered by JS -->
+        </div>
+
+        <!-- Expanded Day Panel -->
+        <div id="expandedPanel" class="mt-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 animate-fade-in hidden">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40" id="expandedTitle">Turnos · 30 de junio</p>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-white/30" id="expandedCount">2 turnos</span>
+              <button onclick="openBlockModal()" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-[9px] font-bold uppercase hover:bg-neon-cyan/20 transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Bloquear
+              </button>
+            </div>
+          </div>
+          <div id="expandedTurns" class="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1">
+            <!-- Turns rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- DAY GROUPS (existing sections) -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Hoy -->
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-3">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Hoy · 29 de junio</p>
+        <span class="text-[10px] font-bold text-white/20">4</span>
+        <div class="flex-1 h-px bg-white/5"></div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <!-- Turn 1 -->
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">09:00</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">Carlos García</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-emerald-400 font-bold">Seña ✓</span>
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Corte</span>
+              <span class="text-[10px] text-white/30">· $4.500</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-emerald-400 bg-emerald-400/10 border-emerald-400/30">Atendido</span>
+          </div>
+        </div>
+        <!-- Turn 2 -->
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">10:30</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">Martín López</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-emerald-400 font-bold">Seña ✓</span>
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Corte + Barba</span>
+              <span class="text-[10px] text-white/30">· $6.500</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-emerald-400 bg-emerald-400/10 border-emerald-400/30">Atendido</span>
+          </div>
+        </div>
+        <!-- Turn 3 -->
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-sky-500/30 hover:border-sky-500/40 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">14:00</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">⭐ Ana Martínez — VIP</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-red-400 font-bold">Sin seña</span>
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Barba</span>
+              <span class="text-[10px] text-yellow-400">· $2.700 <span class="text-[9px] opacity-60">(10% off)</span></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/30">Confirmado</span>
+            <button class="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/30 transition-colors">Presente</button>
+          </div>
+        </div>
+        <!-- Turn 4 — VIP recurrente -->
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-yellow-400/20 hover:border-yellow-400/30 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">16:00</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">⭐ Pedro Ruiz — VIP Fijo</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-emerald-400 font-bold">Seña ✓</span>
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Corte</span>
+              <span class="text-[10px] text-yellow-400">· $4.050 <span class="text-[9px] opacity-60">(10% off)</span></span>
+              <span class="text-[10px] text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1.5 py-0.5 rounded-md">🔄 Semanal</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-yellow-400 bg-yellow-400/10 border-yellow-400/30">Pendiente</span>
+            <button class="px-3 py-1 rounded-xl bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[10px] font-bold uppercase hover:bg-sky-500/30 transition-colors">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mañana -->
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-3">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Mañana · 30 de junio</p>
+        <span class="text-[10px] font-bold text-white/20">2</span>
+        <div class="flex-1 h-px bg-white/5"></div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">10:00</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">Lucas Fernández</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-emerald-400 font-bold">Seña ✓</span>
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Corte + Barba</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/30">Confirmado</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 py-3 px-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
+          <div class="w-14 text-right flex-shrink-0">
+            <span class="text-lg font-black text-neon-cyan tabular-nums">15:30</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-white text-sm truncate">⭐ Gonzalo Díaz — VIP Quincenal</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">Corte</span>
+              <span class="text-[10px] text-yellow-400">· $4.050 <span class="text-[9px] opacity-60">(10% off)</span></span>
+              <span class="text-[10px] text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1.5 py-0.5 rounded-md">🔄 Quincenal</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/30">Confirmado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BLOCK TURN MODAL -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="blockModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md mx-4 bg-[#111114] border border-neon-cyan/30 rounded-3xl p-6 relative animate-slide-up max-h-[92vh] overflow-y-auto">
+      <!-- Close -->
+      <button onclick="closeBlockModal()" class="absolute top-4 right-4 text-white/30 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <!-- Header -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-4 h-4 text-neon-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          <p class="text-[10px] uppercase tracking-widest text-neon-cyan font-bold">Bloquear Turno</p>
+        </div>
+        <h2 class="text-xl font-black">Fede</h2>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Client name -->
+        <div>
+          <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Nombre del cliente</label>
+          <input type="text" value="Carlos García" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan">
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">WhatsApp (opcional)</label>
+          <input type="tel" value="3415551234" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan">
+        </div>
+
+        <!-- Service -->
+        <div>
+          <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Servicio</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="py-3 px-3 rounded-xl text-left text-sm font-bold border border-neon-cyan bg-neon-cyan/10 text-neon-cyan transition-colors">
+              <span class="block truncate">Corte</span>
+              <span class="text-[10px] font-normal opacity-60">$4.500 · 30min</span>
+            </button>
+            <button class="py-3 px-3 rounded-xl text-left text-sm font-bold border border-white/10 bg-white/5 text-white/60 hover:border-white/20 transition-colors">
+              <span class="block truncate">Barba</span>
+              <span class="text-[10px] font-normal opacity-60">$3.000 · 20min</span>
+            </button>
+            <button class="py-3 px-3 rounded-xl text-left text-sm font-bold border border-white/10 bg-white/5 text-white/60 hover:border-white/20 transition-colors">
+              <span class="block truncate">Corte + Barba</span>
+              <span class="text-[10px] font-normal opacity-60">$6.500 · 45min</span>
+            </button>
+            <button class="py-3 px-3 rounded-xl text-left text-sm font-bold border border-white/10 bg-white/5 text-white/60 hover:border-white/20 transition-colors">
+              <span class="block truncate">Degradado</span>
+              <span class="text-[10px] font-normal opacity-60">$5.000 · 35min</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Fecha</label>
+            <input type="date" value="2026-06-30" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Hora</label>
+            <input type="time" value="14:00" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-neon-cyan">
+          </div>
+        </div>
+
+        <!-- VIP Toggle -->
+        <div>
+          <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Cliente VIP</label>
+          <button id="vipToggle" onclick="toggleVip()" class="w-full py-3 rounded-xl text-sm font-bold border border-yellow-400 bg-yellow-400/10 text-yellow-400 transition-colors">
+            ⭐ VIP — 10% descuento
+          </button>
+          <p class="mt-1.5 text-[10px] text-yellow-400/70">Precio con descuento: $4.050</p>
+        </div>
+
+        <!-- Recurrence -->
+        <div>
+          <label class="block text-[10px] uppercase tracking-widest text-white/40 mb-1.5 font-bold">Recurrencia</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="py-2.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-white/40 hover:border-white/20 transition-colors">Único</button>
+            <button class="py-2.5 rounded-xl text-xs font-bold border border-neon-cyan bg-neon-cyan/10 text-neon-cyan transition-colors">Semanal</button>
+            <button class="py-2.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-white/40 hover:border-white/20 transition-colors">Quincenal</button>
+          </div>
+          <p class="mt-1.5 text-[10px] text-white/30">Se crearán turnos por los próximos 3 meses</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <button class="mt-6 w-full py-4 rounded-2xl bg-gradient-to-r from-neon-cyan to-[#bc00ff] text-black font-black uppercase tracking-widest text-sm transition-opacity hover:opacity-90">
+        Bloquear turnos recurrentes
+      </button>
+      <button onclick="closeBlockModal()" class="mt-3 w-full py-3 rounded-2xl text-white/40 text-sm font-bold hover:text-white/70 transition-colors">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Mock Data ──────────────────────────────────────────────────────────────
+    const MOCK_TURNS = {
+      '2026-06-29': [
+        { time: '09:00', name: 'Carlos García', service: 'Corte', price: 4500, status: 'attended', vip: false, deposit: true },
+        { time: '10:30', name: 'Martín López', service: 'Corte + Barba', price: 6500, status: 'attended', vip: false, deposit: true },
+        { time: '14:00', name: 'Ana Martínez', service: 'Barba', price: 2700, status: 'confirmed', vip: true, deposit: false },
+        { time: '16:00', name: 'Pedro Ruiz', service: 'Corte', price: 4050, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+      ],
+      '2026-06-30': [
+        { time: '10:00', name: 'Lucas Fernández', service: 'Corte + Barba', price: 6500, status: 'confirmed', vip: false, deposit: true },
+        { time: '15:30', name: 'Gonzalo Díaz', service: 'Corte', price: 4050, status: 'confirmed', vip: true, deposit: true, recurrence: 'Quincenal' },
+      ],
+      '2026-07-01': [
+        { time: '11:00', name: 'Roberto Sánchez', service: 'Degradado', price: 5000, status: 'confirmed', vip: false, deposit: true },
+      ],
+      '2026-07-03': [
+        { time: '09:30', name: '⭐ VIP Fijo — Viernes', service: 'Corte', price: 4050, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+        { time: '14:00', name: '⭐ VIP Fijo — Viernes', service: 'Corte + Barba', price: 5850, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+      ],
+      '2026-07-04': [
+        { time: '10:00', name: '⭐ VIP Fijo — Viernes', service: 'Barba', price: 2700, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+      ],
+      '2026-07-07': [
+        { time: '16:00', name: '⭐ VIP Martes', service: 'Corte', price: 4050, status: 'pending', vip: true, deposit: true, recurrence: 'Quincenal' },
+      ],
+      '2026-07-10': [
+        { time: '09:00', name: '⭐ VIP Fijo — Viernes', service: 'Corte', price: 4050, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+        { time: '11:00', name: '⭐ VIP Fijo — Viernes', service: 'Corte + Barba', price: 5850, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+        { time: '14:30', name: '⭐ VIP Fijo — Viernes', service: 'Degradado', price: 4500, status: 'pending', vip: true, deposit: true, recurrence: 'Semanal' },
+      ],
+    };
+
+    const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+    let selectedDay = null;
+
+    // ── Render Calendar Grid ───────────────────────────────────────────────────
+    function renderCalendar() {
+      const grid = document.getElementById('dayGrid');
+      grid.innerHTML = '';
+      const today = new Date();
+
+      for (let i = 0; i < 14; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        const turns = MOCK_TURNS[dateStr] || [];
+        const totalSlots = 21;
+        const booked = turns.length;
+        const pct = booked / totalSlots;
+        const isExpanded = selectedDay === dateStr;
+
+        // Occupancy color
+        let barColor = 'bg-white/10';
+        let borderColor = 'border-white/5';
+        let statusText = 'Vacío — ¡publicar!';
+        let statusColor = 'text-white/30';
+        if (pct > 0 && pct < 0.5) { barColor = 'bg-emerald-500'; statusText = 'Disponible'; statusColor = 'text-emerald-400'; }
+        else if (pct >= 0.5 && pct < 0.8) { barColor = 'bg-yellow-400'; borderColor = 'border-yellow-400/15'; statusText = 'Llenándose'; statusColor = 'text-yellow-400'; }
+        else if (pct >= 0.8) { barColor = 'bg-red-500'; borderColor = 'border-red-500/20'; statusText = 'Casi lleno'; statusColor = 'text-orange-400'; }
+        if (booked === 0) { statusText = 'Vacío — ¡publicar!'; statusColor = 'text-white/30'; }
+
+        if (isExpanded) borderColor = 'border-neon-cyan/40 shadow-[0_0_12px_rgba(0,255,200,0.1)]';
+
+        const dayCard = document.createElement('button');
+        dayCard.className = `p-3 rounded-2xl bg-white/[0.03] border ${borderColor} text-left transition-all hover:border-white/15`;
+        dayCard.onclick = () => toggleDay(dateStr);
+        dayCard.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-wide text-white/50">${DAY_NAMES[date.getDay()]}</p>
+              <p class="text-base font-black text-white leading-none">${date.getDate()} ${MONTH_NAMES[date.getMonth()]}</p>
+            </div>
+            <span class="text-[9px] font-bold flex items-baseline gap-0.5">
+              <span class="text-white/70 text-sm font-black">${booked}</span>
+              <span class="text-white/30">/${totalSlots}</span>
+            </span>
+          </div>
+          <div class="h-1 rounded-full bg-white/10 overflow-hidden mb-1.5">
+            <div class="h-full rounded-full transition-all ${barColor}" style="width: ${Math.min(pct * 100, 100)}%"></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <p class="text-[9px] font-bold ${statusColor}">${statusText}</p>
+            ${turns.length > 0 ? `<span class="text-[9px] text-white/30">${isExpanded ? '▲' : '▼'}</span>` : ''}
+          </div>
+        `;
+        grid.appendChild(dayCard);
+      }
+
+      // Render expanded panel
+      if (selectedDay) {
+        renderExpandedPanel(selectedDay);
+      }
+    }
+
+    // ── Render Expanded Panel ──────────────────────────────────────────────────
+    function renderExpandedPanel(dateStr) {
+      const panel = document.getElementById('expandedPanel');
+      const turnsContainer = document.getElementById('expandedTurns');
+      const titleEl = document.getElementById('expandedTitle');
+      const countEl = document.getElementById('expandedCount');
+
+      const turns = MOCK_TURNS[dateStr] || [];
+      const date = new Date(dateStr + 'T12:00:00');
+
+      titleEl.textContent = `Turnos · ${date.getDate()} de ${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][date.getMonth()]}`;
+      countEl.textContent = `${turns.length} turno${turns.length !== 1 ? 's' : ''}`;
+
+      turnsContainer.innerHTML = '';
+
+      if (turns.length === 0) {
+        turnsContainer.innerHTML = `
+          <div class="text-center py-6 text-white/20 text-xs">
+            Sin turnos — ${['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][date.getDay()]}
+          </div>
+        `;
+      } else {
+        turns.sort((a, b) => a.time.localeCompare(b.time));
+        turns.forEach(turn => {
+          const statusColors = {
+            pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30',
+            confirmed: 'text-sky-400 bg-sky-400/10 border-sky-400/30',
+            attended: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
+          };
+          const statusLabels = { pending: 'Pendiente', confirmed: 'Confirmado', attended: 'Atendido' };
+
+          const turnEl = document.createElement('div');
+          turnEl.className = 'flex items-center gap-3 py-2 px-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors';
+          turnEl.innerHTML = `
+            <div class="w-12 text-right flex-shrink-0">
+              <span class="text-sm font-black text-neon-cyan tabular-nums">${turn.time}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-white text-xs truncate">${turn.vip ? '⭐ ' : ''}${turn.name}</p>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="text-[9px] text-white/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md">${turn.service}</span>
+                <span class="text-[9px] text-white/30">· $${turn.price.toLocaleString('es-AR')}</span>
+                ${turn.recurrence ? `<span class="text-[9px] text-neon-purple bg-neon-purple/10 border border-neon-purple/30 px-1.5 py-0.5 rounded-md">🔄 ${turn.recurrence}</span>` : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${statusColors[turn.status]}">${statusLabels[turn.status]}</span>
+              ${turn.status === 'pending' ? '<button class="px-2 py-0.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-400 text-[9px] font-bold uppercase hover:bg-sky-500/30 transition-colors">Confirmar</button>' : ''}
+              ${turn.status === 'confirmed' ? '<button class="px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold uppercase hover:bg-emerald-500/30 transition-colors">Presente</button>' : ''}
+            </div>
+          `;
+          turnsContainer.appendChild(turnEl);
+        });
+      }
+
+      panel.classList.remove('hidden');
+    }
+
+    // ── Toggle Functions ───────────────────────────────────────────────────────
+    function toggleCalendar() {
+      const content = document.getElementById('calendarContent');
+      const chevron = document.getElementById('calendarChevron');
+      const isVisible = !content.classList.contains('hidden');
+      if (isVisible) {
+        content.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+        renderCalendar();
+      }
+    }
+
+    function toggleDay(dateStr) {
+      if (selectedDay === dateStr) {
+        selectedDay = null;
+        document.getElementById('expandedPanel').classList.add('hidden');
+      } else {
+        selectedDay = dateStr;
+      }
+      renderCalendar();
+    }
+
+    function openBlockModal() {
+      document.getElementById('blockModal').style.display = 'flex';
+    }
+
+    function closeBlockModal() {
+      document.getElementById('blockModal').style.display = 'none';
+    }
+
+    function toggleVip() {
+      const btn = document.getElementById('vipToggle');
+      const isVip = btn.classList.contains('bg-yellow-400/10');
+      if (isVip) {
+        btn.className = 'w-full py-3 rounded-xl text-sm font-bold border border-white/10 bg-white/5 text-white/40 transition-colors';
+        btn.textContent = 'Marcar como VIP (10% off)';
+      } else {
+        btn.className = 'w-full py-3 rounded-xl text-sm font-bold border border-yellow-400 bg-yellow-400/10 text-yellow-400 transition-colors';
+        btn.textContent = '⭐ VIP — 10% descuento';
+      }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCalendar();
+      // Auto-expand today
+      const today = new Date().toISOString().split('T')[0];
+      selectedDay = today;
+      renderCalendar();
+    });
+  </script>
+
+</body>
+</html>

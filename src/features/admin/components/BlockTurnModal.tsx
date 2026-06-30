@@ -106,8 +106,14 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
   };
 
   const handleSubmit = async () => {
-    if (!clientName.trim()) { setError('El nombre del cliente es requerido.'); return; }
-    if (!serviceId) { setError('Seleccioná un servicio.'); return; }
+    if (!clientName.trim()) {
+      setError('El nombre del cliente es requerido.');
+      return;
+    }
+    if (!serviceId) {
+      setError('Seleccioná un servicio.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -127,13 +133,14 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
         final_price: finalPrice,
         deposit_paid: false,
       });
-      if (err) failed++; else ok++;
+      if (err) failed++;
+      else ok++;
     }
 
     setLoading(false);
 
     if (ok === 0) {
-      setError(`No se pudo crear ningún turno. Es posible que los horarios ya estén ocupados.`);
+      setError('No se pudo crear ningún turno. Es posible que los horarios ya estén ocupados.');
       return;
     }
 
@@ -160,7 +167,10 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
           </p>
           <button
             type='button'
-            onClick={() => { onSuccess(); handleClose(); }}
+            onClick={() => {
+              onSuccess();
+              handleClose();
+            }}
             className='w-full py-3 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-widest text-sm'
           >
             Listo
@@ -175,10 +185,16 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
       <div className='absolute bottom-0 left-0 right-0 bg-[#111114] rounded-t-3xl px-5 pt-5 pb-10 animate-in slide-in-from-bottom duration-300 max-h-[95vh] overflow-y-auto'>
         <div className='flex items-center justify-between mb-5'>
           <div>
-            <p className='text-[10px] uppercase tracking-widest text-white/30 font-bold'>Nuevo turno</p>
+            <p className='text-[10px] uppercase tracking-widest text-white/30 font-bold'>
+              Nuevo turno
+            </p>
             <h2 className='text-xl font-black'>{barber.name}</h2>
           </div>
-          <button type='button' onClick={handleClose} className='text-white/30 hover:text-white transition-colors'>
+          <button
+            type='button'
+            onClick={handleClose}
+            className='text-white/30 hover:text-white transition-colors'
+          >
             <X className='w-5 h-5' />
           </button>
         </div>
@@ -186,7 +202,9 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
         <div className='space-y-4'>
           {/* Client name */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Nombre</label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>
+              Nombre
+            </label>
             <input
               type='text'
               value={clientName}
@@ -198,7 +216,9 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
 
           {/* WhatsApp */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>WhatsApp</label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>
+              WhatsApp
+            </label>
             <input
               type='tel'
               value={clientPhone}
@@ -210,7 +230,9 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
 
           {/* Service */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Servicio</label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>
+              Servicio
+            </label>
             <div className='grid grid-cols-2 gap-2'>
               {services.map((svc) => (
                 <button
@@ -224,7 +246,9 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
                   }`}
                 >
                   <span className='block truncate'>{svc.name}</span>
-                  <span className='text-[10px] font-normal opacity-60'>${svc.price.toLocaleString('es-AR')}</span>
+                  <span className='text-[10px] font-normal opacity-60'>
+                    ${svc.price.toLocaleString('es-AR')}
+                  </span>
                 </button>
               ))}
             </div>
@@ -233,7 +257,9 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
           {/* Date + Time */}
           <div className='grid grid-cols-2 gap-3'>
             <div>
-              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Fecha</label>
+              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>
+                Fecha
+              </label>
               <input
                 type='date'
                 value={date}
@@ -243,28 +269,40 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
               />
             </div>
             <div>
-              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>Hora</label>
+              <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold'>
+                Hora
+              </label>
               <select
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 className='w-full bg-[#18181c] border border-white/10 rounded-xl px-3 py-3 text-white focus:border-neon-cyan outline-none text-sm'
               >
                 {MODAL_TIMES.map((t) => (
-                  <option key={t} value={t}>{t} hs</option>
+                  <option key={t} value={t}>
+                    {t} hs
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
           {/* VIP toggle */}
-          <div className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${isVip ? 'border-yellow-400/40 bg-yellow-400/5' : 'border-white/10 bg-white/[0.02]'}`}>
+          <div
+            className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${isVip ? 'border-yellow-400/40 bg-yellow-400/5' : 'border-white/10 bg-white/[0.02]'}`}
+          >
             <div className='flex items-center gap-2'>
               <Crown className={`w-4 h-4 ${isVip ? 'text-yellow-400' : 'text-white/20'}`} />
               <div>
-                <p className={`text-xs font-bold ${isVip ? 'text-yellow-400' : 'text-white/40'}`}>Cliente VIP</p>
+                <p className={`text-xs font-bold ${isVip ? 'text-yellow-400' : 'text-white/40'}`}>
+                  Cliente VIP
+                </p>
                 {isVip && basePrice > 0 && (
                   <p className='text-[10px] text-white/40'>
-                    ${basePrice.toLocaleString('es-AR')} → <span className='text-yellow-400 font-bold'>${finalPrice.toLocaleString('es-AR')}</span> (−10%)
+                    ${basePrice.toLocaleString('es-AR')} →{' '}
+                    <span className='text-yellow-400 font-bold'>
+                      ${finalPrice.toLocaleString('es-AR')}
+                    </span>{' '}
+                    (−10%)
                   </p>
                 )}
               </div>
@@ -274,13 +312,17 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
               onClick={() => setIsVip((v) => !v)}
               className={`w-11 h-6 rounded-full transition-all relative ${isVip ? 'bg-yellow-400' : 'bg-white/10'}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${isVip ? 'left-[22px]' : 'left-0.5'}`} />
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${isVip ? 'left-[22px]' : 'left-0.5'}`}
+              />
             </button>
           </div>
 
           {/* Recurrence */}
           <div>
-            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold'>Recurrencia</label>
+            <label className='block text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold'>
+              Recurrencia
+            </label>
             <div className='grid grid-cols-3 gap-2'>
               {(['once', 'weekly', 'biweekly'] as Recurrence[]).map((r) => (
                 <button
@@ -299,8 +341,16 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
             </div>
             {isRecurring && (
               <p className='text-[10px] text-white/30 mt-2 leading-relaxed'>
-                Se crearán <span className='text-neon-cyan font-bold'>{recurrenceDates.length} turnos</span> por los próximos 3 meses
-                {' '}({format(new Date(`${date}T12:00:00`), "d MMM", { locale: es })} → {format(new Date(`${recurrenceDates[recurrenceDates.length - 1]}T12:00:00`), "d MMM", { locale: es })})
+                Se crearán{' '}
+                <span className='text-neon-cyan font-bold'>{recurrenceDates.length} turnos</span>{' '}
+                por los próximos 3 meses (
+                {format(new Date(`${date}T12:00:00`), 'd MMM', { locale: es })} →{' '}
+                {format(
+                  new Date(`${recurrenceDates[recurrenceDates.length - 1]}T12:00:00`),
+                  'd MMM',
+                  { locale: es }
+                )}
+                )
               </p>
             )}
           </div>
