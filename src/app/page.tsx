@@ -22,9 +22,19 @@ export default function Home() {
     <div className='relative flex flex-col items-center' style={{ zIndex: 1 }}>
       {/* Full-page barbershop background — fixed so it stays visible while scrolling */}
       <div
-        className='fixed inset-0 bg-cover bg-center bg-no-repeat pointer-events-none'
-        style={{ backgroundImage: "url('/assets/barberia-hero.jpg')", opacity: 0.12, zIndex: 0 }}
-      />
+        className='fixed pointer-events-none overflow-hidden'
+        style={{ inset: '-20px', zIndex: 0 }}
+      >
+        <div
+          className='absolute inset-0 bg-cover bg-center bg-no-repeat'
+          style={{
+            backgroundImage: "url('/assets/barberia-hero.jpg')",
+            opacity: 0.18,
+            filter: 'blur(12px)',
+            transform: 'scale(1.05)',
+          }}
+        />
+      </div>
       {/* Hero Section */}
       <section className='relative w-full min-h-[90vh] flex flex-col items-center justify-center px-4 pt-20 pb-16 text-center overflow-hidden'>
         {/* Gradient overlay to keep text readable */}
