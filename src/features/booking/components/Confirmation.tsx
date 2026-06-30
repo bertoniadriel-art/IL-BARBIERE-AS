@@ -215,6 +215,12 @@ export function Confirmation() {
             </button>
           )}
 
+          <a
+            href={`/mi-turno/${qrValue}`}
+            className='mb-3 text-white/30 hover:text-white font-bold uppercase tracking-widest text-xs transition-colors block'
+          >
+            Ver / cancelar mi turno
+          </a>
           <button
             onClick={reset}
             className='text-white/40 hover:text-neon-cyan font-bold uppercase tracking-widest text-xs transition-colors'
