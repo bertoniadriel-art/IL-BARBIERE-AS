@@ -4,7 +4,7 @@ import {
   moveAppointment,
   updateAppointmentStatus,
 } from '@/features/admin/services/appointmentService';
-import { getBookedSlots } from '@/features/booking/services/availabilityService';
+import { getBlockedSlotsForDay, getBookedSlots } from '@/features/booking/services/availabilityService';
 import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import { supabase } from '@/shared/lib/supabase';
@@ -205,6 +205,7 @@ function AppointmentCard({
   const isBlocked = row.status === 'blocked';
 
   const [qrOpen, setQrOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveDate, setMoveDate] = useState(row.appointment_date);
   const [moveTime, setMoveTime] = useState(time);
@@ -258,6 +259,13 @@ function AppointmentCard({
     }
     setMoveOpen(false);
     onMoved();
+  }
+
+  async function handleCancel() {
+    setIsCancelling(true);
+    const { error } = await updateAppointmentStatus(row.id, 'cancelled');
+    setIsCancelling(false);
+    if (!error) onMoved();
   }
 
   function handleDownloadQR() {
@@ -359,6 +367,16 @@ function AppointmentCard({
               className='px-3 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase hover:bg-purple-500/25 transition-colors'
             >
               QR
+            </button>
+          )}
+          {isActive && (
+            <button
+              type='button'
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className='px-3 py-1 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 text-[10px] font-bold uppercase hover:bg-orange-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
+            >
+              {isCancelling ? '...' : 'Cancelar'}
             </button>
           )}
           {!isBlocked && (
@@ -525,7 +543,18 @@ function DaySection({
 }) {
   const [blockOpen, setBlockOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
+  const [blockTime, setBlockTime] = useState<string | undefined>(undefined);
   const date = parseISO(dateStr);
+
+  useEffect(() => {
+    getBlockedSlotsForDay(barber.id, dateStr).then(setBlockedSlots);
+  }, [barber.id, dateStr]);
+
+  const scheduledTimes = getAvailableTimesForBarber(barber.name, parseISO(dateStr), BASE_TIMES);
+  const bookedSet = new Set(rows.map((r) => r.appointment_time.slice(0, 5)));
+  const blockedSet = new Set(blockedSlots);
+  const availableSlots = scheduledTimes.filter((s) => !bookedSet.has(s) && !blockedSet.has(s));
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
@@ -535,14 +564,6 @@ function DaySection({
   const headerLabel = prefix
     ? `${prefix} · ${format(date, "d 'de' MMMM", { locale: es })}`
     : dayLabel;
-
-  const availableSlots = useMemo(() => {
-    const allSlots = getAvailableTimesForBarber(barber.name, date, BASE_TIMES);
-    const bookedTimes = new Set(
-      rows.filter((r) => r.status !== 'cancelled').map((r) => r.appointment_time.slice(0, 5))
-    );
-    return allSlots.filter((t) => !bookedTimes.has(t));
-  }, [barber.name, date, rows]);
 
   return (
     <div className='mb-6' ref={sectionRef}>
@@ -561,7 +582,7 @@ function DaySection({
           <p className='text-[10px] font-black uppercase tracking-[0.15em] text-white/30 capitalize truncate group-hover:text-white/50 transition-colors'>
             {headerLabel}
           </p>
-          <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>{rows.length}</span>
+          <span className='text-[10px] font-bold text-white/20 flex-shrink-0'>{availableSlots.length}</span>
         </div>
         <div
           className='flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 border border-white/8 text-white/30 text-[10px] font-bold hover:border-white/20 hover:text-white/60 transition-colors flex-shrink-0'
@@ -583,16 +604,18 @@ function DaySection({
 
       {!collapsed && (
         <>
-          {/* Available slots strip */}
+          {/* Available slots — clickable to quick-book */}
           {availableSlots.length > 0 && (
             <div className='flex gap-1.5 flex-wrap mb-3 px-1'>
               {availableSlots.map((slot) => (
-                <span
+                <button
                   key={slot}
-                  className='text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                  type='button'
+                  onClick={() => { setBlockTime(slot); setBlockOpen(true); }}
+                  className='text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors'
                 >
                   {slot}
-                </span>
+                </button>
               ))}
             </div>
           )}
@@ -615,10 +638,12 @@ function DaySection({
       <BlockTurnModal
         barber={barber}
         initialDate={dateStr}
+        initialTime={blockTime}
         isOpen={blockOpen}
-        onClose={() => setBlockOpen(false)}
+        onClose={() => { setBlockOpen(false); setBlockTime(undefined); }}
         onSuccess={() => {
           setBlockOpen(false);
+          setBlockTime(undefined);
           onMoved();
         }}
       />

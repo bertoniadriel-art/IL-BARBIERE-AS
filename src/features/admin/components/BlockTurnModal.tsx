@@ -28,6 +28,7 @@ interface ServiceOption {
 interface Props {
   barber: { id: string; name: string };
   initialDate?: string;
+  initialTime?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -51,13 +52,13 @@ function getDatesForRecurrence(start: string, type: Recurrence): string[] {
   return dates;
 }
 
-export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess }: Props) {
+export function BlockTurnModal({ barber, initialDate, initialTime, isOpen, onClose, onSuccess }: Props) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState(initialDate ?? todayStr());
-  const [time, setTime] = useState('10:00');
+  const [time, setTime] = useState(initialTime ?? '10:00');
   const [isVip, setIsVip] = useState(false);
   const [recurrence, setRecurrence] = useState<Recurrence>('once');
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,10 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
   useEffect(() => {
     if (initialDate) setDate(initialDate);
   }, [initialDate]);
+
+  useEffect(() => {
+    if (initialTime) setTime(initialTime);
+  }, [initialTime]);
 
   useEffect(() => {
     if (!isOpen || !supabase) return;
@@ -97,7 +102,7 @@ export function BlockTurnModal({ barber, initialDate, isOpen, onClose, onSuccess
     setClientPhone('');
     setServiceId(services[0]?.id ?? '');
     setDate(initialDate ?? todayStr());
-    setTime('10:00');
+    setTime(initialTime ?? '10:00');
     setIsVip(false);
     setRecurrence('once');
     setError(null);
