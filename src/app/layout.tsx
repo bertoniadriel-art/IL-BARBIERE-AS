@@ -16,6 +16,18 @@ export const metadata: Metadata = {
     icon: '/assets/logo/logo-official.jpg',
     apple: '/assets/logo/logo-official.jpg',
   },
+  openGraph: {
+    title: 'Il Barbiere OS',
+    description: 'Sistema de reservas · Arroyo Seco',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Il Barbiere OS',
+    description: 'Sistema de reservas · Arroyo Seco',
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({
