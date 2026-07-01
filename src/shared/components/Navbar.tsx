@@ -43,6 +43,12 @@ export function Navbar() {
               GESTIÓN PERSONAL
             </Link>
             <Link
+              href='/mi-turno'
+              className='text-sm font-medium text-white/70 hover:text-neon-cyan transition-colors'
+            >
+              MI TURNO
+            </Link>
+            <Link
               href='/reservar'
               className='px-5 py-2.5 bg-neon-cyan text-black font-bold rounded-lg hover:shadow-neon-glow transition-all'
             >
@@ -79,6 +85,13 @@ export function Navbar() {
               className='block text-lg font-bold text-white py-2 border-b border-white/5'
             >
               GESTIÓN PERSONAL
+            </Link>
+            <Link
+              href='/mi-turno'
+              onClick={() => setIsOpen(false)}
+              className='block text-lg font-bold text-white py-2 border-b border-white/5'
+            >
+              MI TURNO
             </Link>
             <Link
               href='/reservar'
