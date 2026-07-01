@@ -42,6 +42,7 @@ vi.mock('@/shared/lib/supabase', () => ({
 
 vi.mock('@/features/admin/services/appointmentService', () => ({
   updateAppointmentStatus: vi.fn(),
+  confirmAppointment: vi.fn(),
 }));
 
 // Capture onMutated prop passed to CalendarView
@@ -54,9 +55,10 @@ vi.mock('../components/CalendarView', () => ({
 }));
 
 import { DashboardBento } from '../components/DashboardBento';
-import { updateAppointmentStatus } from '../services/appointmentService';
+import { confirmAppointment, updateAppointmentStatus } from '../services/appointmentService';
 
 const mockUpdateAppointmentStatus = vi.mocked(updateAppointmentStatus);
+const mockConfirmAppointment = vi.mocked(confirmAppointment);
 
 function createChainableQuery(data: any[] = [], error: any = null) {
   const chain: any = {};
@@ -124,8 +126,8 @@ describe('DashboardBento (T8.2)', () => {
     expect(screen.getByRole('button', { name: /presente/i })).toBeInTheDocument();
   });
 
-  it("calls updateAppointmentStatus with 'confirmed' when Confirmar clicked", async () => {
-    mockUpdateAppointmentStatus.mockResolvedValue({ error: null });
+  it('calls confirmAppointment when Confirmar clicked', async () => {
+    mockConfirmAppointment.mockResolvedValue({ error: null, whatsappUrl: null });
 
     const chain = createChainableQuery([
       {
@@ -150,7 +152,7 @@ describe('DashboardBento (T8.2)', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() => {
-      expect(mockUpdateAppointmentStatus).toHaveBeenCalledWith('apt-1', 'confirmed');
+      expect(mockConfirmAppointment).toHaveBeenCalledWith('apt-1');
     });
   });
 
@@ -206,8 +208,9 @@ describe('DashboardBento (T8.2)', () => {
   });
 
   it('rolls back optimistic update on error', async () => {
-    mockUpdateAppointmentStatus.mockResolvedValue({
+    mockConfirmAppointment.mockResolvedValue({
       error: new Error('network fail'),
+      whatsappUrl: null,
     });
 
     const chain = createChainableQuery([

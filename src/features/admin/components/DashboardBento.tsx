@@ -8,7 +8,7 @@ import type { AppointmentStatus } from '@/shared/types';
 import { addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import { Activity, BadgeDollarSign, CalendarDays, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { updateAppointmentStatus } from '../services/appointmentService';
+import { confirmAppointment, updateAppointmentStatus } from '../services/appointmentService';
 import { CalendarView } from './CalendarView';
 import { TodaySummary } from './TodaySummary';
 
@@ -106,6 +106,17 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
   async function handleMarkStatus(id: string, next: AppointmentStatus) {
     const prev = rows;
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
+
+    if (next === 'confirmed') {
+      const { error, whatsappUrl } = await confirmAppointment(id);
+      if (error) {
+        setRows(prev);
+        return;
+      }
+      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      return;
+    }
+
     const { error } = await updateAppointmentStatus(id, next);
     if (error) {
       setRows(prev);

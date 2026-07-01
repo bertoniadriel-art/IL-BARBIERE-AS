@@ -171,6 +171,23 @@ export function CancelAppointment({
           <p className='text-white/30 text-xs uppercase tracking-widest mt-1'>Mi turno</p>
         </div>
 
+        {appointment.status === 'confirmed' && (
+          <div className='flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 mb-6'>
+            <CheckCircle className='w-5 h-5 text-emerald-400 flex-shrink-0' />
+            <p className='text-emerald-400 text-xs font-black uppercase tracking-[0.15em]'>
+              ¡Turno confirmado por el barbero!
+            </p>
+          </div>
+        )}
+        {appointment.status === 'pending' && (
+          <div className='flex items-center gap-3 p-4 rounded-2xl bg-yellow-400/5 border border-yellow-400/20 mb-6'>
+            <AlertCircle className='w-5 h-5 text-yellow-400 flex-shrink-0' />
+            <p className='text-yellow-400 text-xs font-black uppercase tracking-[0.15em]'>
+              Pendiente de confirmación del barbero
+            </p>
+          </div>
+        )}
+
         <div className='bg-white/[0.03] border border-white/8 rounded-3xl p-6 mb-6 space-y-4'>
           <div className='flex items-center gap-3'>
             <Calendar className='w-4 h-4 text-white/30 flex-shrink-0' />
