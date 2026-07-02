@@ -1,6 +1,7 @@
 'use client';
 
 import { createAppointment } from '@/features/admin/services/appointmentService';
+import { getVipDiscountPercent } from '@/features/booking/services/vipDiscountService';
 import { supabase } from '@/shared/lib/supabase';
 import { format } from 'date-fns';
 import { Download } from 'lucide-react';
@@ -43,11 +44,17 @@ function todayStr() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
+function priceWithDiscount(basePrice: number, discountPercent: number): string {
+  return String(Math.round(basePrice * (1 - discountPercent / 100)));
+}
+
 export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddModalProps) {
   const [date, setDate] = useState<string>(todayStr);
   const [time, setTime] = useState<string>(getNextRoundHour);
   const [price, setPrice] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
+  const [clientPhone, setClientPhone] = useState<string>('');
+  const [vipDiscountPercent, setVipDiscountPercent] = useState<number>(0);
   const [depositPaid, setDepositPaid] = useState<boolean>(true);
   const [serviceId, setServiceId] = useState<string>('');
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -72,11 +79,30 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       });
   }, [isOpen, serviceId]);
 
-  // Auto-fill price when service changes
+  // VIP ("Coronita") clients get their active discount applied automatically —
+  // same lookup as the public booking flow, keyed by phone (Bug #9 follow-up).
+  useEffect(() => {
+    if (!clientPhone.trim()) {
+      setVipDiscountPercent(0);
+      return;
+    }
+    let cancelled = false;
+    getVipDiscountPercent(clientPhone, barber.id).then((percent) => {
+      if (!cancelled) setVipDiscountPercent(percent);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientPhone, barber.id]);
+
+  // Auto-fill price (with VIP discount, if any) when service or discount changes
+  useEffect(() => {
+    const svc = services.find((s) => s.id === serviceId);
+    if (svc) setPrice(priceWithDiscount(svc.price, vipDiscountPercent));
+  }, [serviceId, vipDiscountPercent, services]);
+
   function handleServiceChange(id: string) {
     setServiceId(id);
-    const svc = services.find((s) => s.id === id);
-    if (svc) setPrice(String(svc.price));
   }
 
   if (!isOpen) return null;
@@ -91,6 +117,8 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     setError(null);
     setConfirmedQrHash(null);
     setServiceId(services[0]?.id ?? '');
+    setClientPhone('');
+    setVipDiscountPercent(0);
   };
 
   const handleConfirmedClose = () => {
@@ -116,7 +144,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       barber_id: barber.id,
       service_id: serviceId,
       client_name: clientName.trim(),
-      client_phone: '',
+      client_phone: clientPhone.trim(),
       appointment_date: date,
       appointment_time: time,
       final_price: price ? Number(price) : null,
@@ -266,20 +294,6 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
             </select>
           </div>
 
-          {/* Price */}
-          <div>
-            <label className='block text-xs text-white/40 uppercase tracking-widest mb-1'>
-              Precio
-            </label>
-            <input
-              type='number'
-              min={0}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
-            />
-          </div>
-
           {/* Client name */}
           <div>
             <label className='block text-xs text-white/40 uppercase tracking-widest mb-1'>
@@ -292,6 +306,39 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
               placeholder='Ej: Juan Pérez'
               className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
             />
+          </div>
+
+          {/* Client phone */}
+          <div>
+            <label className='block text-xs text-white/40 uppercase tracking-widest mb-1'>
+              Teléfono (para aplicar descuento VIP si corresponde)
+            </label>
+            <input
+              type='tel'
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              placeholder='Ej: 3402500000'
+              className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
+            />
+          </div>
+
+          {/* Price */}
+          <div>
+            <label className='block text-xs text-white/40 uppercase tracking-widest mb-1'>
+              Precio
+            </label>
+            <input
+              type='number'
+              min={0}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
+            />
+            {vipDiscountPercent > 0 && (
+              <p className='mt-1 text-[10px] text-yellow-400 font-bold uppercase tracking-widest'>
+                Incluye {vipDiscountPercent}% descuento VIP
+              </p>
+            )}
           </div>
 
           {/* Deposit */}
