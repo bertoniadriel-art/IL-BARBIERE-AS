@@ -8,7 +8,7 @@ export default async function MiTurnoPage({ params }: { params: Promise<{ hash: 
   const { data: raw } = await supabase
     .from('appointments')
     .select(
-      'id, client_name, appointment_date, appointment_time, status, barbers(name), services(name)'
+      'id, client_name, appointment_date, appointment_time, status, qr_hash, deposit_paid, final_price, barbers(name), services(name)'
     )
     .eq('qr_hash', hash.toUpperCase())
     .single();

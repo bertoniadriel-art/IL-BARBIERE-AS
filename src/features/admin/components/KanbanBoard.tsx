@@ -1,6 +1,9 @@
 'use client';
 
-import { updateAppointmentStatus } from '@/features/admin/services/appointmentService';
+import {
+  confirmAppointment,
+  updateAppointmentStatus,
+} from '@/features/admin/services/appointmentService';
 import { useDashboardMetrics } from '@/shared/hooks/useDashboardMetrics';
 import { supabase } from '@/shared/lib/supabase';
 import type { AppointmentStatus } from '@/shared/types';
@@ -185,6 +188,17 @@ export function KanbanBoard({ barber }: KanbanBoardProps) {
   async function handleStatusChange(id: string, next: AppointmentStatus) {
     const prev = rows;
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
+
+    if (next === 'confirmed') {
+      const { error, whatsappUrl } = await confirmAppointment(id);
+      if (error) {
+        setRows(prev);
+        return;
+      }
+      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      return;
+    }
+
     const { error } = await updateAppointmentStatus(id, next);
     if (error) setRows(prev);
   }

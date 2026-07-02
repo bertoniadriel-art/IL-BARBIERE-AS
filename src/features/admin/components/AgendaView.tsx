@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  confirmAppointment,
   moveAppointment,
   updateAppointmentStatus,
 } from '@/features/admin/services/appointmentService';
@@ -718,6 +719,17 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     if (id.startsWith('mock-')) return;
     const prev = rows;
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
+
+    if (next === 'confirmed') {
+      const { error, whatsappUrl } = await confirmAppointment(id);
+      if (error) {
+        setRows(prev);
+        return;
+      }
+      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      return;
+    }
+
     const { error } = await updateAppointmentStatus(id, next);
     if (error) setRows(prev);
   }

@@ -4,9 +4,9 @@ import { getBarberConfig } from '@/shared/config/barbers';
 import { supabase } from '@/shared/lib/supabase';
 import { validateBookingForm } from '@/shared/lib/validation';
 import { format } from 'date-fns';
-import { ArrowRight, CheckCircle, CreditCard } from 'lucide-react';
+import { ArrowRight, CreditCard } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import QRCode from 'react-qr-code';
 import { useBookingStore } from '../bookingStore';
 import { getVipDiscountPercent } from '../services/vipDiscountService';
 
@@ -22,21 +22,16 @@ export function Confirmation() {
     isFixedWeekly,
     clientName,
     clientPhone,
-    reset,
     setStep,
     setFixedWeekly,
     setClient,
     setSlotConflictError,
   } = useBookingStore();
 
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const [qrValue, setQrValue] = useState('');
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [hasCopied, setHasCopied] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState<string | null>(null);
-  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   // Bug #9: VIP ("Coronita") clients get an automatic discount that must be
   // consulted before computing the final price — see vipDiscountService.
   const [vipDiscountPercent, setVipDiscountPercent] = useState(0);
@@ -44,7 +39,7 @@ export function Confirmation() {
   // Format date for display
   const formattedDate = date ? format(new Date(`${date}T12:00:00`), 'dd-MM-yyyy') : '';
 
-  // Payment alias from barber config
+  // Payment alias from barber config (preview before confirming)
   const barberConfig = barberName ? getBarberConfig(barberName) : undefined;
   const paymentAlias = barberConfig?.paymentAlias ?? 'barberia.ilbarbiere';
 
@@ -74,22 +69,6 @@ export function Confirmation() {
     const discountPercent = Math.max(vipDiscountPercent, isFixedWeekly ? 10 : 0);
     const base = servicePrice * (1 - discountPercent / 100);
     return Math.round(base / 100) * 100;
-  };
-
-  const handleCopyAlias = async () => {
-    try {
-      await navigator.clipboard.writeText(paymentAlias);
-      setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 2000);
-    } catch (error) {
-      console.error('Error copying alias to clipboard:', error);
-    }
-  };
-
-  const handleOpenWhatsApp = () => {
-    if (whatsappUrl) {
-      window.open(whatsappUrl, '_blank');
-    }
   };
 
   const handleConfirm = async () => {
@@ -150,120 +129,12 @@ export function Confirmation() {
       return;
     }
 
-    setQrValue(qrHash);
-    setIsConfirmed(true);
-    setIsSubmitting(false);
-
-    // WhatsApp dynamic link — store URL for user-triggered open
-    const barberWaPhone = barberConfig?.whatsappPhone ?? '3402417023';
-    const displayService = serviceName ?? 'Servicio';
-    const message = `*IL BARBIERE OS - NUEVA RESERVA*\n\n👤 *Cliente:* ${clientName}\n✂️ *Servicio:* ${displayService}\n📅 *Fecha:* ${formattedDate}\n⏰ *Hora:* ${time} HS\n💈 *Barbero:* ${barberName || 'Sin asignar'}\n🎟️ *Código:* ${qrHash}\n\n_Confirmado vía IL BARBIERE OS_`;
-
-    setWhatsappUrl(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`);
+    // Redirige a la página durable del turno (DB-backed) en vez de quedarse
+    // en estado local: si WhatsApp mata/recarga la pestaña al volver, esta
+    // URL sigue funcionando y evita que el cliente reintente reservar el
+    // mismo horario (chocaría con su propio turno pending).
+    router.push(`/mi-turno/${qrHash}`);
   };
-
-  if (isConfirmed) {
-    return (
-      <div className='w-full max-w-xl mx-auto px-4 py-8 text-center animate-in zoom-in-95 duration-500'>
-        <div className='flex flex-col items-center'>
-          <div className='w-20 h-20 bg-neon-cyan/20 rounded-full flex items-center justify-center mb-6 shadow-neon-glow'>
-            <CheckCircle className='w-10 h-10 text-neon-cyan' />
-          </div>
-          <h2 className='text-4xl font-extrabold tracking-tighter mb-2'>
-            {paymentCompleted ? '¡TURNO REGISTRADO!' : '¡PENDIENTE DE SEÑA!'}
-          </h2>
-          <p className='text-white/60 mb-6 uppercase tracking-widest text-[10px] font-black'>
-            {paymentCompleted
-              ? 'Queda sujeto a validación del pago por parte del barbero'
-              : 'Tu turno fue generado en estado PENDING. Debes abonar la seña para que pase a CONFIRMED.'}
-          </p>
-
-          <div className='w-full glass-card p-1 max-w-[260px] mx-auto mb-8 shadow-neon-glow border-2 border-neon-cyan overflow-hidden rounded-3xl'>
-            <div className='bg-white p-6 rounded-2xl'>
-              <QRCode
-                value={qrValue}
-                size={200}
-                style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-              />
-            </div>
-            <div className='py-4 text-white font-black text-2xl tracking-[0.3em] uppercase'>
-              {qrValue}
-            </div>
-          </div>
-
-          {/* Payment section */}
-          <div className='w-full glass-card p-6 mb-8 border-white/5 text-left bg-white/[0.02] animate-in fade-in slide-in-from-bottom-2 duration-500'>
-            <div className='flex items-center gap-3 mb-4'>
-              <CreditCard className='w-5 h-5 text-neon-purple' />
-              <h4 className='font-bold text-sm tracking-widest uppercase'>Finalizar Compra</h4>
-            </div>
-            <p className='text-white/40 text-xs mb-4'>
-              Para asegurar tu turno, envía la seña usando el alias que corresponde a tu barbero y
-              luego confirma el pago.
-            </p>
-            <div className='grid gap-4 md:grid-cols-[2fr,1fr] items-center'>
-              <div className='p-4 bg-white/5 rounded-2xl border border-white/10 flex flex-col gap-2'>
-                <p className='text-[10px] text-white/40 uppercase tracking-[0.25em]'>
-                  Alias para transferir
-                </p>
-                <p className='text-2xl md:text-3xl font-black tracking-wide uppercase text-neon-purple'>
-                  {paymentAlias}
-                </p>
-                <p className='text-[10px] text-white/30 mt-1 uppercase'>
-                  Barbero seleccionado: <span className='font-bold'>{barberName || 'N/D'}</span>
-                </p>
-              </div>
-              <button
-                type='button'
-                onClick={handleCopyAlias}
-                className='w-full h-full flex items-center justify-center rounded-2xl border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan font-bold text-xs uppercase tracking-[0.2em] hover:bg-neon-cyan hover:text-black transition-colors shadow-neon-glow/30'
-              >
-                {hasCopied ? 'Alias copiado' : 'Copiar alias'}
-              </button>
-            </div>
-
-            <button
-              type='button'
-              onClick={() => setPaymentCompleted(true)}
-              className='mt-6 w-full py-4 rounded-2xl bg-neon-cyan text-black font-black uppercase tracking-[0.25em] text-xs hover:scale-[1.01] active:scale-[0.98] transition-transform shadow-neon-glow'
-            >
-              Ya realicé el pago
-            </button>
-
-            {paymentCompleted && (
-              <div className='mt-4 p-3 rounded-xl border border-green-500/40 bg-green-500/10 text-left'>
-                <p className='text-xs font-bold text-green-400 uppercase tracking-[0.2em]'>
-                  ¡Turno registrado! Queda sujeto a la validación del pago por parte del barbero.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {whatsappUrl && (
-            <button
-              onClick={handleOpenWhatsApp}
-              className='mb-4 w-full py-4 rounded-2xl bg-green-500 text-white font-black uppercase tracking-[0.25em] text-xs hover:scale-[1.01] active:scale-[0.98] transition-transform shadow-lg'
-            >
-              Enviar por WhatsApp
-            </button>
-          )}
-
-          <a
-            href={`/mi-turno/${qrValue}`}
-            className='mb-3 text-white/30 hover:text-white font-bold uppercase tracking-widest text-xs transition-colors block'
-          >
-            Ver / cancelar mi turno
-          </a>
-          <button
-            onClick={reset}
-            className='text-white/40 hover:text-neon-cyan font-bold uppercase tracking-widest text-xs transition-colors'
-          >
-            Volver al Inicio
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Compute display price (with discount if applicable)
   const displayPrice = computeFinalPrice();

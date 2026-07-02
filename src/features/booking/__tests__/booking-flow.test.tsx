@@ -12,7 +12,7 @@ import { BookingWizard } from '../components/BookingWizard';
 
 // ── Hoisted shared state (accessible inside vi.mock factories) ───────────────
 
-const { appointmentsDB, resetAppointments, insertShouldFail } = vi.hoisted(() => {
+const { appointmentsDB, resetAppointments, insertShouldFail, mockPush } = vi.hoisted(() => {
   const appointmentsDB: any[] = [];
   let insertShouldFail = false;
   return {
@@ -26,8 +26,18 @@ const { appointmentsDB, resetAppointments, insertShouldFail } = vi.hoisted(() =>
         insertShouldFail = v;
       },
     },
+    mockPush: vi.fn(),
   };
 });
+
+// Confirmation redirects to the durable /mi-turno/{hash} route after booking
+// instead of rendering the QR inline — override the global next/navigation
+// mock so the test can assert on that redirect.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 // ── Mock module (all data inlined for hoisting safety) ───────────────────────
 
@@ -174,24 +184,24 @@ async function goToConfirmation() {
     expect(screen.getByText(/FECHA Y/i)).toBeTruthy();
   });
 
+  // Date buttons render as "<día> <día-num> <mes>" (e.g. "mié 01 jul") — matching
+  // any month abbreviation instead of hardcoding one keeps this test stable
+  // across the calendar year instead of breaking every time the month rolls over.
+  const isDateButton = (btn: Element): btn is HTMLButtonElement =>
+    btn instanceof HTMLButtonElement &&
+    !btn.disabled &&
+    /^(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)$/i.test(
+      (btn.textContent ?? '').match(/[a-záéíóú]{3}$/i)?.[0] ?? ''
+    );
+
   // Wait for at least one enabled date
   await waitFor(() => {
-    const enabled = screen
-      .getAllByRole('button')
-      .filter(
-        (btn): btn is HTMLButtonElement =>
-          btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? '')
-      );
+    const enabled = screen.getAllByRole('button').filter(isDateButton);
     expect(enabled.length).toBeGreaterThan(0);
   });
 
   // Click first enabled date
-  const dateBtns = screen
-    .getAllByRole('button')
-    .filter(
-      (btn): btn is HTMLButtonElement =>
-        btn instanceof HTMLButtonElement && !btn.disabled && /jun/i.test(btn.textContent ?? '')
-    );
+  const dateBtns = screen.getAllByRole('button').filter(isDateButton);
   fireEvent.click(dateBtns[0]);
 
   // Wait for time grid
@@ -241,6 +251,7 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     resetAppointments();
     insertShouldFail.set(false);
     useBookingStore.getState().reset();
+    mockPush.mockClear();
   });
 
   it('REQ-9.1 — happy path: inserts exactly once with correct payload', async () => {
@@ -249,9 +260,9 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     await goToConfirmation();
     fillAndConfirm('Juan Perez', '3402500000');
 
-    // Confirmation screen reached
+    // Redirected to the durable /mi-turno/{qr_hash} route
     await waitFor(() => {
-      expect(screen.getByTestId('qr-code')).toBeTruthy();
+      expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}$/));
     });
 
     // Insert called exactly once with correct payload
@@ -283,8 +294,8 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     // Wizard navigated back to step 3 (not success)
     expect(useBookingStore.getState().step).toBe(3);
 
-    // No success state
-    expect(screen.queryByTestId('qr-code')).toBeNull();
+    // No success redirect
+    expect(mockPush).not.toHaveBeenCalled();
 
     // No new appointment was inserted
     expect(appointmentsDB.length).toBe(0);
@@ -297,7 +308,7 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     fillAndConfirm('Maria Garcia', '3402500001');
 
     await waitFor(() => {
-      expect(screen.getByTestId('qr-code')).toBeTruthy();
+      expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}$/));
     });
 
     expect(appointmentsDB.length).toBe(1);
