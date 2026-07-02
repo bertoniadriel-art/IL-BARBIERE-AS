@@ -4,6 +4,7 @@ import {
   BadgeDollarSign,
   CalendarDays,
   Crown,
+  HelpCircle,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -55,6 +56,12 @@ export function AdminLayout({
       key: 'vip',
       label: 'Turnos VIP',
       icon: <Crown className='w-5 h-5 flex-shrink-0' />,
+      badge: 0,
+    },
+    {
+      key: 'ayuda',
+      label: 'Ayuda',
+      icon: <HelpCircle className='w-5 h-5 flex-shrink-0' />,
       badge: 0,
     },
   ];

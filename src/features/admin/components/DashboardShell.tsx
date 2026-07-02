@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 import { AdminLayout } from './AdminLayout';
 import { AgendaView } from './AgendaView';
+import { AyudaView } from './AyudaView';
 import { FinanzasView } from './FinanzasView';
 import { QuickAddModal } from './QuickAddModal';
 import { VipSlotsView } from './VipSlotsView';
@@ -19,7 +20,7 @@ const ScannerModule = dynamic(() => import('./ScannerModule').then((mod) => mod.
   ssr: false,
 });
 
-type AdminTab = 'agenda' | 'scanner' | 'finanzas' | 'vip';
+type AdminTab = 'agenda' | 'scanner' | 'finanzas' | 'vip' | 'ayuda';
 
 interface Props {
   barber: Barber;
@@ -59,6 +60,7 @@ export function DashboardShell({ barber }: Props) {
     scanner: 'Escáner QR',
     finanzas: 'Finanzas',
     vip: 'Turnos VIP',
+    ayuda: 'Ayuda',
   };
 
   return (
@@ -152,6 +154,11 @@ export function DashboardShell({ barber }: Props) {
           {activeTab === 'vip' && (
             <div className='animate-in fade-in duration-500'>
               <VipSlotsView barberId={barber.id} />
+            </div>
+          )}
+          {activeTab === 'ayuda' && (
+            <div className='animate-in fade-in duration-500'>
+              <AyudaView />
             </div>
           )}
         </div>
