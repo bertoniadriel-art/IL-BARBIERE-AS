@@ -220,7 +220,7 @@ export function CancelAppointment({
           )}
         </div>
 
-        {appointment.status === 'pending' && (
+        {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
           <>
             <div className='glass-card p-1 max-w-[220px] mx-auto mb-6 shadow-neon-glow border-2 border-neon-cyan overflow-hidden rounded-3xl'>
               <div className='bg-white p-5 rounded-2xl'>
@@ -245,7 +245,9 @@ export function CancelAppointment({
 
               {depositPaid ? (
                 <p className='text-green-400 text-xs font-bold uppercase tracking-[0.15em]'>
-                  Queda sujeto a validación del pago por parte del barbero.
+                  {appointment.status === 'confirmed'
+                    ? 'Seña recibida ✓'
+                    : 'Queda sujeto a validación del pago por parte del barbero.'}
                 </p>
               ) : (
                 <>
