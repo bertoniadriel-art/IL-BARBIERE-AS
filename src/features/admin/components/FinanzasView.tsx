@@ -43,8 +43,16 @@ export function FinanzasView({ barber }: FinanzasViewProps) {
       try {
         setLoading(true);
         const today = new Date();
-        const from = format(startOfMonth(today), 'yyyy-MM-dd');
-        const to = format(endOfMonth(today), 'yyyy-MM-dd');
+        // "Esta semana" can start before the month does (e.g. week starts
+        // Mon 29/06 while the month is julio) — widen the fetch to the
+        // union of month range and week range so it never silently drops
+        // days from the previous/next month.
+        const monthFrom = startOfMonth(today);
+        const monthTo = endOfMonth(today);
+        const weekFrom = startOfWeek(today, { weekStartsOn: 1 });
+        const weekTo = endOfWeek(today, { weekStartsOn: 1 });
+        const from = format(monthFrom < weekFrom ? monthFrom : weekFrom, 'yyyy-MM-dd');
+        const to = format(monthTo > weekTo ? monthTo : weekTo, 'yyyy-MM-dd');
 
         const { data } = await supabase
           .from('appointments')
