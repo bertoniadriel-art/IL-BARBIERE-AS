@@ -25,6 +25,13 @@ vi.mock('react-qr-code', () => ({
   default: () => <div data-testid='qr-code' />,
 }));
 
+// Mock VIP discount lookup (Bug #9) — defaults to "not VIP" (0%) unless a
+// test overrides the resolved value.
+const mockGetVipDiscountPercent = vi.fn().mockResolvedValue(0);
+vi.mock('../services/vipDiscountService', () => ({
+  getVipDiscountPercent: (...args: unknown[]) => mockGetVipDiscountPercent(...args),
+}));
+
 // Track setStep calls
 const mockSetStep = vi.fn();
 const mockSetSlotConflictError = vi.fn();
@@ -67,6 +74,7 @@ function renderConfirmation(overrides: Partial<typeof storeState> = {}) {
 describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetVipDiscountPercent.mockResolvedValue(0);
     storeState = {
       barberId: 'barber-001',
       barberName: 'Santi Ducca',
@@ -169,6 +177,77 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
       renderConfirmation({
         clientName: 'Juan Perez',
         clientPhone: '3402500000',
+        servicePrice: 12000,
+        isFixedWeekly: true,
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            final_price: 10800,
+          })
+        );
+      });
+    });
+  });
+
+  describe('Bug #9 — VIP (Coronita) 10% discount applied automatically', () => {
+    it('applies the VIP discount to final_price for a VIP client', async () => {
+      mockInsert.mockResolvedValue({ error: null });
+      mockGetVipDiscountPercent.mockResolvedValue(10);
+
+      // price 12000 * 0.9 = 10800 → round to nearest 100 = 10800
+      renderConfirmation({
+        clientName: 'Cliente Coronita',
+        clientPhone: '3402500001',
+        servicePrice: 12000,
+        isFixedWeekly: false,
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            final_price: 10800,
+          })
+        );
+      });
+
+      expect(mockGetVipDiscountPercent).toHaveBeenCalledWith('3402500001', 'barber-001');
+    });
+
+    it('charges full price for a non-VIP client', async () => {
+      mockInsert.mockResolvedValue({ error: null });
+      mockGetVipDiscountPercent.mockResolvedValue(0);
+
+      renderConfirmation({
+        clientName: 'Cliente Regular',
+        clientPhone: '3402500002',
+        servicePrice: 12000,
+        isFixedWeekly: false,
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            final_price: 12000,
+          })
+        );
+      });
+    });
+
+    it('does not stack VIP discount with the fixed-weekly discount (uses the higher one)', async () => {
+      mockInsert.mockResolvedValue({ error: null });
+      mockGetVipDiscountPercent.mockResolvedValue(10);
+
+      renderConfirmation({
+        clientName: 'Cliente Coronita Fijo',
+        clientPhone: '3402500003',
         servicePrice: 12000,
         isFixedWeekly: true,
       });

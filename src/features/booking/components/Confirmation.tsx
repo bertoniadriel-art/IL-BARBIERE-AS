@@ -6,8 +6,9 @@ import { validateBookingForm } from '@/shared/lib/validation';
 import { format } from 'date-fns';
 import { ArrowRight, CreditCard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBookingStore } from '../bookingStore';
+import { getVipDiscountPercent } from '../services/vipDiscountService';
 
 export function Confirmation() {
   const {
@@ -31,6 +32,9 @@ export function Confirmation() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [slotError, setSlotError] = useState<string | null>(null);
+  // Bug #9: VIP ("Coronita") clients get an automatic discount that must be
+  // consulted before computing the final price — see vipDiscountService.
+  const [vipDiscountPercent, setVipDiscountPercent] = useState(0);
 
   // Format date for display
   const formattedDate = date ? format(new Date(`${date}T12:00:00`), 'dd-MM-yyyy') : '';
@@ -39,10 +43,31 @@ export function Confirmation() {
   const barberConfig = barberName ? getBarberConfig(barberName) : undefined;
   const paymentAlias = barberConfig?.paymentAlias ?? 'barberia.ilbarbiere';
 
-  // Compute final price: integer pesos rounded to nearest 100
+  // Look up VIP discount whenever the client's phone (identity) changes.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!clientPhone) {
+      setVipDiscountPercent(0);
+      return;
+    }
+
+    getVipDiscountPercent(clientPhone, barberId).then((percent) => {
+      if (!cancelled) setVipDiscountPercent(percent);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientPhone, barberId]);
+
+  // Compute final price: integer pesos rounded to nearest 100.
+  // VIP discount and the fixed-weekly discount don't stack — the higher
+  // of the two applies.
   const computeFinalPrice = (): number | null => {
     if (servicePrice == null) return null;
-    const base = isFixedWeekly ? servicePrice * 0.9 : servicePrice;
+    const discountPercent = Math.max(vipDiscountPercent, isFixedWeekly ? 10 : 0);
+    const base = servicePrice * (1 - discountPercent / 100);
     return Math.round(base / 100) * 100;
   };
 
@@ -58,7 +83,15 @@ export function Confirmation() {
     setIsSubmitting(true);
 
     const qrHash = crypto.randomUUID().slice(0, 8).toUpperCase();
-    const finalPrice = computeFinalPrice();
+    // Re-check VIP status right before charging, in case the background
+    // lookup triggered by typing the phone hasn't resolved yet.
+    const freshVipDiscountPercent = await getVipDiscountPercent(clientPhone, barberId);
+    setVipDiscountPercent(freshVipDiscountPercent);
+    const discountPercent = Math.max(freshVipDiscountPercent, isFixedWeekly ? 10 : 0);
+    const finalPrice =
+      servicePrice == null
+        ? null
+        : Math.round((servicePrice * (1 - discountPercent / 100)) / 100) * 100;
 
     if (!supabase || !barberId) {
       console.error('Cannot save appointment: Supabase not configured or no barber selected');
