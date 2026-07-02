@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, CheckCircle2, Crown, MoveRight, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, Crown, MoveRight, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface FaqItem {
@@ -56,6 +56,26 @@ const FAQS: FaqItem[] = [
             reservado para tu cliente fijo, sin que tengas que cargarlo de nuevo.
           </li>
         </ol>
+      </div>
+    ),
+  },
+  {
+    id: 'sobreturnos',
+    icon: <Clock className='w-5 h-5 text-neon-cyan' />,
+    question: '¿Puedo cargar un sobreturno fuera del horario habitual sin que la app lo bloquee?',
+    answer: (
+      <div className='space-y-3'>
+        <p>
+          <span className='text-emerald-400 font-bold'>Sí, sin problema.</span> La carga manual de
+          turnos (botón de agregar turno en Agenda) no valida el horario habitual del barbero —
+          podés cargar un sobreturno a cualquier hora, aunque sea después del último turno regular
+          del día.
+        </p>
+        <p>
+          Se crea igual que cualquier otro turno: queda confirmado y{' '}
+          <span className='text-neon-cyan font-bold'>te genera su propio QR</span> para que se lo
+          mandes al cliente.
+        </p>
       </div>
     ),
   },
