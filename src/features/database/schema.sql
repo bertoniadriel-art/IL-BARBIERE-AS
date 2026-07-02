@@ -68,9 +68,15 @@ create table if not exists public.appointments (
 -- UNIQUE CONSTRAINT — slot collision prevention
 -- ==========================================
 
-alter table public.appointments
-  add constraint if not exists appointments_unique_slot
-  unique (barber_id, appointment_date, appointment_time);
+-- Partial index: cancelled appointments don't hold their slot, so a client
+-- can rebook the same barber/date/time after a cancellation. See
+-- migrations/2026-06-23_partial_unique_slot.sql — this was written on
+-- 2026-06-23 but drifted from what's actually applied to prod (schema.sql
+-- kept the old plain-unique version). Always cross-check this file against
+-- the live DB's index definition, not just against migration files.
+create unique index if not exists appointments_unique_slot
+  on public.appointments (barber_id, appointment_date, appointment_time)
+  where status != 'cancelled';
 
 -- ==========================================
 -- RLS (ROW LEVEL SECURITY)
