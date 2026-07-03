@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-vip-appointments",
+      "schedule": "0 3 * * 6"
+    }
+  ]
+}
