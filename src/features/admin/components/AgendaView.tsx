@@ -403,7 +403,7 @@ function AppointmentCard({
           )}
           {row.client_phone && !isBlocked && (
             <a
-              href={`https://wa.me/54${row.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${row.client_name ?? ''}, te recordamos tu turno a las ${time} hs en Il Barbiere ✂️`)}`}
+              href={`https://wa.me/549${row.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${row.client_name ?? ''}, te recordamos tu turno a las ${time} hs en Il Barbiere ✂️`)}`}
               target='_blank'
               rel='noreferrer'
               className='px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase hover:bg-emerald-500/20 transition-colors'
@@ -756,8 +756,12 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
         {[
           { label: 'Hoy', value: todayRows.length, sub: 'turnos' },
           {
+            // Count every unconfirmed appointment in the fetched window (next
+            // 14 days), not just today's. A client can book a slot for a future
+            // date, and the barber needs that to register at the top so a new
+            // request never goes unnoticed.
             label: 'Pendientes',
-            value: todayRows.filter((r) => r.status === 'pending').length,
+            value: rows.filter((r) => r.status === 'pending').length,
             sub: 'sin confirmar',
           },
           {

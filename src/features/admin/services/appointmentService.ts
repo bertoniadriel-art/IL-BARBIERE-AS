@@ -52,7 +52,11 @@ export async function confirmAppointment(
 
   return {
     error: null,
-    whatsappUrl: `https://wa.me/${raw.client_phone}?text=${encodeURIComponent(message)}`,
+    // Argentine mobiles on WhatsApp need the 549 prefix (country 54 + mobile 9)
+    // before the 10-digit number. The DB stores the bare number (form asks for
+    // it "sin 0 ni 15"), so without this prefix wa.me reports "el número no
+    // existe" and the barber can't notify the client.
+    whatsappUrl: `https://wa.me/549${raw.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`,
   };
 }
 
