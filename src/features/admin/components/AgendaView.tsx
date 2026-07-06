@@ -747,6 +747,11 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
   const sortedDates = Object.keys(byDate).sort();
   const todayRows = byDate[format(new Date(), 'yyyy-MM-dd')] ?? [];
 
+  // Every unconfirmed turno in the window, pinned at the top so the barber sees
+  // exactly what needs confirming the moment the agenda loads — no scrolling
+  // through 14 days. rows already come ordered by date then time.
+  const pendingRows = useMemo(() => rows.filter((r) => r.status === 'pending'), [rows]);
+
   return (
     <div>
       <LiveTicker notifications={recentNotifications} />
@@ -782,6 +787,45 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
           </div>
         ))}
       </div>
+
+      {/* Pinned "to confirm" inbox — first thing the barber sees on refresh */}
+      {!loading && pendingRows.length > 0 && (
+        <div className='mb-6 glass-card border border-yellow-400/30 rounded-2xl p-4'>
+          <p className='text-[10px] uppercase tracking-[0.2em] text-yellow-400 font-black mb-3 flex items-center gap-2'>
+            <span className='w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse inline-block' />
+            Sin confirmar ({pendingRows.length})
+          </p>
+          <div className='space-y-2'>
+            {pendingRows.map((r) => (
+              <div
+                key={r.id}
+                className='flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] border border-white/5 px-3 py-2'
+              >
+                <button
+                  type='button'
+                  onClick={() => scrollToDay(r.appointment_date)}
+                  className='flex flex-col items-start min-w-0 text-left'
+                >
+                  <span className='font-bold text-white text-sm truncate max-w-[45vw]'>
+                    {r.client_name || 'Cliente sin nombre'}
+                  </span>
+                  <span className='text-white/40 text-[11px]'>
+                    {format(parseISO(r.appointment_date), 'd MMM', { locale: es })} ·{' '}
+                    {r.appointment_time?.slice(0, 5)} hs
+                  </span>
+                </button>
+                <button
+                  type='button'
+                  onClick={() => handleStatusChange(r.id, 'confirmed')}
+                  className='flex-shrink-0 px-3 py-1.5 rounded-xl bg-sky-500/15 border border-sky-500/40 text-sky-400 text-[10px] font-black uppercase tracking-wide hover:bg-sky-500/25 transition-colors'
+                >
+                  Confirmar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Availability bar */}
       <AvailabilityBar barberName={barber.name} rows={rows} onDayClick={scrollToDay} />
