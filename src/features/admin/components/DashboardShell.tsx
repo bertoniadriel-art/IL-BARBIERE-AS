@@ -3,6 +3,7 @@
 import { authService } from '@/features/auth/services/authService';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import { useNewAppointmentNotifications } from '@/shared/hooks/useNewAppointmentNotifications';
+import { playNotificationBeep } from '@/shared/lib/notificationSound';
 import type { Barber } from '@/shared/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -40,6 +41,7 @@ export function DashboardShell({ barber }: Props) {
   };
 
   const handleNewAppointment = useCallback((appt: IncomingAppointment) => {
+    playNotificationBeep();
     setNotification(appt);
     setNotificationCount((c) => c + 1);
     setRecentNotifications((prev) => [appt, ...prev].slice(0, 8));
