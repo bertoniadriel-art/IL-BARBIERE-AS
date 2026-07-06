@@ -12,6 +12,7 @@ import {
 import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import { supabase } from '@/shared/lib/supabase';
+import { clientWhatsAppUrl } from '@/shared/lib/whatsapp';
 import type { AppointmentStatus } from '@/shared/types';
 import { addDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -262,6 +263,10 @@ function AppointmentCard({
       return;
     }
     setMoveOpen(false);
+    // Let the barber notify the client that the turno moved (new date/time).
+    const moveMsg = `*IL BARBIERE OS - TURNO REPROGRAMADO* 🔄\n\n👤 *Cliente:* ${row.client_name ?? ''}\n✂️ *Servicio:* ${row.services?.name ?? 'Servicio'}\n📅 *Nueva fecha:* ${format(parseISO(moveDate), 'dd-MM-yyyy')}\n⏰ *Nueva hora:* ${moveTime} HS\n\n_Te esperamos!_`;
+    const moveUrl = clientWhatsAppUrl(row.client_phone, moveMsg);
+    if (moveUrl) window.open(moveUrl, '_blank');
     onMoved();
   }
 
@@ -269,7 +274,12 @@ function AppointmentCard({
     setIsCancelling(true);
     const { error } = await updateAppointmentStatus(row.id, 'cancelled');
     setIsCancelling(false);
-    if (!error) onMoved();
+    if (error) return;
+    // Let the barber notify the client that the turno was cancelled.
+    const cancelMsg = `*IL BARBIERE OS - TURNO CANCELADO* ❌\n\n👤 *Cliente:* ${row.client_name ?? ''}\n✂️ *Servicio:* ${row.services?.name ?? 'Servicio'}\n📅 *Fecha:* ${format(parseISO(row.appointment_date), 'dd-MM-yyyy')}\n⏰ *Hora:* ${time} HS\n\n_Escribinos para reprogramar tu turno._`;
+    const cancelUrl = clientWhatsAppUrl(row.client_phone, cancelMsg);
+    if (cancelUrl) window.open(cancelUrl, '_blank');
+    onMoved();
   }
 
   function handleDownloadQR() {
