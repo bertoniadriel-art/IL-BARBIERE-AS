@@ -15,7 +15,12 @@ interface BookedRow {
   services: { duration_min: number } | null;
 }
 
-function expandSlots(time: string, durationMin: number): string[] {
+/**
+ * Expands a start time into every 30-min slot it occupies for the given
+ * duration. E.g. a 60-min service at "13:30" occupies ["13:30", "14:00"].
+ * Accepts "HH:MM" or "HH:MM:SS".
+ */
+export function expandSlots(time: string, durationMin: number): string[] {
   const [h, m] = time.slice(0, 5).split(':').map(Number);
   const startMin = h * 60 + m;
   const slots: string[] = [];

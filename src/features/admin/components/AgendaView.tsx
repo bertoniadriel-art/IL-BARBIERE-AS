@@ -6,6 +6,7 @@ import {
   updateAppointmentStatus,
 } from '@/features/admin/services/appointmentService';
 import {
+  expandSlots,
   getBlockedSlotsForDay,
   getBookedSlots,
 } from '@/features/booking/services/availabilityService';
@@ -41,7 +42,7 @@ interface AppointmentRow {
   appointment_time: string;
   qr_hash: string | null;
   barber_id: string;
-  services: { name: string } | null;
+  services: { name: string; duration_min: number } | null;
   is_fixed_weekly: boolean;
   frequency?: 'weekly' | 'biweekly';
 }
@@ -566,7 +567,15 @@ function DaySection({
   }, [barber.id, dateStr]);
 
   const scheduledTimes = getAvailableTimesForBarber(barber.name, parseISO(dateStr), BASE_TIMES);
-  const bookedSet = new Set(rows.map((r) => r.appointment_time.slice(0, 5)));
+  // Expand each turno across every 30-min slot it occupies, so a 60-min service
+  // (e.g. Corte + Barba) marks both halves as taken. A start-time-only set left
+  // the second half-hour showing as free.
+  const bookedSet = new Set<string>();
+  for (const r of rows) {
+    for (const slot of expandSlots(r.appointment_time, r.services?.duration_min ?? 30)) {
+      bookedSet.add(slot);
+    }
+  }
   const blockedSet = new Set(blockedSlots);
   const availableSlots = scheduledTimes.filter((s) => !bookedSet.has(s) && !blockedSet.has(s));
 
@@ -705,7 +714,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
       const { data } = await supabase
         .from('appointments')
         .select(
-          'id, status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name)'
+          'id, status, deposit_paid, final_price, client_name, client_phone, appointment_date, appointment_time, qr_hash, barber_id, is_fixed_weekly, services(name, duration_min)'
         )
         .eq('barber_id', barber.id)
         .gte('appointment_date', today)
