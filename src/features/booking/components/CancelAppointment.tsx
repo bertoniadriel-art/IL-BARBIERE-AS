@@ -62,12 +62,13 @@ export function CancelAppointment({
   const handleMarkPaid = async () => {
     if (!supabase || !appointment) return;
     setMarkingPaid(true);
-    const { error } = await supabase
-      .from('appointments')
-      .update({ deposit_paid: true })
-      .eq('id', appointment.id);
+    // mark_deposit_paid(p_hash) is idempotent and returns `true` only when it
+    // actually mutated a pending/confirmed appointment; any other status
+    // no-ops and returns `false` (JDA-006 regression: previously this write
+    // went through the blanket anon UPDATE policy with no status guard).
+    const { data, error } = await supabase.rpc('mark_deposit_paid', { p_hash: hash });
     setMarkingPaid(false);
-    if (!error) setDepositPaid(true);
+    if (!error && data === true) setDepositPaid(true);
   };
 
   const handleSendWhatsApp = () => {
@@ -130,13 +131,15 @@ export function CancelAppointment({
 
   async function handleCancel() {
     if (!supabase) return;
-    const { error } = await supabase
-      .from('appointments')
-      .update({ status: 'cancelled' })
-      .eq('id', appointment!.id)
-      .in('status', ['pending', 'confirmed']);
+    // cancel_appointment(p_hash) returns 'cancelled' only on a true
+    // pending/confirmed -> cancelled transition. Invalid hash, already-
+    // cancelled, wrong-status, and cutoff-blocked cancels all return the SAME
+    // 'no_op' value externally (anti-oracle contract) — the UI MUST branch on
+    // this returned value, not merely on the absence of a thrown error, and
+    // must not leak WHY a no_op happened.
+    const { data, error } = await supabase.rpc('cancel_appointment', { p_hash: hash });
 
-    if (error) {
+    if (error || data !== 'cancelled') {
       setStatus('error');
     } else {
       setStatus('cancelled');
