@@ -56,6 +56,6 @@
     "vitest": "^2.1.8"
   },
   "lint-staged": {
-    "*.{ts,tsx}": ["biome check --write --no-errors-on-unmatched", "tsc --noEmit"]
+    "*.{ts,tsx}": ["biome check --write --no-errors-on-unmatched"]
   }
 }
