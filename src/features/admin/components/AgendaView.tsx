@@ -1,6 +1,11 @@
 'use client';
 
 import {
+  AGENDA_DAYS_AHEAD,
+  BASE_TIMES,
+  buildAgendaDates,
+} from '@/features/admin/services/agendaDays';
+import {
   confirmAppointment,
   moveAppointment,
   updateAppointmentStatus,
@@ -21,11 +26,6 @@ import { CalendarDays, ChevronDown, ChevronUp, Crown, Download, Lock, X } from '
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { BlockTurnModal } from './BlockTurnModal';
-import {
-  AGENDA_DAYS_AHEAD,
-  BASE_TIMES,
-  buildAgendaDates,
-} from '@/features/admin/services/agendaDays';
 
 const TIME_SLOTS = BASE_TIMES;
 
