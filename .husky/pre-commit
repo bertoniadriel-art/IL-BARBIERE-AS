@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Runs the lint-staged config from package.json: Biome formats + lints every
+# staged .ts/.tsx and restages the result. Without this hook that config never
+# executes, and unformatted code reaches CI.
+#
+# Called bare, not via a package manager: husky puts node_modules/.bin first on
+# PATH, and pnpm is a CI-only dependency here — `pnpm exec` fails on a dev
+# machine that installed with npm.
+lint-staged
