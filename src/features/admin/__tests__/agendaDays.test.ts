@@ -1,4 +1,6 @@
-import { buildAgendaDates } from '@/features/admin/services/agendaDays';
+import { AGENDA_DAYS_AHEAD, buildAgendaDates } from '@/features/admin/services/agendaDays';
+import { BARBERS_CONFIG } from '@/shared/config/barbers';
+import { addDays, format } from 'date-fns';
 import { describe, expect, it } from 'vitest';
 
 // Sunday 2026-07-12. The following 14 days hold no Argentine holiday, so the
@@ -60,5 +62,26 @@ describe('buildAgendaDates', () => {
     const dates = buildAgendaDates('Ghost Barber', ['2026-07-15'], SUNDAY);
 
     expect(dates).toEqual(['2026-07-15']);
+  });
+
+  // Guards every barber in the config, not just the one the bug was reported
+  // on: any day a barber is scheduled to work must reach the agenda with zero
+  // appointments on it, or that day can never receive its first turno.
+  describe.each(Object.keys(BARBERS_CONFIG))('%s', (barberName) => {
+    it('renders every scheduled working day in the window when the agenda is empty', () => {
+      const dates = buildAgendaDates(barberName, [], SUNDAY);
+      const schedule = BARBERS_CONFIG[barberName].schedule;
+
+      const expected: string[] = [];
+      for (let i = 0; i < AGENDA_DAYS_AHEAD; i++) {
+        const date = addDays(SUNDAY, i);
+        if (schedule[date.getDay() as keyof typeof schedule]) {
+          expected.push(format(date, 'yyyy-MM-dd'));
+        }
+      }
+
+      expect(expected.length).toBeGreaterThan(0);
+      expect(dates).toEqual(expected);
+    });
   });
 });
