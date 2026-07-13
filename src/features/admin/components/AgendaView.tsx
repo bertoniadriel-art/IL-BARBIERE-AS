@@ -21,13 +21,11 @@ import { CalendarDays, ChevronDown, ChevronUp, Crown, Download, Lock, X } from '
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { BlockTurnModal } from './BlockTurnModal';
-
-// 30-min slots 08:00–20:00
-const BASE_TIMES = Array.from({ length: 25 }, (_, i) => {
-  const h = Math.floor(i / 2) + 8;
-  const m = i % 2 === 0 ? '00' : '30';
-  return `${String(h).padStart(2, '0')}:${m}`;
-});
+import {
+  AGENDA_DAYS_AHEAD,
+  BASE_TIMES,
+  buildAgendaDates,
+} from '@/features/admin/services/agendaDays';
 
 const TIME_SLOTS = BASE_TIMES;
 
@@ -106,7 +104,7 @@ function AvailabilityBar({
   const [open, setOpen] = useState(false);
 
   const days = useMemo(() => {
-    return Array.from({ length: 14 }, (_, i) => {
+    return Array.from({ length: AGENDA_DAYS_AHEAD }, (_, i) => {
       const date = addDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const total = getAvailableTimesForBarber(barberName, date, BASE_TIMES).length;
@@ -763,7 +761,13 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     return map;
   }, [rows]);
 
-  const sortedDates = Object.keys(byDate).sort();
+  // Derived from the barber's schedule, not just from the fetched turnos: a
+  // working day with zero appointments must still render, otherwise its
+  // free-slot chips never appear and it can never receive its first booking.
+  const sortedDates = useMemo(
+    () => buildAgendaDates(barber.name, Object.keys(byDate)),
+    [barber.name, byDate]
+  );
   const todayRows = byDate[format(new Date(), 'yyyy-MM-dd')] ?? [];
 
   // Every unconfirmed turno in the window, pinned at the top so the barber sees
@@ -861,7 +865,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
           <DaySection
             key={dateStr}
             dateStr={dateStr}
-            rows={byDate[dateStr]}
+            rows={byDate[dateStr] ?? []}
             barber={barber}
             onStatusChange={handleStatusChange}
             onMoved={fetchAgenda}
