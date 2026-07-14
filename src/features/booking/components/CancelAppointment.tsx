@@ -2,6 +2,7 @@
 
 import { getBarberConfig } from '@/shared/config/barbers';
 import { supabase } from '@/shared/lib/supabase';
+import { whatsAppUrl } from '@/shared/lib/whatsapp';
 import { differenceInHours, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -78,7 +79,8 @@ export function CancelAppointment({
       'dd-MM-yyyy'
     );
     const message = `*IL BARBIERE OS - NUEVA RESERVA*\n\n👤 *Cliente:* ${appointment.client_name}\n✂️ *Servicio:* ${displayService}\n📅 *Fecha:* ${formattedDateWa}\n⏰ *Hora:* ${appointment.appointment_time.slice(0, 5)} HS\n💈 *Barbero:* ${appointment.barbers?.name || 'Sin asignar'}\n🎟️ *Código:* ${appointment.qr_hash}\n\n_Confirmado vía IL BARBIERE OS_`;
-    window.open(`https://wa.me/${barberWaPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    const url = whatsAppUrl(barberWaPhone, message);
+    if (url) window.open(url, '_blank');
   };
 
   if (!appointment) {
