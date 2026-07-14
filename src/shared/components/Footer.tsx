@@ -45,7 +45,7 @@ export function Footer() {
             <li className='flex items-center gap-3'>
               <Phone className='w-5 h-5 text-white/20' />
               <a
-                href='https://wa.me/543402503244'
+                href='https://wa.me/5493402503244'
                 target='_blank'
                 rel='noreferrer'
                 className='hover:text-green-400 transition-colors'
@@ -56,7 +56,7 @@ export function Footer() {
             <li className='flex items-center gap-3'>
               <Phone className='w-5 h-5 text-white/20' />
               <a
-                href='https://wa.me/543402417023'
+                href='https://wa.me/5493402417023'
                 target='_blank'
                 rel='noreferrer'
                 className='hover:text-green-400 transition-colors'
