@@ -38,6 +38,7 @@ export function TimeSelector() {
   const setStep = useBookingStore((state) => state.setStep);
   const barberId = useBookingStore((state) => state.barberId);
   const barberName = useBookingStore((state) => state.barberName);
+  const serviceDuration = useBookingStore((state) => state.serviceDuration);
   const slotConflictError = useBookingStore((state) => state.slotConflictError);
   const setSlotConflictError = useBookingStore((state) => state.setSlotConflictError);
 
@@ -72,14 +73,14 @@ export function TimeSelector() {
   const getTimesForDate = (dateStr: string): string[] => {
     const date = new Date(`${dateStr}T12:00:00`);
     if (!barberName) return [];
-    return filterAvailableSlots(barberName, date, BASE_TIMES, bookedTimes);
+    return filterAvailableSlots(barberName, date, BASE_TIMES, bookedTimes, serviceDuration ?? 30);
   };
 
   // For date availability preview (uses empty bookedTimes to show all schedule days)
   const dateHasSlots = (dateStr: string): boolean => {
     const date = new Date(`${dateStr}T12:00:00`);
     if (!barberName) return false;
-    return filterAvailableSlots(barberName, date, BASE_TIMES, []).length > 0;
+    return filterAvailableSlots(barberName, date, BASE_TIMES, [], serviceDuration ?? 30).length > 0;
   };
 
   return (

@@ -103,7 +103,8 @@ describe('ServiceSelector (T3.2 — async from DB)', () => {
     // Click the first service card
     fireEvent.click(screen.getByText('Corte de Pelo').closest('button')!);
 
-    expect(mockSetService).toHaveBeenCalledWith('uuid-svc-1', 'Corte de Pelo', 12000);
+    // The duration must travel to the store: TimeSelector needs it to size the slot.
+    expect(mockSetService).toHaveBeenCalledWith('uuid-svc-1', 'Corte de Pelo', 12000, 30);
     expect(mockSetService).not.toHaveBeenCalledWith('s1');
   });
 

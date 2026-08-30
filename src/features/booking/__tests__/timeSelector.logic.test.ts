@@ -106,3 +106,52 @@ describe('filterAvailableSlots (T2.2)', () => {
     });
   });
 });
+
+/**
+ * Duration-aware filtering.
+ *
+ * A 60-min service ("Corte + Barba") occupies TWO 30-min slots. Filtering only
+ * by the starting slot lets it overlap the next appointment and run past the
+ * barber's window. These tests pin the slot a service actually consumes.
+ */
+describe('filterAvailableSlots — service duration', () => {
+  // Santi Ducca, Wednesday 10:00–18:30
+  const WEDNESDAY = new Date('2026-06-03T12:00:00');
+  // Fede Diaz, Tuesday 09:00–19:00
+  const TUESDAY = new Date('2026-06-02T12:00:00');
+
+  it('does not offer a 60-min slot when the following slot is booked', () => {
+    const result = filterAvailableSlots('Santi Ducca', WEDNESDAY, BASE_TIMES, ['14:30'], 60);
+    // 14:00 would run 14:00–15:00 and overlap the 14:30 appointment
+    expect(result).not.toContain('14:00');
+  });
+
+  it('offers that same slot for a 30-min service', () => {
+    const result = filterAvailableSlots('Santi Ducca', WEDNESDAY, BASE_TIMES, ['14:30'], 30);
+    // Same day, same bookings — only the duration differs
+    expect(result).toContain('14:00');
+  });
+
+  it('offers a 60-min slot when both halves are free', () => {
+    const result = filterAvailableSlots('Santi Ducca', WEDNESDAY, BASE_TIMES, ['14:30'], 60);
+    expect(result).toContain('15:00');
+  });
+
+  it('does not offer a 60-min slot that would run past the barber window', () => {
+    const result = filterAvailableSlots('Fede Diaz', TUESDAY, BASE_TIMES, [], 60);
+    // Fede closes at 19:00: a 60-min service there would occupy 19:00 and 19:30
+    expect(result).not.toContain('19:00');
+    expect(result).toContain('18:00');
+  });
+
+  it('still offers the last slot for a 30-min service', () => {
+    const result = filterAvailableSlots('Fede Diaz', TUESDAY, BASE_TIMES, [], 30);
+    expect(result).toContain('19:00');
+  });
+
+  it('defaults to 30 min when no duration is given', () => {
+    const withDefault = filterAvailableSlots('Santi Ducca', WEDNESDAY, BASE_TIMES, ['14:30']);
+    const explicit = filterAvailableSlots('Santi Ducca', WEDNESDAY, BASE_TIMES, ['14:30'], 30);
+    expect(withDefault).toEqual(explicit);
+  });
+});
