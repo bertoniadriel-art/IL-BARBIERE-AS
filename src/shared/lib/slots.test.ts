@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expandSlots } from './slots';
+import { expandSlots, slotEnd } from './slots';
 
 describe('expandSlots', () => {
   it('returns a single slot for a 30-min service', () => {
@@ -24,5 +24,23 @@ describe('expandSlots', () => {
 
   it('pads single-digit hours', () => {
     expect(expandSlots('09:00', 30)).toEqual(['09:00']);
+  });
+});
+
+describe('slotEnd', () => {
+  it('ends a 30-min service half an hour later', () => {
+    expect(slotEnd('18:30', 30)).toBe('19:00');
+  });
+
+  it('ends a 60-min service an hour later', () => {
+    expect(slotEnd('18:00', 60)).toBe('19:00');
+  });
+
+  it('rolls over the hour', () => {
+    expect(slotEnd('09:30', 30)).toBe('10:00');
+  });
+
+  it('accepts the DB "HH:MM:SS" format', () => {
+    expect(slotEnd('13:30:00', 60)).toBe('14:30');
   });
 });

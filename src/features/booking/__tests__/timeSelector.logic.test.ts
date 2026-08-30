@@ -20,6 +20,7 @@ const BASE_TIMES = [
   '14:30',
   '15:00',
   '18:00',
+  '18:30',
   '19:00',
   '19:30',
   '20:00',
@@ -31,9 +32,10 @@ describe('filterAvailableSlots (T2.2)', () => {
       // Tuesday 2026-06-02
       const date = new Date('2026-06-02T12:00:00');
       const result = filterAvailableSlots('Fede Diaz', date, BASE_TIMES, []);
-      // Fede Tue: 09:00–19:00
+      // Fede Tue: 09:00–19:00, where 19:00 is closing time
       expect(result).toContain('09:00');
-      expect(result).toContain('19:00');
+      expect(result).toContain('18:30');
+      expect(result).not.toContain('19:00');
       expect(result).not.toContain('19:30');
       expect(result).not.toContain('20:00');
     });
@@ -144,9 +146,23 @@ describe('filterAvailableSlots — service duration', () => {
     expect(result).toContain('18:00');
   });
 
-  it('still offers the last slot for a 30-min service', () => {
+  it('offers the last 30-min slot that still ends by closing time', () => {
     const result = filterAvailableSlots('Fede Diaz', TUESDAY, BASE_TIMES, [], 30);
-    expect(result).toContain('19:00');
+    // 18:30 runs 18:30-19:00 and ends exactly at closing
+    expect(result).toContain('18:30');
+  });
+
+  it('does not offer a 30-min slot that would end after closing time', () => {
+    const result = filterAvailableSlots('Fede Diaz', TUESDAY, BASE_TIMES, [], 30);
+    // 19:00 IS closing: starting there runs until 19:30
+    expect(result).not.toContain('19:00');
+  });
+
+  it('does not offer a 60-min slot that would end after closing time', () => {
+    const result = filterAvailableSlots('Fede Diaz', TUESDAY, BASE_TIMES, [], 60);
+    // 18:30 runs until 19:30; the last 60-min slot is 18:00
+    expect(result).not.toContain('18:30');
+    expect(result).toContain('18:00');
   });
 
   it('defaults to 30 min when no duration is given', () => {

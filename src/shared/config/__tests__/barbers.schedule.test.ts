@@ -52,23 +52,24 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns times from 09:00 to 19:00 for Fede on Tuesday', () => {
+    it('offers 09:00 through 18:30 for Fede on Tuesday (closes 19:00)', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', tuesday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('19:00');
+      // 19:00 is closing time: the last slot must END there, not start there
+      expect(result[result.length - 1]).toBe('18:30');
     });
 
-    it('returns times from 09:00 to 19:00 for Fede on Wednesday', () => {
+    it('offers 09:00 through 18:30 for Fede on Wednesday (closes 19:00)', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', wednesday, BASE_TIMES);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('19:00');
+      expect(result[result.length - 1]).toBe('18:30');
     });
 
-    it('returns times from 09:00 to 16:00 for Fede on Saturday', () => {
+    it('offers 09:00 through 15:30 for Fede on Saturday (closes 16:00)', () => {
       const result = getAvailableTimesForBarber('Fede Diaz', saturday, BASE_TIMES);
       expect(result[0]).toBe('09:00');
-      expect(result[result.length - 1]).toBe('16:00');
+      expect(result[result.length - 1]).toBe('15:30');
     });
 
     it('does not include times before 09:00 for Fede', () => {
@@ -90,25 +91,25 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns times from 10:00 to 18:30 for Santi on Tuesday', () => {
+    it('offers 10:00 through 18:00 for Santi on Tuesday (closes 18:30)', () => {
       const tuesday = new Date('2026-06-02T12:00:00');
       const result = getAvailableTimesForBarber('Santi Ducca', tuesday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('10:00');
-      expect(result[result.length - 1]).toBe('18:30');
+      expect(result[result.length - 1]).toBe('18:00');
     });
 
-    it('returns times from 10:00 to 18:30 for Santi on Friday', () => {
+    it('offers 10:00 through 18:00 for Santi on Friday (closes 18:30)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', friday, BASE_TIMES);
       expect(result[0]).toBe('10:00');
-      expect(result[result.length - 1]).toBe('18:30');
+      expect(result[result.length - 1]).toBe('18:00');
     });
 
-    it('returns only times up to 14:00 for Santi on Saturday', () => {
+    it('offers only times up to 13:30 for Santi on Saturday (closes 14:00)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', saturday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('10:00');
-      expect(result[result.length - 1]).toBe('14:00');
+      expect(result[result.length - 1]).toBe('13:30');
       expect(result).not.toContain('14:30');
       expect(result).not.toContain('19:00');
     });
