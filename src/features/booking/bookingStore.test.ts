@@ -78,18 +78,26 @@ describe('BookingStore', () => {
   describe('setService (T3.1/T7.1)', () => {
     it('should store service id, name, and price, and advance to step 3', () => {
       const { setService } = useBookingStore.getState();
-      setService('uuid-real-1', 'Corte de Pelo', 12000);
+      setService('uuid-real-1', 'Corte de Pelo', 12000, 30);
 
       const state = useBookingStore.getState();
       expect(state.serviceId).toBe('uuid-real-1');
       expect(state.serviceName).toBe('Corte de Pelo');
       expect(state.servicePrice).toBe(12000);
+      expect(state.serviceDuration).toBe(30);
       expect(state.step).toBe(3);
+    });
+
+    it('should store the duration of a 60-min service', () => {
+      const { setService } = useBookingStore.getState();
+      setService('uuid-real-3', 'Corte + Barba', 20000, 60);
+
+      expect(useBookingStore.getState().serviceDuration).toBe(60);
     });
 
     it('should store a different service correctly', () => {
       const { setService } = useBookingStore.getState();
-      setService('uuid-real-2', 'Barba', 8000);
+      setService('uuid-real-2', 'Barba', 8000, 30);
 
       const state = useBookingStore.getState();
       expect(state.serviceId).toBe('uuid-real-2');
@@ -141,7 +149,7 @@ describe('BookingStore', () => {
   describe('reset (T7.1 — clears all new fields)', () => {
     it('should reset clientName, clientPhone, serviceName, servicePrice, slotConflictError', () => {
       const { setService, setClient, setSlotConflictError } = useBookingStore.getState();
-      setService('uuid-real-1', 'Corte de Pelo', 12000);
+      setService('uuid-real-1', 'Corte de Pelo', 12000, 30);
       setClient('Juan', '1155551234');
       setSlotConflictError('conflict!');
 

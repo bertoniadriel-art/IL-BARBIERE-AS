@@ -1,3 +1,4 @@
+import { expandSlots } from '@/shared/lib/slots';
 import { supabase } from '@/shared/lib/supabase';
 
 interface BlockedSlotRow {
@@ -15,22 +16,8 @@ interface BookedRow {
   duration_min: number | null;
 }
 
-/**
- * Expands a start time into every 30-min slot it occupies for the given
- * duration. E.g. a 60-min service at "13:30" occupies ["13:30", "14:00"].
- * Accepts "HH:MM" or "HH:MM:SS".
- */
-export function expandSlots(time: string, durationMin: number): string[] {
-  const [h, m] = time.slice(0, 5).split(':').map(Number);
-  const startMin = h * 60 + m;
-  const slots: string[] = [];
-  for (let t = startMin; t < startMin + durationMin; t += 30) {
-    const hh = String(Math.floor(t / 60)).padStart(2, '0');
-    const mm = String(t % 60).padStart(2, '0');
-    slots.push(`${hh}:${mm}`);
-  }
-  return slots;
-}
+// Re-exported so existing consumers keep importing it from here.
+export { expandSlots };
 
 /**
  * Fetches booked time slots for a given barber on a given date.

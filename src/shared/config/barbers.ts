@@ -1,3 +1,4 @@
+import { expandSlots } from '../lib/slots';
 // Barbers configuration — schedules, payment aliases, contact info
 // Schedules are in code (stable, 2-barber operation). Move to DB in v2 if dynamic editing is needed.
 import type { Barber } from '../types';
@@ -49,14 +50,20 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
  * Filters baseTimes to the barber's schedule window for that day-of-week.
  * Returns [] if the barber is off that day or on vacation.
  *
- * @param barberName - display name matching a key in BARBERS_CONFIG
- * @param date       - the date to check
- * @param baseTimes  - all possible time slots ("HH:MM" strings), e.g. ["09:00", "09:30", ...]
+ * A service occupies every 30-min slot from its start time, so all of them must
+ * fall inside the window — a 60-min service cannot start on the last slot of
+ * the day. With the 30-min default this is the same as checking the start time.
+ *
+ * @param barberName  - display name matching a key in BARBERS_CONFIG
+ * @param date        - the date to check
+ * @param baseTimes   - all possible time slots ("HH:MM" strings), e.g. ["09:00", "09:30", ...]
+ * @param durationMin - length of the service being booked, in minutes
  */
 export function getAvailableTimesForBarber(
   barberName: string,
   date: Date,
-  baseTimes: string[]
+  baseTimes: string[],
+  durationMin = 30
 ): string[] {
   const cfg = BARBERS_CONFIG[barberName];
   if (!cfg) return [];
@@ -77,7 +84,9 @@ export function getAvailableTimesForBarber(
   const window = cfg.schedule[dayKey];
   if (!window) return []; // day off
 
-  return baseTimes.filter((t) => t >= window.from && t <= window.to);
+  return baseTimes.filter((t) =>
+    expandSlots(t, durationMin).every((slot) => slot >= window.from && slot <= window.to)
+  );
 }
 
 export const getBarberConfig = (name: string): Barber | undefined => {

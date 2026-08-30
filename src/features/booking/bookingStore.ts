@@ -12,6 +12,7 @@ interface BookingState {
   serviceId: string | null;
   serviceName: string | null;
   servicePrice: number | null;
+  serviceDuration: number | null;
 
   // Date/time
   date: string | null;
@@ -30,7 +31,7 @@ interface BookingState {
   // Actions
   setStep: (step: number) => void;
   setBarber: (id: string, name: string) => void;
-  setService: (id: string, name: string, price: number) => void;
+  setService: (id: string, name: string, price: number, durationMin: number) => void;
   setDateTime: (date: string, time: string) => void;
   setFixedWeekly: (value: boolean) => void;
   setClient: (name: string, phone: string) => void;
@@ -45,6 +46,7 @@ const initialState = {
   serviceId: null,
   serviceName: null,
   servicePrice: null,
+  serviceDuration: null,
   date: null,
   time: null,
   isFixedWeekly: false,
@@ -57,8 +59,8 @@ export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
   setStep: (step) => set({ step }),
   setBarber: (barberId, barberName) => set({ barberId, barberName, step: 2 }),
-  setService: (serviceId, serviceName, servicePrice) =>
-    set({ serviceId, serviceName, servicePrice, step: 3 }),
+  setService: (serviceId, serviceName, servicePrice, serviceDuration) =>
+    set({ serviceId, serviceName, servicePrice, serviceDuration, step: 3 }),
   setDateTime: (date, time) => set({ date, time, step: 4 }),
   setFixedWeekly: (isFixedWeekly) => set({ isFixedWeekly }),
   setClient: (clientName, clientPhone) => set({ clientName, clientPhone }),

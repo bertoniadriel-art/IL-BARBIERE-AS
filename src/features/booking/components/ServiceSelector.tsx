@@ -98,7 +98,9 @@ export function ServiceSelector() {
             return (
               <button
                 key={service.id}
-                onClick={() => setService(service.id, service.name, service.price)}
+                onClick={() =>
+                  setService(service.id, service.name, service.price, service.duration_min)
+                }
                 className='group relative flex flex-col p-8 glass-card border-white/5 hover:border-neon-cyan/50 transition-all duration-500 text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]'
               >
                 {/* Interactive Background Gradient */}
