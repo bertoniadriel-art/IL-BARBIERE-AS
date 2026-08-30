@@ -1,4 +1,4 @@
-import { expandSlots } from '../lib/slots';
+import { slotEnd } from '../lib/slots';
 // Barbers configuration — schedules, payment aliases, contact info
 // Schedules are in code (stable, 2-barber operation). Move to DB in v2 if dynamic editing is needed.
 import type { Barber } from '../types';
@@ -50,9 +50,9 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
  * Filters baseTimes to the barber's schedule window for that day-of-week.
  * Returns [] if the barber is off that day or on vacation.
  *
- * A service occupies every 30-min slot from its start time, so all of them must
- * fall inside the window — a 60-min service cannot start on the last slot of
- * the day. With the 30-min default this is the same as checking the start time.
+ * `window.to` is closing time, so a service must FINISH by then, not merely
+ * start before it: at a 19:00 close the last 30-min slot is 18:30 and the last
+ * 60-min slot is 18:00.
  *
  * @param barberName  - display name matching a key in BARBERS_CONFIG
  * @param date        - the date to check
@@ -84,9 +84,7 @@ export function getAvailableTimesForBarber(
   const window = cfg.schedule[dayKey];
   if (!window) return []; // day off
 
-  return baseTimes.filter((t) =>
-    expandSlots(t, durationMin).every((slot) => slot >= window.from && slot <= window.to)
-  );
+  return baseTimes.filter((t) => t >= window.from && slotEnd(t, durationMin) <= window.to);
 }
 
 export const getBarberConfig = (name: string): Barber | undefined => {

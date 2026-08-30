@@ -23,3 +23,13 @@ export function expandSlots(time: string, durationMin: number): string[] {
   }
   return slots;
 }
+
+/**
+ * Returns the time a service starting at `time` finishes, as "HH:MM".
+ * E.g. a 60-min service at "18:00" ends at "19:00".
+ */
+export function slotEnd(time: string, durationMin: number): string {
+  const [h, m] = time.slice(0, 5).split(':').map(Number);
+  const end = h * 60 + m + durationMin;
+  return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+}
