@@ -67,16 +67,34 @@ function loadEnv(): Record<string, string> {
 
 const env = loadEnv();
 
+/**
+ * PostgREST caps how many rows one response may carry, and silently returns a
+ * short page instead of failing. Asking for the whole table ordered ascending
+ * therefore dropped the most RECENT rows: the August 2026 report came out with
+ * its last two working weeks at zero. Page through with Range until a short
+ * page arrives.
+ */
+const PAGE_SIZE = 1000;
+
 async function sbFetch(qs: string): Promise<any[]> {
-  const url = `${env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')}/rest/v1/appointments?${qs}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-    },
-  });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  return res.json();
+  const base = `${env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')}/rest/v1/appointments?${qs}`;
+  const rows: any[] = [];
+
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const res = await fetch(base, {
+      headers: {
+        apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        'Range-Unit': 'items',
+        Range: `${from}-${from + PAGE_SIZE - 1}`,
+      },
+    });
+    if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+
+    const page: any[] = await res.json();
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
 }
 
 const money = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
@@ -230,7 +248,7 @@ async function main() {
 
   const select =
     'select=appointment_date,appointment_time,created_at,status,final_price,client_name,client_phone,qr_hash,barbers(name),services(name)';
-  const all: Row[] = await sbFetch(`${select}&order=appointment_date.asc&limit=20000`);
+  const all: Row[] = await sbFetch(`${select}&order=appointment_date.asc`);
   // Shop closures are booked as ordinary appointments; they are not turnos.
   const live = all.filter((r) => !isClosureRow(r));
 
