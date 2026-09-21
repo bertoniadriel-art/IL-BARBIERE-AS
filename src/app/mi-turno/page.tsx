@@ -56,9 +56,9 @@ export default function BuscarMiTurnoPage() {
             </div>
             {error && <p className='text-red-400 text-xs mt-2'>{error}</p>}
           </div>
-          <p className='text-white/30 text-[10px]'>
-            Lo enviamos por WhatsApp cuando reservaste — también está en el QR que te mostramos al
-            confirmar.
+          <p className='text-white/30 text-[10px] leading-relaxed'>
+            Es el código que te mostramos junto al QR cuando pediste el turno, y está también en el
+            link de tu turno.
           </p>
           <button
             type='submit'

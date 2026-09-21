@@ -1,17 +1,30 @@
 import { CancelAppointment } from '@/features/booking/components/CancelAppointment';
 import { createClient } from '@/shared/lib/supabase-server';
 
-export default async function MiTurnoPage({ params }: { params: Promise<{ hash: string }> }) {
+export default async function MiTurnoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ hash: string }>;
+  searchParams: Promise<{ nuevo?: string }>;
+}) {
   const { hash } = await params;
+  // `nuevo=1` lo agrega Confirmation al redirigir recién reservado. Se lee acá
+  // (Server Component) para no envolver el cliente en <Suspense>.
+  const { nuevo } = await searchParams;
   const supabase = await createClient();
 
-  const { data: raw } = await supabase
+  const { data: raw, error } = await supabase
     .from('appointments')
     .select(
-      'id, client_name, appointment_date, appointment_time, status, qr_hash, deposit_paid, final_price, barbers(name), services(name)'
+      'id, client_name, appointment_date, appointment_time, status, qr_hash, barbers(name), services(name, duration_min)'
     )
     .eq('qr_hash', hash.toUpperCase())
     .single();
+
+  // PGRST116 = `.single()` matched no row, which IS "no existe". Any other error
+  // means the read failed: never tell the client their turno does not exist.
+  const loadFailed = Boolean(error) && error?.code !== 'PGRST116';
 
   const appointment = raw
     ? {
@@ -21,5 +34,12 @@ export default async function MiTurnoPage({ params }: { params: Promise<{ hash: 
       }
     : null;
 
-  return <CancelAppointment appointment={appointment} hash={hash.toUpperCase()} />;
+  return (
+    <CancelAppointment
+      appointment={appointment}
+      hash={hash.toUpperCase()}
+      isNew={nuevo === '1'}
+      loadFailed={loadFailed}
+    />
+  );
 }

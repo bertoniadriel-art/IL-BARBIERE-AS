@@ -18,9 +18,9 @@ import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { getAvailableTimesForBarber } from '../src/shared/config/barbers';
+import { isClosureName, isClosureRow } from '../src/shared/lib/closures';
 
 const OUT_DIR = join(homedir(), 'Documents/Adriel-Core/02_BARBIERE-AS/informes-semanales');
-const BLOCK_LABEL = 'Argentina - Cerrado';
 
 // 30-min slots 08:00–20:00 — same base grid the app uses.
 const BASE_TIMES = Array.from({ length: 25 }, (_, i) => {
@@ -126,11 +126,14 @@ async function main() {
   const firstVisit: Record<string, string> = {};
   for (const r of hist) {
     const n = (r.client_name || '').trim();
+    if (isClosureName(n)) continue;
     if (n && !firstVisit[n]) firstVisit[n] = r.appointment_date;
   }
 
   const days = datesInWindow(FROM, TO);
-  const live = rows.filter((r) => r.status !== 'blocked');
+  // Shop closures are booked as ordinary appointments, so status alone does not
+  // separate them — see src/shared/lib/closures.ts.
+  const live = rows.filter((r) => !isClosureRow(r));
   const attended = live.filter((r) => r.status === 'attended');
   const confirmed = live.filter((r) => r.status === 'confirmed');
   const cancelled = live.filter((r) => r.status === 'cancelled');
@@ -193,7 +196,7 @@ async function main() {
   const clientVisits: Record<string, number> = {};
   for (const r of live) {
     const n = (r.client_name || '').trim();
-    if (!n || n === BLOCK_LABEL) continue;
+    if (!n) continue;
     clientVisits[n] = (clientVisits[n] || 0) + 1;
   }
   const topClients = Object.entries(clientVisits).sort((a, b) => b[1] - a[1]).slice(0, 10);

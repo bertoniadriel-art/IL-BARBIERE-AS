@@ -3,14 +3,25 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
  * Tests for Confirmation component (T2.3, T3.3, T6.1).
  *
  * T2.3: 23505 unique constraint violation shows inline error, wizard stays on step 4
- * T3.3: reads serviceName/servicePrice from store, uses real UUID in INSERT, final_price rounded to nearest 100, shows paymentAlias per barber
+ * T3.3: reads serviceName/servicePrice from store, uses real UUID in INSERT, final_price rounded to nearest 100
  * T6.1: Zod validateBookingForm wired — invalid phone shows error, insert NOT called
+ *
+ * Honest client flow: no deposit/payment UI is shown to the client (the shop
+ * takes no seña), and a successful booking lands on /mi-turno/<hash>?nuevo=1.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Confirmation } from '../components/Confirmation';
 
 // Mock supabase insert
 const mockInsert = vi.fn();
+
+// Capture router.push so we can assert the post-booking destination.
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 vi.mock('@/shared/lib/supabase', () => ({
   supabase: {
@@ -105,17 +116,6 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
       renderConfirmation();
       // Price should appear in the details section
       expect(screen.getByText(/12[.,]?000/)).toBeTruthy();
-    });
-
-    it('shows Santi Ducca paymentAlias (santi.ducca)', () => {
-      renderConfirmation({ barberName: 'Santi Ducca' });
-      // paymentAlias appears in the form before submit
-      expect(screen.getByText('santi.ducca')).toBeTruthy();
-    });
-
-    it('shows Fede Diaz paymentAlias (fedediaz.14)', () => {
-      renderConfirmation({ barberName: 'Fede Diaz' });
-      expect(screen.getByText('fedediaz.14')).toBeTruthy();
     });
 
     it('sends real UUID (not hardcoded) in INSERT payload', async () => {
@@ -360,6 +360,65 @@ describe('Confirmation (T2.3 + T3.3 + T6.1)', () => {
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalledTimes(1);
       });
+    });
+  });
+
+  describe('Honest client flow — no deposit, booking is a request', () => {
+    it('does not show any payment alias or deposit copy to the client', () => {
+      renderConfirmation({ barberName: 'Santi Ducca' });
+
+      expect(screen.queryByText('santi.ducca')).toBeNull();
+      expect(screen.queryByText(/alias/i)).toBeNull();
+      expect(screen.queryByText(/seña/i)).toBeNull();
+    });
+
+    it('does not promise a WhatsApp message', () => {
+      renderConfirmation();
+      expect(screen.queryByText(/enviar los datos por whatsapp/i)).toBeNull();
+    });
+
+    it('inserts the turno as pending with deposit_paid false (barber approves)', async () => {
+      mockInsert.mockResolvedValue({ error: null });
+
+      renderConfirmation({ clientName: 'Juan Perez', clientPhone: '3402500000' });
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith(
+          expect.objectContaining({ status: 'pending', deposit_paid: false })
+        );
+      });
+    });
+
+    it('redirects to /mi-turno/<hash>?nuevo=1 on success', async () => {
+      mockInsert.mockResolvedValue({ error: null });
+
+      renderConfirmation({ clientName: 'Juan Perez', clientPhone: '3402500000' });
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/mi-turno\/.+\?nuevo=1$/));
+      });
+    });
+
+    it('does not redirect when the insert fails', async () => {
+      mockInsert.mockResolvedValue({ error: { code: '500', message: 'boom' } });
+
+      renderConfirmation({ clientName: 'Juan Perez', clientPhone: '3402500000' });
+      fireEvent.click(screen.getByRole('button', { name: /confirmar reserva/i }));
+
+      await waitFor(() => expect(mockInsert).toHaveBeenCalled());
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('tells the client the fixed-weekly option does not book the coming weeks', () => {
+      renderConfirmation();
+
+      // The generator only materializes turnos from `vip_clients`, which this
+      // checkbox never writes — the label must not promise a recurring series.
+      expect(
+        screen.getByText(/los turnos de las próximas semanas no quedan reservados/i)
+      ).toBeTruthy();
     });
   });
 });
