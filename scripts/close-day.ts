@@ -102,6 +102,14 @@ async function main() {
     console.error(`Service not found: ${BLOCK_SERVICE_NAME}`);
     process.exit(1);
   }
+  // One blocked row must occupy exactly one slot. If the block service is no
+  // longer 30 min, each insert would span multiple slots and leave gaps.
+  if (service.duration_min !== 30) {
+    console.error(
+      `${BLOCK_SERVICE_NAME} is ${service.duration_min}min, expected 30 — one blocked row must occupy exactly one 30-min slot. Aborting.`
+    );
+    process.exit(1);
+  }
 
   // Anything already occupying those slots (cancelled rows do not count).
   const { data: existing } = await db

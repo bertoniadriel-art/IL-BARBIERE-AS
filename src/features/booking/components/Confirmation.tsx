@@ -1,10 +1,9 @@
 'use client';
 
-import { getBarberConfig } from '@/shared/config/barbers';
 import { supabase } from '@/shared/lib/supabase';
 import { validateBookingForm } from '@/shared/lib/validation';
 import { format } from 'date-fns';
-import { ArrowRight, CreditCard } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useBookingStore } from '../bookingStore';
@@ -38,10 +37,6 @@ export function Confirmation() {
 
   // Format date for display
   const formattedDate = date ? format(new Date(`${date}T12:00:00`), 'dd-MM-yyyy') : '';
-
-  // Payment alias from barber config (preview before confirming)
-  const barberConfig = barberName ? getBarberConfig(barberName) : undefined;
-  const paymentAlias = barberConfig?.paymentAlias ?? 'barberia.ilbarbiere';
 
   // Look up VIP discount whenever the client's phone (identity) changes.
   useEffect(() => {
@@ -133,7 +128,8 @@ export function Confirmation() {
     // en estado local: si WhatsApp mata/recarga la pestaña al volver, esta
     // URL sigue funcionando y evita que el cliente reintente reservar el
     // mismo horario (chocaría con su propio turno pending).
-    router.push(`/mi-turno/${qrHash}`);
+    // `nuevo=1` marca la primera llegada para mostrar el aviso de alta.
+    router.push(`/mi-turno/${qrHash}?nuevo=1`);
   };
 
   // Compute display price (with discount if applicable)
@@ -149,7 +145,7 @@ export function Confirmation() {
           ← Volver
         </button>
         <h2 className='text-3xl font-black tracking-tighter uppercase italic'>
-          TU <span className='text-neon-cyan'>IDENTIDAD</span>
+          PEDIR <span className='text-neon-cyan'>TURNO</span>
         </h2>
         <div className='w-16' />
       </div>
@@ -160,15 +156,6 @@ export function Confirmation() {
           <p className='text-red-400 text-sm font-bold'>{slotError}</p>
         </div>
       )}
-
-      {/* Payment alias shown before confirmation (T3.3) */}
-      <div className='glass-card p-4 mb-6 border-neon-purple/20 bg-white/[0.02] flex items-center gap-3'>
-        <CreditCard className='w-4 h-4 text-neon-purple flex-shrink-0' />
-        <div>
-          <p className='text-[10px] text-white/40 uppercase tracking-[0.2em]'>Alias de pago</p>
-          <p className='text-lg font-black text-neon-purple uppercase'>{paymentAlias}</p>
-        </div>
-      </div>
 
       <div className='glass-card p-8 mb-8 border-neon-cyan/20 relative overflow-hidden'>
         <div className='absolute top-0 right-0 w-32 h-32 bg-neon-cyan/5 blur-3xl pointer-events-none' />
@@ -234,17 +221,24 @@ export function Confirmation() {
             <p className='text-sm font-black italic uppercase'>{barberName || 'Sin asignar'}</p>
           </div>
           <div className='col-span-2 mt-4'>
-            <label className='inline-flex items-center gap-3 cursor-pointer'>
+            <label className='flex items-start gap-3 cursor-pointer'>
               <input
                 type='checkbox'
                 checked={isFixedWeekly}
                 onChange={(e) => setFixedWeekly(e.target.checked)}
-                className='h-4 w-4 rounded border-white/30 bg-white/5 text-neon-cyan focus:ring-neon-cyan'
+                className='mt-0.5 h-4 w-4 flex-shrink-0 rounded border-white/30 bg-white/5 text-neon-cyan focus:ring-neon-cyan'
               />
               <span className='text-[11px] text-white/60 uppercase tracking-[0.2em] font-bold'>
-                Marcar como turno fijo semanal (aplica 10% OFF automático)
+                Quiero este horario fijo todas las semanas (10% de descuento)
               </span>
             </label>
+            {/* El checkbox marca este turno y aplica el descuento; NO crea los
+                turnos de las próximas semanas. La serie recurrente sale de la
+                tabla vip_clients, que sólo carga el barbero. */}
+            <p className='mt-3 pl-7 text-[10px] text-white/30 leading-relaxed'>
+              El descuento se aplica a este turno. Los turnos de las próximas semanas no quedan
+              reservados todavía: el barbero los coordina con vos.
+            </p>
           </div>
         </div>
       </div>
@@ -268,8 +262,9 @@ export function Confirmation() {
           <p className='text-red-400 text-xs font-bold'>{validationErrors.submit}</p>
         </div>
       )}
-      <p className='text-center mt-6 text-white/20 text-[10px] font-bold uppercase tracking-widest'>
-        Después de confirmar, podés enviar los datos por WhatsApp
+      <p className='text-center mt-6 text-white/30 text-[11px] leading-relaxed'>
+        Tu turno queda como pedido hasta que el barbero lo confirme. Después de enviarlo te llevamos
+        al link de tu turno, donde vas a poder ver el estado.
       </p>
     </div>
   );

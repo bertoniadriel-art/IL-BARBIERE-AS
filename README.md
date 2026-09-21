@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://il-barbiere-10-5r4p8m8l4-adrielias-projects.vercel.app/">
+  <a href="https://il-barbiere-10-adrielias-projects.vercel.app/">
     <img src="https://img.shields.io/badge/Live-Demo-blue?style=for-the-badge" alt="Live Demo" />
   </a>
   <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />

@@ -42,15 +42,35 @@ export function mapHashRowToAppointment(raw: HashAppointmentRow | null) {
   };
 }
 
-export default async function MiTurnoPage({ params }: { params: Promise<{ hash: string }> }) {
+export default async function MiTurnoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ hash: string }>;
+  searchParams: Promise<{ nuevo?: string }>;
+}) {
   const { hash } = await params;
+  // `nuevo=1` lo agrega Confirmation al redirigir recién reservado. Se lee acá
+  // (Server Component) para no envolver el cliente en <Suspense>.
+  const { nuevo } = await searchParams;
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .rpc('get_appointment_by_hash', { p_hash: hash.toUpperCase() })
     .maybeSingle();
 
+  // RPC no devuelve error row-missing como PGRST116 — maybeSingle da null.
+  // Solo consideramos error real (red caída, timeout, etc.).
+  const loadFailed = Boolean(error);
+
   const appointment = mapHashRowToAppointment(data as HashAppointmentRow | null);
 
-  return <CancelAppointment appointment={appointment} hash={hash.toUpperCase()} />;
+  return (
+    <CancelAppointment
+      appointment={appointment}
+      hash={hash.toUpperCase()}
+      isNew={nuevo === '1'}
+      loadFailed={loadFailed}
+    />
+  );
 }

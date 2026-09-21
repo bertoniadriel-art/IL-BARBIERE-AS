@@ -14,6 +14,7 @@ import {
   Scissors,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 
@@ -35,9 +36,13 @@ interface Appointment {
 export function CancelAppointment({
   appointment,
   hash,
+  loadFailed = false,
+  isNew = false,
 }: {
   appointment: Appointment | null;
   hash: string;
+  loadFailed?: boolean;
+  isNew?: boolean;
 }) {
   const [status, setStatus] = useState<'idle' | 'cancelled' | 'error'>('idle');
   const [depositPaid, setDepositPaid] = useState(appointment?.deposit_paid ?? false);
@@ -83,6 +88,27 @@ export function CancelAppointment({
     const url = whatsAppUrl(barberWaPhone, message);
     if (url) window.open(url, '_blank');
   };
+
+  if (loadFailed) {
+    return (
+      <div className='min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6'>
+        <div className='w-full max-w-sm text-center'>
+          <AlertCircle className='w-12 h-12 text-orange-400 mx-auto mb-4' />
+          <p className='text-white font-bold text-lg'>No pudimos cargar tu turno</p>
+          <p className='text-white/40 text-sm mt-2'>
+            No pudimos leer el turno {hash}. Tu turno sigue como estaba: volvé a abrir este mismo
+            link en un momento.
+          </p>
+          <Link
+            href='/'
+            className='mt-8 block w-full py-3 rounded-2xl border border-white/10 bg-white/5 text-white/50 font-bold uppercase tracking-widest text-[11px] text-center hover:bg-white/10 hover:text-white/70 transition-colors'
+          >
+            Volver al inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!appointment) {
     return (

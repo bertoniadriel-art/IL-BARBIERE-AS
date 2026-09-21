@@ -708,7 +708,7 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     try {
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
-      const limit = format(addDays(new Date(), 14), 'yyyy-MM-dd');
+      const limit = format(addDays(new Date(), AGENDA_DAYS_AHEAD), 'yyyy-MM-dd');
       const { data } = await supabase
         .from('appointments')
         .select(

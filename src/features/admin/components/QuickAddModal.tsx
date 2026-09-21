@@ -44,8 +44,10 @@ function todayStr() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-function priceWithDiscount(basePrice: number, discountPercent: number): string {
-  return String(Math.round(basePrice * (1 - discountPercent / 100)));
+// Integer pesos rounded to nearest 100 — matches the public booking flow's
+// computeFinalPrice() so quick-add and public bookings report consistent totals.
+function computeDiscountedPrice(basePrice: number, discountPercent: number): number {
+  return Math.round((basePrice * (1 - discountPercent / 100)) / 100) * 100;
 }
 
 export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddModalProps) {
@@ -55,6 +57,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
   const [clientName, setClientName] = useState<string>('');
   const [clientPhone, setClientPhone] = useState<string>('');
   const [vipDiscountPercent, setVipDiscountPercent] = useState<number>(0);
+  const [priceEdited, setPriceEdited] = useState<boolean>(false);
   const [depositPaid, setDepositPaid] = useState<boolean>(true);
   const [serviceId, setServiceId] = useState<string>('');
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -95,14 +98,17 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     };
   }, [clientPhone, barber.id]);
 
-  // Auto-fill price (with VIP discount, if any) when service or discount changes
+  // Auto-fill price (with VIP discount, if any) when service or discount changes,
+  // unless the admin already typed a custom price by hand.
   useEffect(() => {
+    if (priceEdited) return;
     const svc = services.find((s) => s.id === serviceId);
-    if (svc) setPrice(priceWithDiscount(svc.price, vipDiscountPercent));
-  }, [serviceId, vipDiscountPercent, services]);
+    if (svc) setPrice(String(computeDiscountedPrice(svc.price, vipDiscountPercent)));
+  }, [serviceId, vipDiscountPercent, services, priceEdited]);
 
   function handleServiceChange(id: string) {
     setServiceId(id);
+    setPriceEdited(false);
   }
 
   if (!isOpen) return null;
@@ -119,6 +125,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     setServiceId(services[0]?.id ?? '');
     setClientPhone('');
     setVipDiscountPercent(0);
+    setPriceEdited(false);
   };
 
   const handleConfirmedClose = () => {
@@ -140,6 +147,20 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
     setLoading(true);
     setError(null);
 
+    // Re-check VIP status right before charging, in case the background lookup
+    // triggered by typing the phone hasn't resolved yet (only when the admin
+    // hasn't typed a custom price by hand).
+    let finalPrice = price ? Number(price) : null;
+    if (!priceEdited) {
+      const freshVipDiscountPercent = await getVipDiscountPercent(clientPhone.trim(), barber.id);
+      setVipDiscountPercent(freshVipDiscountPercent);
+      const svc = services.find((s) => s.id === serviceId);
+      if (svc) {
+        finalPrice = computeDiscountedPrice(svc.price, freshVipDiscountPercent);
+        setPrice(String(finalPrice));
+      }
+    }
+
     const { error: submitError, qr_hash } = await createAppointment({
       barber_id: barber.id,
       service_id: serviceId,
@@ -147,7 +168,7 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
       client_phone: clientPhone.trim(),
       appointment_date: date,
       appointment_time: time,
-      final_price: price ? Number(price) : null,
+      final_price: finalPrice,
       deposit_paid: depositPaid,
     });
 
@@ -331,7 +352,10 @@ export function QuickAddModal({ barber, isOpen, onClose, onSuccess }: QuickAddMo
               type='number'
               min={0}
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                setPriceEdited(true);
+              }}
               className='w-full bg-[#18181c] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-neon-cyan outline-none'
             />
             {vipDiscountPercent > 0 && (
