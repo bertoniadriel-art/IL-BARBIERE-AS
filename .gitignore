@@ -16,3 +16,14 @@ openspec/
 preview-dashboard.html
 AXON-L-MEJORAS-*.md
 WhatsApp\ Audio\ *
+.vercel
+
+# Week-specific barber schedule screenshots
+assets/
+!public/assets/
+
+# One-off scripts (already applied)
+scripts/fix-santi-vip-service.ts
+
+# Project-level artifacts
+pnpm-workspace.yaml

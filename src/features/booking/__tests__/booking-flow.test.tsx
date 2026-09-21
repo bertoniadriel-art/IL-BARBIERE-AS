@@ -229,7 +229,7 @@ async function goToConfirmation() {
 
   // Step 4: confirmation screen rendered
   await waitFor(() => {
-    expect(screen.getByText(/IDENTIDAD/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /confirmar reserva/i })).toBeTruthy();
   });
 }
 
@@ -262,7 +262,9 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
 
     // Redirected to the durable /mi-turno/{qr_hash} route
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}$/));
+      expect(mockPush).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}\?nuevo=1$/)
+      );
     });
 
     // Insert called exactly once with correct payload
@@ -308,7 +310,9 @@ describe('Booking Flow Integration (REQ-9.1, REQ-9.2)', () => {
     fillAndConfirm('Maria Garcia', '3402500001');
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}$/));
+      expect(mockPush).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/mi-turno\/[A-Z0-9]{8}\?nuevo=1$/)
+      );
     });
 
     expect(appointmentsDB.length).toBe(1);
