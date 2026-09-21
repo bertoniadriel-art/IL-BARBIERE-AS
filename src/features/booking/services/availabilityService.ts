@@ -13,7 +13,7 @@ interface VipClientRow {
 
 interface BookedRow {
   appointment_time: string;
-  services: { duration_min: number } | null;
+  duration_min: number | null;
 }
 
 // Re-exported so existing consumers keep importing it from here.
@@ -21,7 +21,11 @@ export { expandSlots };
 
 /**
  * Fetches booked time slots for a given barber on a given date.
- * Excludes cancelled appointments (they free up the slot).
+ * Reads from the `booked_slots` VIEW (anon-hardening surface, see
+ * sdd/il-barbiere-anon-hardening/design D1) instead of `appointments`
+ * directly — the view already scopes rows to the bookable statuses
+ * (pending/confirmed/attended/blocked) server-side, so no `.in('status', ...)`
+ * filter is needed here anymore.
  * Expands slots based on service duration (e.g. a 60-min service at 10:00 blocks 10:00 and 10:30).
  * Normalizes DB "HH:MM:SS" format to "HH:MM".
  *
@@ -33,11 +37,10 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from('appointments')
-    .select('appointment_time, services(duration_min)')
+    .from('booked_slots')
+    .select('appointment_time, duration_min')
     .eq('barber_id', barberId)
-    .eq('appointment_date', date)
-    .in('status', ['pending', 'confirmed', 'attended', 'blocked']);
+    .eq('appointment_date', date);
 
   if (error) {
     console.error('getBookedSlots error', error);
@@ -46,7 +49,7 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
 
   const blocked = new Set<string>();
   for (const row of (data ?? []) as BookedRow[]) {
-    const duration = row.services?.duration_min ?? 30;
+    const duration = row.duration_min ?? 30;
     for (const slot of expandSlots(row.appointment_time, duration)) {
       blocked.add(slot);
     }

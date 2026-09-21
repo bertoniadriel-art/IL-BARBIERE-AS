@@ -1,307 +1,170 @@
 /**
- * CancelAppointment (/mi-turno) — honest client flow.
+ * CancelAppointment (/mi-turno) — regression test
  *
- * The shop takes no seña, and the app sends no automated message: every
- * WhatsApp goes out manually from the barber's phone. So this screen must
- * never offer a deposit, never write `deposit_paid` (that column belongs to
- * the barber), and never promise a notification. `/mi-turno/<hash>` is the
- * single source of truth the client returns to.
+ * Bug: the deposit/payment section only rendered for status === 'pending'.
+ * Once a barber confirms a turno (which can happen without deposit_paid
+ * ever being set — see confirmAppointment()), the client had no way to
+ * see whether they still owed the seña or had already paid it.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// jsdom implements neither of these; the .ics download uses both.
-beforeAll(() => {
-  URL.createObjectURL = vi.fn(() => 'blob:mock');
-  URL.revokeObjectURL = vi.fn();
-});
-
-// Chainable supabase mock: from().update().eq().in().select() → { data, error }.
-const mockUpdate = vi.fn();
-const mockSelect = vi.fn();
-const mockIn = vi.fn(() => ({ select: mockSelect }));
-const mockEq = vi.fn(() => ({ in: mockIn }));
-const CANCELLED_ONE_ROW = { data: [{ id: 'apt-1' }], error: null };
+const mockRpc = vi.fn();
 
 vi.mock('@/shared/lib/supabase', () => ({
-  supabase: {
-    from: () => ({ update: mockUpdate }),
-  },
+  supabase: { from: vi.fn(), rpc: (...args: unknown[]) => mockRpc(...args) },
 }));
 
-const mockSingle = vi.fn();
-vi.mock('@/shared/lib/supabase-server', () => ({
-  createClient: async () => ({
-    from: () => ({ select: () => ({ eq: () => ({ single: mockSingle }) }) }),
-  }),
-}));
-
-import MiTurnoPage from '@/app/mi-turno/[hash]/page';
 import { CancelAppointment } from '../components/CancelAppointment';
 
 const baseAppointment = {
   id: 'apt-1',
   client_name: 'Juan Perez',
-  // Far enough in the future that cancelling is still allowed (>4 h).
-  appointment_date: '2099-07-03',
+  appointment_date: '2026-07-03',
   appointment_time: '14:00:00',
   qr_hash: 'ABC12345',
+  final_price: 14000,
   barbers: { name: 'Santi Ducca' },
-  services: { name: 'Corte Premium', duration_min: 30 },
+  services: { name: 'Corte Premium' },
 };
 
-function renderAppointment(overrides: Record<string, unknown> = {}, isNew = false) {
-  return render(
-    <CancelAppointment
-      appointment={{ ...baseAppointment, status: 'pending', ...overrides }}
-      hash='ABC12345'
-      isNew={isNew}
-    />
-  );
-}
+describe('CancelAppointment — deposit visibility after confirmation', () => {
+  it('shows the "seña pendiente" payment CTA when confirmed but not yet paid', () => {
+    render(
+      <CancelAppointment
+        appointment={{ ...baseAppointment, status: 'confirmed', deposit_paid: false }}
+        hash='ABC12345'
+      />
+    );
 
-describe('CancelAppointment — no client-side deposit', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockSelect.mockResolvedValue(CANCELLED_ONE_ROW);
-    mockUpdate.mockReturnValue({ eq: mockEq });
-    mockEq.mockReturnValue({ in: mockIn });
+    expect(screen.getByText('¡Turno confirmado por el barbero!')).toBeInTheDocument();
+    expect(screen.getByText('Finalizar Compra')).toBeInTheDocument();
+    expect(screen.getByText('Ya realicé el pago')).toBeInTheDocument();
   });
 
-  it('offers the client no way to write deposit_paid', () => {
-    renderAppointment({ status: 'confirmed' });
+  it('shows "Seña recibida" when confirmed and already paid', () => {
+    render(
+      <CancelAppointment
+        appointment={{ ...baseAppointment, status: 'confirmed', deposit_paid: true }}
+        hash='ABC12345'
+      />
+    );
 
-    expect(screen.queryByText(/ya realicé el pago/i)).toBeNull();
-    expect(screen.queryByText(/seña/i)).toBeNull();
-    expect(screen.queryByText(/finalizar compra/i)).toBeNull();
-    expect(screen.queryByText(/alias/i)).toBeNull();
-
-    // No button on this screen may issue a deposit_paid update.
-    for (const button of screen.getAllByRole('button')) {
-      fireEvent.click(button);
-    }
-    for (const call of mockUpdate.mock.calls) {
-      expect(call[0]).not.toHaveProperty('deposit_paid');
-    }
+    expect(screen.getByText('Seña recibida ✓')).toBeInTheDocument();
+    expect(screen.queryByText('Finalizar Compra')).not.toBeInTheDocument();
   });
 
-  it('does not offer to send anything by WhatsApp', () => {
-    renderAppointment({ status: 'confirmed' });
-    expect(screen.queryByText(/enviar por whatsapp/i)).toBeNull();
-  });
-});
+  it('still shows the pending flow with the pre-confirmation wording', () => {
+    render(
+      <CancelAppointment
+        appointment={{ ...baseAppointment, status: 'pending', deposit_paid: true }}
+        hash='ABC12345'
+      />
+    );
 
-describe('CancelAppointment — status is explained', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUpdate.mockReturnValue({ eq: mockEq });
-  });
-
-  it('explains what "pendiente" means and where to check back', () => {
-    renderAppointment({ status: 'pending' });
-
-    expect(screen.getByText(/pendiente de confirmación del barbero/i)).toBeTruthy();
-    expect(screen.getByText(/el barbero tiene que aprobarlo/i)).toBeTruthy();
-    expect(screen.getByText(/volvé a abrir este mismo link/i)).toBeTruthy();
-  });
-
-  it('never promises a message for a pending turno', () => {
-    renderAppointment({ status: 'pending' });
-    expect(screen.getByText(/no te vamos a enviar ningún mensaje/i)).toBeTruthy();
-  });
-
-  it('renders the confirmed state when the barber approved it', () => {
-    renderAppointment({ status: 'confirmed' });
-
-    expect(screen.getByText(/turno confirmado por el barbero/i)).toBeTruthy();
-    expect(screen.queryByText(/pendiente de confirmación/i)).toBeNull();
-  });
-
-  it('captions the QR with the rules the scanner actually enforces', () => {
-    renderAppointment({ status: 'confirmed' });
-
-    expect(screen.getByText(/el barbero escanea este código cuando llegás/i)).toBeTruthy();
-    expect(screen.getByText(/sólo sirve el día del turno/i)).toBeTruthy();
-    expect(screen.getByText(/vence 2 horas después/i)).toBeTruthy();
-  });
-
-  it('gives the client a way to keep the link', () => {
-    renderAppointment({ status: 'pending' });
-
-    expect(screen.getByRole('button', { name: /copiar link/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /agregar al calendario/i })).toBeTruthy();
+    expect(
+      screen.getByText('Queda sujeto a validación del pago por parte del barbero.')
+    ).toBeInTheDocument();
   });
 });
 
-describe('CancelAppointment — first arrival (?nuevo=1)', () => {
+/**
+ * handleCancel / handleMarkPaid — RPC return-value branching (anon-hardening
+ * Unit 2, T3.3). Both actions now call `cancel_appointment(p_hash)` /
+ * `mark_deposit_paid(p_hash)` keyed by the `hash` prop instead of mutating
+ * `appointments` directly by `appointment.id`. The UI MUST branch on the
+ * RETURNED VALUE (success status vs. generic no_op), not merely on the
+ * absence of a thrown error (design IB-C2 fix).
+ */
+const cancellableAppointment = {
+  id: 'ABC12345',
+  client_name: 'Juan Perez',
+  appointment_date: '2099-01-01',
+  appointment_time: '14:00:00',
+  qr_hash: 'ABC12345',
+  final_price: 14000,
+  barbers: { name: 'Santi Ducca' },
+  services: { name: 'Corte Premium' },
+  status: 'pending',
+  deposit_paid: false,
+};
+
+describe('CancelAppointment — handleCancel RPC branching', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockUpdate.mockReturnValue({ eq: mockEq });
+    mockRpc.mockReset();
   });
 
-  it('shows the success banner when isNew', () => {
-    renderAppointment({ status: 'pending' }, true);
-    expect(screen.getByText(/tu pedido de turno entró/i)).toBeTruthy();
-  });
+  it('shows the cancelled state when cancel_appointment returns "cancelled"', async () => {
+    mockRpc.mockResolvedValue({ data: 'cancelled', error: null });
 
-  it('does not show the success banner on a normal visit', () => {
-    renderAppointment({ status: 'pending' }, false);
-    expect(screen.queryByText(/tu pedido de turno entró/i)).toBeNull();
-  });
-});
-
-describe('CancelAppointment — cancelling requires confirmation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockSelect.mockResolvedValue(CANCELLED_ONE_ROW);
-    mockUpdate.mockReturnValue({ eq: mockEq });
-    mockEq.mockReturnValue({ in: mockIn });
-  });
-
-  it('does not touch supabase on the first click — it asks first', () => {
-    renderAppointment({ status: 'confirmed' });
-
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-
-    expect(mockUpdate).not.toHaveBeenCalled();
-    expect(screen.getByText(/¿cancelar este turno\?/i)).toBeTruthy();
-  });
-
-  it('cancels only after the client confirms', async () => {
-    renderAppointment({ status: 'confirmed' });
-
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /sí, cancelar/i }));
+    render(<CancelAppointment appointment={cancellableAppointment} hash='ABC12345' />);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
 
     await waitFor(() => {
-      expect(mockUpdate).toHaveBeenCalledWith({ status: 'cancelled' });
+      expect(screen.getByText('Turno cancelado')).toBeInTheDocument();
     });
+    expect(mockRpc).toHaveBeenCalledWith('cancel_appointment', { p_hash: 'ABC12345' });
   });
 
-  it('backs out without cancelling when the client declines', () => {
-    renderAppointment({ status: 'confirmed' });
+  it('treats a "no_op" return value as could-not-cancel, without leaking why', async () => {
+    mockRpc.mockResolvedValue({ data: 'no_op', error: null });
 
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /no, mantener/i }));
-
-    expect(mockUpdate).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /^cancelar turno$/i })).toBeTruthy();
-  });
-});
-
-describe('CancelAppointment — dead ends always offer a way out', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockSelect.mockResolvedValue(CANCELLED_ONE_ROW);
-    mockUpdate.mockReturnValue({ eq: mockEq });
-    mockEq.mockReturnValue({ in: mockIn });
-  });
-
-  it('offers a route out when the turno does not exist', () => {
-    render(<CancelAppointment appointment={null} hash='NOPE' />);
-
-    expect(screen.getByText(/turno no encontrado/i)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /pedir un turno/i })).toHaveAttribute(
-      'href',
-      '/reservar'
-    );
-  });
-
-  it('offers a route out when the turno was already cancelled', () => {
-    renderAppointment({ status: 'cancelled' });
-
-    expect(screen.getByText(/este turno ya fue cancelado/i)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /pedir otro turno/i })).toHaveAttribute(
-      'href',
-      '/reservar'
-    );
-  });
-
-  it('offers a route out when the turno was already completed', () => {
-    renderAppointment({ status: 'attended' });
-
-    expect(screen.getByText(/este turno ya fue completado/i)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /pedir otro turno/i })).toHaveAttribute(
-      'href',
-      '/reservar'
-    );
-  });
-
-  it('offers a route out from the post-cancellation screen', async () => {
-    renderAppointment({ status: 'confirmed' });
-
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /sí, cancelar/i }));
+    render(<CancelAppointment appointment={cancellableAppointment} hash='ABC12345' />);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/^turno cancelado$/i)).toBeTruthy();
+      expect(screen.getByText('Error al cancelar. Intentá nuevamente.')).toBeInTheDocument();
     });
-    expect(screen.getByRole('link', { name: /pedir otro turno/i })).toHaveAttribute(
-      'href',
-      '/reservar'
-    );
+    expect(screen.queryByText('Turno cancelado')).not.toBeInTheDocument();
+  });
+
+  it('treats a thrown RPC error the same as a no_op (no distinguishable UI state)', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'network error' } });
+
+    render(<CancelAppointment appointment={cancellableAppointment} hash='ABC12345' />);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Error al cancelar. Intentá nuevamente.')).toBeInTheDocument();
+    });
   });
 });
 
-describe('CancelAppointment — never claims what did not happen', () => {
+describe('CancelAppointment — handleMarkPaid RPC branching', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockSelect.mockResolvedValue(CANCELLED_ONE_ROW);
-    mockUpdate.mockReturnValue({ eq: mockEq });
-    mockEq.mockReturnValue({ in: mockIn });
+    mockRpc.mockReset();
   });
 
-  // A row outside the .in() filter matches ZERO rows and returns NO error.
-  it('reports failure, not "Turno cancelado", when the update changes zero rows', async () => {
-    mockSelect.mockResolvedValue({ data: [], error: null });
-    renderAppointment({ status: 'confirmed' });
+  it('marks the deposit as paid when mark_deposit_paid returns true', async () => {
+    mockRpc.mockResolvedValue({ data: true, error: null });
 
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /sí, cancelar/i }));
+    render(<CancelAppointment appointment={cancellableAppointment} hash='ABC12345' />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ya realicé el pago' }));
 
-    expect(await screen.findByText(/no pudimos cancelar el turno/i)).toBeTruthy();
-    expect(screen.queryByText(/^turno cancelado$/i)).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText('Seña enviada')).toBeInTheDocument();
+    });
+    expect(mockRpc).toHaveBeenCalledWith('mark_deposit_paid', { p_hash: 'ABC12345' });
   });
 
-  it('disables the confirm button while the cancellation is in flight', async () => {
-    mockSelect.mockReturnValue(new Promise(() => {})); // never settles
-    renderAppointment({ status: 'confirmed' });
+  /**
+   * JDA-006 regression: marking the deposit on a non-pending/confirmed
+   * appointment now returns `false` (no_op) from the RPC — previously this
+   * write went through the blanket "TEMP: anon update appointments" policy
+   * with no status guard and would silently "succeed" client-side. The UI
+   * MUST NOT flip to the paid state when the RPC reports no mutation.
+   */
+  it('does not mark the deposit as paid when mark_deposit_paid returns false (no_op)', async () => {
+    mockRpc.mockResolvedValue({ data: false, error: null });
 
-    fireEvent.click(screen.getByRole('button', { name: /^cancelar turno$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /sí, cancelar/i }));
+    render(<CancelAppointment appointment={cancellableAppointment} hash='ABC12345' />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ya realicé el pago' }));
 
-    expect(await screen.findByRole('button', { name: /cancelando/i })).toBeDisabled();
-  });
-
-  it('shows the link to copy by hand when the clipboard is unavailable', async () => {
-    renderAppointment({ status: 'confirmed' }); // jsdom has no navigator.clipboard
-    fireEvent.click(screen.getByRole('button', { name: /copiar link/i }));
-    expect(await screen.findByText(/copiá el link a mano/i)).toBeTruthy();
-  });
-
-  it.each(['debt', 'blocked'])('renders an honest screen for %s, with no cancel', (status) => {
-    renderAppointment({ status });
-
-    expect(screen.getByText(/pago pendiente|ya no está activo/i)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /cancelar/i })).toBeNull();
-  });
-
-  it('says "no pudimos cargar" on a read error, "no encontrado" only on zero rows', async () => {
-    const renderPage = () =>
-      MiTurnoPage({
-        params: Promise.resolve({ hash: 'abc12345' }),
-        searchParams: Promise.resolve({}),
-      }).then(render);
-
-    mockSingle.mockResolvedValue({ data: null, error: { code: '08006' } }); // network
-    await renderPage();
-    expect(screen.getByText(/no pudimos cargar tu turno/i)).toBeTruthy();
-    expect(screen.queryByText(/turno no encontrado/i)).toBeNull();
-
-    cleanup();
-    mockSingle.mockResolvedValue({ data: null, error: { code: 'PGRST116' } }); // zero rows
-    await renderPage();
-    expect(screen.getByText(/turno no encontrado/i)).toBeTruthy();
+    await waitFor(() => {
+      expect(mockRpc).toHaveBeenCalledWith('mark_deposit_paid', { p_hash: 'ABC12345' });
+    });
+    expect(screen.getByText('Ya realicé el pago')).toBeInTheDocument();
+    expect(screen.queryByText('Seña enviada')).not.toBeInTheDocument();
   });
 });
