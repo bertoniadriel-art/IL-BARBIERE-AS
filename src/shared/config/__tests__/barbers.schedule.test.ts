@@ -80,7 +80,7 @@ describe('getAvailableTimesForBarber', () => {
     });
   });
 
-  describe('Santi Ducca schedule — Mar–Vie 10:00–18:30, Sáb 10:00–14:00, Lun+Dom off', () => {
+  describe('Santi Ducca schedule — Mar–Vie 10:00–19:00, Sáb 10:00–14:00, Lun+Dom off', () => {
     it('returns [] for Santi on Sunday (day off)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', sunday, BASE_TIMES);
       expect(result).toEqual([]);
@@ -91,18 +91,19 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).toEqual([]);
     });
 
-    it('offers 10:00 through 18:00 for Santi on Tuesday (closes 18:30)', () => {
+    it('offers 10:00 through 18:30 for Santi on Tuesday (closes 19:00)', () => {
       const tuesday = new Date('2026-06-02T12:00:00');
       const result = getAvailableTimesForBarber('Santi Ducca', tuesday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('10:00');
-      expect(result[result.length - 1]).toBe('18:00');
+      // 19:00 is closing time: the last slot must END there, not start there
+      expect(result[result.length - 1]).toBe('18:30');
     });
 
-    it('offers 10:00 through 18:00 for Santi on Friday (closes 18:30)', () => {
+    it('offers 10:00 through 18:30 for Santi on Friday (closes 19:00)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', friday, BASE_TIMES);
       expect(result[0]).toBe('10:00');
-      expect(result[result.length - 1]).toBe('18:00');
+      expect(result[result.length - 1]).toBe('18:30');
     });
 
     it('offers only times up to 13:30 for Santi on Saturday (closes 14:00)', () => {
