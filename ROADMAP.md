@@ -1,24 +1,27 @@
 ---
 created: 2026-06-25
-updated: 2026-06-30
+updated: 2026-09-21
 type: roadmap
 project: IL BARBIERE-AS
-version: 1.3
+version: 1.7
 marca: Soluciones Adriel-IA
 tags: [barbiere, roadmap, versiones, hitos, libro]
 ---
 
 # IL BARBIERE-AS — Capítulos
 
-> *El Sistema Operativo de tu imagen personal — de un repo initial a producción pulida con ~94 commits.*
+> *El Sistema Operativo de tu imagen personal — de un repo initial a producción pulida con ~152 commits.*
+
+> **Nota sobre versionado:** los "v1.0"–"v1.7" de este libro son capítulos narrativos, no tags de git — numeran la historia del proyecto, no releases. El primer tag de git real (`v1.1.0`, SemVer) recién se creó el 2026-09-21, con el contenido del Capítulo 8. No son la misma numeración; no correlacionar.
 
 ```
-  FEBRERO 2026    MAYO 2026       JUNIO 2026      JUNIO 2026
-    │               │               │               │
-    ●──── v1.0 ────●──── v1.1 ────●──── v1.2 ────●──── v1.3
-  Initial         MVP Core       Dashboard +     UI Polish +
-  Commit          Booking+Auth   Scanner+Tests   VIP+Cancel+PWA
-  (repo base)     (PR1-PR3)      (PR4-PR5)       (PR6-PR9)
+ FEB 2026   MAY 2026    JUN 2026    JUN 2026    JUL 2026      JUL 2026        JUL-AGO 2026    SEP 2026
+   │           │           │           │           │             │                │               │
+   ●── v1.0 ──●── v1.1 ──●── v1.2 ──●── v1.3 ──●── v1.4 ──●── v1.5 ──●── v1.6 ──●── v1.7 ──●
+ Initial     MVP Core   Dashboard   UI Polish   VIP+Precios   Anon-Hardening   Reporting +     Cancel/Confirm
+ Commit      Booking+   +Scanner+   +VIP+Cancel  +Agenda      Kickoff+Agenda   Closing-Time    UX + Horarios
+ (repo base) Auth       Tests       +PWA         Notif.       Hardening        Fix             (tag v1.1.0)
+ (PR1-PR3)   (PR4-PR5)  (PR6-PR9)   (PR10-21)   (PR22,24-28) (PR29-31 rango)  (PR14,32)
 ```
 
 ### Evolución del proyecto
@@ -29,6 +32,10 @@ tags: [barbiere, roadmap, versiones, hitos, libro]
 | **v1.1** MVP Core | 24–25 may | ~15 | — | ✅ |
 | **v1.2** Dashboard & Features | 21–25 jun | ~50 | 124 | ✅ |
 | **v1.3** UI Polish + VIP + Cancel + PWA | 29–30 jun | ~17 | 151 | ✅ |
+| **v1.4** VIP Pricing + Agenda Notif. | 1–7 jul | ~20 | — | ✅ |
+| **v1.5** Anon-Hardening Kickoff + Agenda | 13–14 jul | ~6 | — | ✅ |
+| **v1.6** Reporting Automation + Closing-Time Fix | 20 jul – 31 ago | ~10 | — | ✅ |
+| **v1.7** Cancel/Confirm UX + Horario Santi | 21 sep | ~5 | 272 | ✅ |
 
 ---
 
@@ -365,17 +372,175 @@ QR generado con `qrencode` (brew): `qrencode -o qr.png -s 8 -m 2 --level=H "URL"
 
 ---
 
+## Capítulo 5: v1.4 — VIP Pricing, Sobreturnos & Agenda Notifications
+
+**Fecha:** 1–7 de julio de 2026
+**Commits:** ~20
+**Dolor resuelto:** Los descuentos VIP eran inconsistentes (redondeo, casos manuales), los servicios combinados pisaban el slot siguiente, y la agenda no avisaba de turnos nuevos ni facilitaba el contacto por WhatsApp.
+
+### Qué se hizo
+
+- **Pricing VIP:** 10% de descuento para clientes Coronita (`fix(pricing)`), aplicado también a turnos agregados a mano (`#13`), con re-chequeo de la condición VIP antes de guardar y redondeo al centenar más cercano (mismo día, fix de seguimiento).
+- **Duración de servicios combinados:** bloqueo del slot completo para reservas VIP con servicios combinados, tanto en el booking público (`#11`) como en la lista de horarios libres de la agenda (`#21`).
+- **Ayuda tab:** FAQ para preguntas frecuentes del día a día (`#12`) + entrada específica sobre sobreturnos.
+- **VIP recurrentes automáticos:** cron semanal que auto-genera los turnos fijos de clientes VIP (`#16`) — la misma pieza que hoy interviene en el issue #30 (Fede quiere sacar su turno fijo de los viernes).
+- **Agenda con feedback de turnos nuevos:** contador de pendientes + links `wa.me` válidos (`#17`), beep de notificación (`#18`), inbox "sin confirmar" fijado arriba (`#19`), aviso al cliente por WhatsApp cuando el barbero cancela o mueve un turno (`#20`).
+- Extras del mismo rango: persistencia del estado de confirmación/pago en `/mi-turno`, notificación WhatsApp al cliente cuando el barbero confirma, fix de "esta semana" en finanzas cruzando límite de mes, sync de `schema.sql` con el índice `appointments_unique_slot`.
+
+### Commits clave
+
+| PR/Commit | Qué hizo |
+|---|---|
+| `bf6da92` | fix(pricing): 10% VIP discount para clientes Coronita |
+| `0592260` (#11) | fix(booking): bloquear duración completa para servicios combinados VIP |
+| `eb9cea0` (#12) | feat(admin): tab "Ayuda" con FAQ |
+| `85a308f` | feat(admin): entrada de FAQ sobre sobreturnos |
+| `ce9556c` (#13) | fix(admin): aplicar descuento VIP a turnos agregados manualmente |
+| `3ff21e7` | fix(admin): re-chequear descuento VIP antes de guardar, redondear al centenar |
+| `9de8f48` (#16) | feat(admin): auto-generar turnos VIP recurrentes vía cron |
+| `a2d5d00` (#17) | fix(admin): contador de pendientes + links wa.me válidos |
+| `a8ff36f` (#18) | feat(admin): beep en notificación de turno nuevo |
+| `683b4ce` (#19) | feat(admin): inbox "sin confirmar" fijado arriba de la agenda |
+| `bd3ad55` (#20) | feat(admin): avisar por WhatsApp al cliente si se cancela/mueve el turno |
+| `28eae29` (#21) | fix(admin): bloquear duración completa de servicios combinados en la agenda |
+
+### Decisiones clave
+
+| Decisión | Por qué |
+|---|---|
+| Redondeo al centenar en descuentos VIP | Evitar precios como $12.320 — números feos para cobrar en efectivo |
+| Cron para VIP recurrentes, no carga manual | Menos trabajo operativo para Santi/Fede cada semana |
+| Contador + beep + inbox fijo en agenda | Los barberos no revisaban la agenda seguido — necesitaban señal activa |
+
+### Lecciones aprendidas
+
+- El descuento VIP necesitaba re-chequearse justo antes de guardar — un lookup async que no resolvía a tiempo dejaba pasar el precio sin descuento (race condition, corregida el mismo día).
+- Automatizar turnos recurrentes vía cron resuelve el problema de "cargar todas las semanas", pero crea un problema nuevo: sacar a un cliente puntual del cron no es trivial (ver Capítulo 8 / issue #30).
+
+---
+
+## Capítulo 6: v1.5 — Anon-Hardening Kickoff & Agenda Hardening
+
+**Fecha:** 13–14 de julio de 2026
+**Commits:** ~6
+**Dolor resuelto:** La agenda tenía huecos de render, faltaba un hook de pre-commit, y el acceso público (`/mi-turno`) dependía de queries directas sin capa de seguridad adicional.
+
+### Qué se hizo
+
+- **Agenda:** renderiza días laborables sin turnos en vez de omitirlos (`#24`).
+- **Tooling:** se agregó el hook de pre-commit de Husky que faltaba, así `lint-staged` corre de verdad (`#25`); script `close-day` para cierres parciales puntuales (`#26`).
+- **WhatsApp:** validación de teléfono acepta todos los formatos argentinos válidos, sin romper el link del cliente (`#27`).
+- **Anon-hardening (Unit 1/4 y 2/4):** superficie aditiva en DB — vista `booked_slots` + 3 RPCs para que el acceso anónimo no dependa de leer la tabla `appointments` directamente (`#22`), y los consumidores de la app (booking público) repuntados a esa superficie nueva (`#28`). Primer paso de un trabajo de seguridad que se termina de cerrar recién en el Capítulo 8.
+
+### Commits clave
+
+| PR | Qué hizo |
+|---|---|
+| `ca8e438` (#24) | fix(admin): renderizar días laborables sin turnos |
+| `a2eb596` (#25) | chore(husky): agregar el pre-commit hook que faltaba |
+| `1643f05` (#26) | chore(scripts): close-day para cierres parciales |
+| `2685cf4` (#27) | fix(booking): aceptar todo número argentino válido en WhatsApp |
+| `14f1932` (#22) | feat(db): superficie anon-hardening aditiva (booked_slots + 3 RPCs) |
+| `00d9bc9` (#28) | feat(booking): repuntar consumidores de la app a anon-hardening |
+
+### Decisiones clave
+
+| Decisión | Por qué |
+|---|---|
+| Superficie aditiva (vista + RPCs) en vez de tocar RLS de `appointments` directo | Migración sin downtime — los consumidores viejos siguen andando mientras se repuntan de a uno |
+| Repuntar consumidores en un PR separado del que crea la superficie | Permite revertir el consumo sin tocar el schema si algo sale mal |
+
+---
+
+## Capítulo 7: v1.6 — Reporting Automation & El Fix del Horario de Cierre
+
+**Fecha:** 20 de julio – 31 de agosto de 2026
+**Commits:** ~10
+**Dolor resuelto:** No había visibilidad automática de KPIs para Santi y Fede, y un bug de larga data hacía que el horario de cierre se tratara como "último turno reservable" en vez de "hora en que debe terminar el servicio" — causando solapamientos de 60 minutos reportados por Fede.
+
+### Qué se hizo
+
+- **Reporting automatizado:** generador de informe semanal por cron (`8fe484b`), informe mensual en PDF (`665d1f7`), detección de cierres de local unificada en un solo predicado (`6bbb84b`).
+- **Fix de URLs muertas:** los links de producción en docs/landing apuntaban a un deployment de Vercel específico que devolvía 410 Gone — se cambiaron a la URL estable del proyecto (`a084f63`).
+- **El bug de solapamiento (reportado por Fede):** la duración del servicio nunca viajaba del paso "servicio" al paso "horario" — el sistema calculaba disponibilidad solo por el slot de inicio, no por cuánto duraba el turno. Fix en dos pasos: primero dimensionar la disponibilidad por duración real del servicio (`7d0b8a0`/`419b025`), después corregir la semántica de "hora de cierre" — es la hora en que el turno debe *terminar*, no la última hora en que puede *empezar* (`a751587`/`385dbd4`). Esta segunda corrección es la misma lógica que hoy protege el fix del horario de Santi (Capítulo 8, issue #29).
+- **Bug del informe mensual:** truncado silencioso de PostgREST — el informe de agosto mostraba la mitad de los turnos reales (266 vs. 532) porque la query no paginaba. Corregido paginando la consulta (`dd666cf`).
+
+### Commits clave
+
+| Commit | Qué hizo |
+|---|---|
+| `3f108ce` | fix(agenda): usar AGENDA_DAYS_AHEAD en vez de ventana hardcodeada |
+| `2da3505` | fix(scripts): asegurar que un servicio de bloqueo dure 30min antes de cerrar el día |
+| `8fe484b` | feat(scripts): generador de informe semanal KPI automatizado |
+| `6bbb84b` | feat(lib): detectar cierres de local con un solo predicado |
+| `665d1f7` | feat(scripts): informe mensual en PDF para la barbería |
+| `a084f63` | fix(docs): apuntar links de producción a la URL estable del proyecto |
+| `7d0b8a0`/`419b025` | fix(booking): dimensionar disponibilidad por duración del servicio, no solo por slot de inicio |
+| `a751587`/`385dbd4` | fix(booking): tratar el fin del horario como hora de cierre, no como último slot |
+| `dd666cf` | fix(scripts): paginar la query del informe mensual |
+
+### Decisiones clave
+
+| Decisión | Por qué |
+|---|---|
+| `window.to` = hora en que el servicio debe terminar | Único modelo correcto para servicios de duración variable — evita que un corte de 60min empiece 30min antes del cierre |
+| Paginar la query de PostgREST en vez de confiar en el límite por defecto | El truncado silencioso (sin error) es peor que un error explícito — hay que pedir explícitamente todas las páginas |
+
+### Lecciones aprendidas
+
+- Un bug de "solapamiento" reportado como anecdótico por un barbero resultó ser un problema de una sola línea (la duración nunca viajaba entre pasos del wizard) — pero tardó dos PRs en corregirse completamente porque la primera corrección fue conservadora y la semántica real de "cierre" se terminó de confirmar después con Adriel.
+- Un reporte con "menos turnos de los esperados" sin error visible es la señal clásica de un límite de paginación silencioso en PostgREST — nunca asumir que la respuesta trajo todo.
+
+---
+
+## Capítulo 8: v1.7 — Cancel/Confirm UX, Cierre de Anon-Hardening & Horario de Santi
+
+**Fecha:** 21 de septiembre de 2026
+**Commits:** ~5
+**Tag de git:** `v1.1.0` (primer tag SemVer real del proyecto)
+**Dolor resuelto:** El flujo de cancelación/confirmación necesitaba pulido, el trabajo de anon-hardening iniciado en el Capítulo 6 quedaba sin cerrar, el descuento VIP en quick-add seguía teniendo una race condition de redondeo, y Santi reportaba que el sistema no ofrecía su último turno real (18:30) porque su horario configurado había quedado desactualizado.
+
+### Qué se hizo
+
+- **Cancel/Confirm UX + cierre de anon-hardening:** mejoras al flujo de cancelación y confirmación de turnos, mergeadas junto con el cierre del trabajo de anon-hardening iniciado en julio — push directo a `main`, tagueado como `v1.1.0`.
+- **VIP quick-add (PR #14):** re-chequeo del descuento VIP justo antes de guardar (evita que un lookup async lento deje pasar el precio sin descuento) + redondeo consistente al centenar, usando el mismo helper que ya usaba el booking público.
+- **Horario de Santi (PR #32, cierra issue #29):** Santi cerraba a las 18:30 Mar-Vie, así que el sistema ofrecía correctamente 18:00 como último turno (termina justo al cierre) — pero Santi ahora trabaja hasta las 19:00, igual que Fede, y quería que el sistema lo reflejara. No era un bug de lógica: era el horario configurado el que había quedado atrás de la realidad. TDD completo: test actualizado primero (RED), después el cambio de configuración (GREEN). 272/272 tests, typecheck y biome limpios.
+
+### Commits clave
+
+| PR | Qué hizo |
+|---|---|
+| `acf2d18` | fix(booking): mejoras al flujo de cancelación y confirmación |
+| `d568e05` (#14) | fix(admin): re-chequear descuento VIP antes de guardar, redondear al centenar |
+| `c4f2c34` | fix(booking): mejoras a cancelación + cierre de anon-hardening (push directo, tag v1.1.0) |
+| `49afaab` (#32) | fix(booking): extender el horario de cierre de Santi a las 19:00 |
+
+### Decisiones clave
+
+| Decisión | Por qué |
+|---|---|
+| Extender el horario de Santi (19:00) en vez de "aclarar la UI" | El horario real de trabajo de Santi cambió — la solución correcta es que el dato refleje la realidad, no maquillar el síntoma |
+| Verificar antes de mergear los cambios directos a `main` (cancel/confirm + anon-hardening) | Un push directo a una rama protegida con auto-deploy a producción necesita el mismo nivel de chequeo que un PR, aunque haya llegado por otro canal |
+
+### Lecciones aprendidas
+
+- No todo "el sistema me da mal el horario" es un bug de código — acá la lógica de disponibilidad era matemáticamente correcta para el horario *configurado*; lo que estaba mal era el dato, no la función.
+- Cuando dos sesiones/agentes trabajan sobre el mismo working directory en paralelo, un `git checkout` de uno mueve la rama activa bajo el otro — real, pasó en esta misma sesión. Vale la pena worktrees separados si va a haber concurrencia.
+
+---
+
 ## Resumen del Proyecto
 
-### Métricas al cierre (v1.3)
+### Métricas al cierre (v1.7)
 
 | Métrica | Valor |
 |---|---|
-| Commits totales | ~94 |
-| Tests passing | 151 |
-| Features principales | Booking, Dashboard, Scanner, Cancel/Move, QR, VIP, Auto-cancelación, PWA |
+| Commits totales | ~152 |
+| Tests passing | 272 (13 skipped) |
+| Features principales | Booking, Dashboard, Scanner, Cancel/Move, QR, VIP (pricing + recurrentes por cron), Auto-cancelación, PWA, Anon-hardening, Reportes automáticos (semanal/mensual) |
 | Stack | Next.js 16, React 19, Supabase, Zustand, Tailwind v3, Vitest, Biome |
 | Deploy | Vercel (auto-deploy from main) |
+| Tag actual | `v1.1.0` (2026-09-21) |
 | URL producción | https://il-barbiere-10-adrielias-projects.vercel.app/ |
 | Ubicación | San Martín 345, Arroyo Seco, Santa Fe |
 
@@ -392,16 +557,28 @@ QR generado con `qrencode` (brew): `qrencode -o qr.png -s 8 -m 2 --level=H "URL"
 | PR7 | VIP Clients — tabla, slots, corona badge | ✅ |
 | PR8 | Auto-cancelación cliente con cutoff 4h | ✅ |
 | PR9 | UI Polish — logo, favicon, OG, PWA, fondo | ✅ |
+| PR10-13, 21 | Pricing VIP + duración de servicios combinados | ✅ |
+| PR12 | Ayuda tab + FAQ sobreturnos | ✅ |
+| PR16 | Cron de turnos VIP recurrentes | ✅ |
+| PR17-20 | Notificaciones de agenda (contador, beep, inbox, WhatsApp) | ✅ |
+| PR22, 28 | Anon-hardening — superficie DB + consumidores repunteados | ✅ |
+| PR24-27 | Agenda hardening + validación WhatsApp + tooling | ✅ |
+| — | Reporting automatizado (semanal, mensual) + fix de solapamiento por duración/cierre | ✅ |
+| PR14 | VIP quick-add — race condition + redondeo | ✅ |
+| — | Cancel/Confirm UX + cierre de anon-hardening (tag v1.1.0) | ✅ |
+| PR32 | Horario de Santi 18:30→19:00 (issue #29) | ✅ |
 
 ### Pendientes (próximas sesiones)
 
-1. **Cargar VIPs quincenales de Fede** a Supabase: Juli Juárez (mar 12:30), Javi Orru (jue 09:00), Walter Chapista (vie 14:00) — necesita service role key
+1. **Cargar VIPs quincenales de Fede** a Supabase: Juli Juárez (mar 12:30), Javi Orru (jue 09:00), Walter Chapista (vie 14:00) — necesita service role key *(sin verificar si ya se cargó)*
 2. **Tipar CalendarView** con `Appointment[]` (deuda de AXON-L M4)
 3. **Skeleton loaders** para UX de carga (M6)
-4. **Notificación al barbero** cuando cliente cancela desde `/mi-turno`
-5. **WhatsApp integration** — confirmación automática de turno
-6. **Pagos online** — Mercado Pago / QR de cobro
-7. **Foto original de la barbería sin texto** — para reemplazar la actual con blur
+4. **Notificación al barbero** cuando cliente cancela desde `/mi-turno` (distinto de la notificación al cliente ya implementada en PR #20)
+5. **Issue #31** — mensaje de confirmación automática al cliente al reservar
+6. **Issue #30** — sacar el turno fijo recurrente de Fede los viernes 12:00 del cron de VIP (Capítulo 5) — decisión de negocio de Santi
+7. **Issue #7** — quick booking desde slots libres + botón de cancelar + fotos nuevas de barberos (el pendiente más viejo, desde el 30/06)
+8. **Pagos online** — Mercado Pago / QR de cobro
+9. **Foto original de la barbería sin texto** — para reemplazar la actual con blur
 
 ---
 
