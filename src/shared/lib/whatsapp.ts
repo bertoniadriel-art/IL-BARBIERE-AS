@@ -9,3 +9,25 @@ export function whatsAppUrl(phone: string | null | undefined, message?: string):
   const url = `https://wa.me/549${digits}`;
   return message ? `${url}?text=${encodeURIComponent(message)}` : url;
 }
+
+// Browsers only allow window.open during a user gesture; after an `await` the
+// gesture is gone and the popup gets blocked (notably on Safari/iOS). Call this
+// synchronously in the click handler, before any await, then `go(url)` once the
+// link is known. A null url closes the placeholder tab.
+export function openPendingWindow(): { go: (url: string | null | undefined) => void } {
+  const tab = window.open('', '_blank');
+  return {
+    go(url) {
+      if (!url) {
+        tab?.close();
+        return;
+      }
+      if (!tab) {
+        window.open(url, '_blank');
+        return;
+      }
+      tab.opener = null;
+      tab.location.href = url;
+    },
+  };
+}

@@ -6,6 +6,7 @@ import {
 } from '@/features/admin/services/appointmentService';
 import { useDashboardMetrics } from '@/shared/hooks/useDashboardMetrics';
 import { supabase } from '@/shared/lib/supabase';
+import { openPendingWindow } from '@/shared/lib/whatsapp';
 import type { AppointmentStatus } from '@/shared/types';
 import { addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import { AlertCircle, BadgeDollarSign, CalendarDays } from 'lucide-react';
@@ -190,12 +191,15 @@ export function KanbanBoard({ barber }: KanbanBoardProps) {
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
 
     if (next === 'confirmed') {
+      // Open the tab before the await, while the click still counts as a user gesture.
+      const whatsappTab = openPendingWindow();
       const { error, whatsappUrl } = await confirmAppointment(id);
       if (error) {
+        whatsappTab.go(null);
         setRows(prev);
         return;
       }
-      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      whatsappTab.go(whatsappUrl);
       return;
     }
 

@@ -18,7 +18,7 @@ import {
 import { getAvailableTimesForBarber } from '@/shared/config/barbers';
 import type { IncomingAppointment } from '@/shared/hooks/useNewAppointmentNotifications';
 import { supabase } from '@/shared/lib/supabase';
-import { whatsAppUrl } from '@/shared/lib/whatsapp';
+import { openPendingWindow, whatsAppUrl } from '@/shared/lib/whatsapp';
 import type { AppointmentStatus } from '@/shared/types';
 import { addDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -738,12 +738,15 @@ export function AgendaView({ barber, refetchKey, recentNotifications = [] }: Age
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
 
     if (next === 'confirmed') {
+      // Open the tab before the await, while the click still counts as a user gesture.
+      const whatsappTab = openPendingWindow();
       const { error, whatsappUrl } = await confirmAppointment(id);
       if (error) {
+        whatsappTab.go(null);
         setRows(prev);
         return;
       }
-      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      whatsappTab.go(whatsappUrl);
       return;
     }
 

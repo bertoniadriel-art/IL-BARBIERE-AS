@@ -4,6 +4,7 @@ import { ConnectionStatusIndicator } from '@/shared/components/ConnectionStatus'
 import { useConnectionStatus } from '@/shared/hooks/useConnectionStatus';
 import { useDashboardMetrics } from '@/shared/hooks/useDashboardMetrics';
 import { supabase } from '@/shared/lib/supabase';
+import { openPendingWindow } from '@/shared/lib/whatsapp';
 import type { AppointmentStatus } from '@/shared/types';
 import { addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import { Activity, BadgeDollarSign, CalendarDays, Users } from 'lucide-react';
@@ -108,12 +109,15 @@ export function DashboardBento({ barber }: DashboardBentoProps) {
     setRows(rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
 
     if (next === 'confirmed') {
+      // Open the tab before the await, while the click still counts as a user gesture.
+      const whatsappTab = openPendingWindow();
       const { error, whatsappUrl } = await confirmAppointment(id);
       if (error) {
+        whatsappTab.go(null);
         setRows(prev);
         return;
       }
-      if (whatsappUrl) window.open(whatsappUrl, '_blank');
+      whatsappTab.go(whatsappUrl);
       return;
     }
 

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { whatsAppUrl } from './whatsapp';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { openPendingWindow, whatsAppUrl } from './whatsapp';
 
 describe('whatsAppUrl', () => {
   it('should prefix the stored 10-digit number with 549', () => {
@@ -24,5 +24,42 @@ describe('whatsAppUrl', () => {
     expect(whatsAppUrl(null)).toBeNull();
     expect(whatsAppUrl(undefined)).toBeNull();
     expect(whatsAppUrl('')).toBeNull();
+  });
+});
+
+describe('openPendingWindow', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function fakeWindow() {
+    return { opener: {}, location: { href: '' }, close: vi.fn() } as unknown as Window;
+  }
+
+  it('should open a blank tab synchronously, before any await', () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(fakeWindow());
+    openPendingWindow();
+    expect(openSpy).toHaveBeenCalledWith('', '_blank');
+  });
+
+  it('should point the pending tab at the url once it arrives', () => {
+    const tab = fakeWindow();
+    vi.spyOn(window, 'open').mockReturnValue(tab);
+    openPendingWindow().go('https://wa.me/5493402417023');
+    expect(tab.location.href).toBe('https://wa.me/5493402417023');
+    expect(tab.opener).toBeNull();
+  });
+
+  it('should close the pending tab when there is no url', () => {
+    const tab = fakeWindow();
+    vi.spyOn(window, 'open').mockReturnValue(tab);
+    openPendingWindow().go(null);
+    expect(tab.close).toHaveBeenCalled();
+  });
+
+  it('should fall back to a direct open when the blank tab was blocked', () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    openPendingWindow().go('https://wa.me/5493402417023');
+    expect(openSpy).toHaveBeenLastCalledWith('https://wa.me/5493402417023', '_blank');
   });
 });
