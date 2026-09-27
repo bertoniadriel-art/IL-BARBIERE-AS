@@ -14,6 +14,7 @@ import { AdminLayout } from './AdminLayout';
 import { AgendaView } from './AgendaView';
 import { AyudaView } from './AyudaView';
 import { FinanzasView } from './FinanzasView';
+import { NotificationCenter } from './NotificationCenter';
 import { QuickAddModal } from './QuickAddModal';
 import { VipSlotsView } from './VipSlotsView';
 
@@ -34,6 +35,7 @@ export function DashboardShell({ barber }: Props) {
   const [notification, setNotification] = useState<IncomingAppointment | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const [recentNotifications, setRecentNotifications] = useState<IncomingAppointment[]>([]);
+  const [notificationCenterKey, setNotificationCenterKey] = useState(0);
 
   const handleLogout = async () => {
     await authService.signOut();
@@ -45,6 +47,7 @@ export function DashboardShell({ barber }: Props) {
     setNotification(appt);
     setNotificationCount((c) => c + 1);
     setRecentNotifications((prev) => [appt, ...prev].slice(0, 8));
+    setNotificationCenterKey((k) => k + 1);
   }, []);
 
   useNewAppointmentNotifications(barber.id, handleNewAppointment);
@@ -136,6 +139,11 @@ export function DashboardShell({ barber }: Props) {
                 {tabLabel[activeTab]}
               </p>
             </div>
+            <NotificationCenter
+              barberId={barber.id}
+              refreshKey={notificationCenterKey}
+              onConfirmed={() => setRefetchKey((k) => k + 1)}
+            />
           </div>
 
           {activeTab === 'agenda' && (
