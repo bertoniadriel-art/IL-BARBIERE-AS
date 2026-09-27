@@ -250,10 +250,13 @@ function AppointmentCard({
       setMoveError('Ese horario ya está ocupado.');
       return;
     }
+    // Open the tab before the await, while the click still counts as a user gesture.
+    const whatsappTab = row.client_phone ? openPendingWindow() : null;
     setIsMoving(true);
     const { error } = await moveAppointment(row.id, row.barber_id, moveDate, moveTime);
     setIsMoving(false);
     if (error) {
+      whatsappTab?.go(null);
       setMoveError(
         typeof error === 'object' && 'type' in error && error.type === 'slot_occupied'
           ? 'Ese horario ya está ocupado.'
@@ -265,19 +268,24 @@ function AppointmentCard({
     // Let the barber notify the client that the turno moved (new date/time).
     const moveMsg = `*IL BARBIERE OS - TURNO REPROGRAMADO* 🔄\n\n👤 *Cliente:* ${row.client_name ?? ''}\n✂️ *Servicio:* ${row.services?.name ?? 'Servicio'}\n📅 *Nueva fecha:* ${format(parseISO(moveDate), 'dd-MM-yyyy')}\n⏰ *Nueva hora:* ${moveTime} HS\n\n_Te esperamos!_`;
     const moveUrl = whatsAppUrl(row.client_phone, moveMsg);
-    if (moveUrl) window.open(moveUrl, '_blank');
+    whatsappTab?.go(moveUrl);
     onMoved();
   }
 
   async function handleCancel() {
+    // Open the tab before the await, while the click still counts as a user gesture.
+    const whatsappTab = row.client_phone ? openPendingWindow() : null;
     setIsCancelling(true);
     const { error } = await updateAppointmentStatus(row.id, 'cancelled');
     setIsCancelling(false);
-    if (error) return;
+    if (error) {
+      whatsappTab?.go(null);
+      return;
+    }
     // Let the barber notify the client that the turno was cancelled.
     const cancelMsg = `*IL BARBIERE OS - TURNO CANCELADO* ❌\n\n👤 *Cliente:* ${row.client_name ?? ''}\n✂️ *Servicio:* ${row.services?.name ?? 'Servicio'}\n📅 *Fecha:* ${format(parseISO(row.appointment_date), 'dd-MM-yyyy')}\n⏰ *Hora:* ${time} HS\n\n_Escribinos para reprogramar tu turno._`;
     const cancelUrl = whatsAppUrl(row.client_phone, cancelMsg);
-    if (cancelUrl) window.open(cancelUrl, '_blank');
+    whatsappTab?.go(cancelUrl);
     onMoved();
   }
 
