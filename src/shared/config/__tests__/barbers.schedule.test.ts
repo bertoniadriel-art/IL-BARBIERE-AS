@@ -106,13 +106,21 @@ describe('getAvailableTimesForBarber', () => {
       expect(result[result.length - 1]).toBe('18:30');
     });
 
-    it('offers only times up to 13:30 for Santi on Saturday (closes 14:00)', () => {
+    it('offers 10:00 through 13:30 for Santi on Saturday (closes 14:00)', () => {
       const result = getAvailableTimesForBarber('Santi Ducca', saturday, BASE_TIMES);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toBe('10:00');
+      // 14:00 is closing time: the last 30-min slot must END there, not start there
       expect(result[result.length - 1]).toBe('13:30');
       expect(result).not.toContain('14:30');
       expect(result).not.toContain('19:00');
+    });
+
+    it('keeps the regular Saturday window for Fede Diaz (closes 16:00)', () => {
+      const santi = getAvailableTimesForBarber('Santi Ducca', saturday, BASE_TIMES);
+      const fede = getAvailableTimesForBarber('Fede Diaz', saturday, BASE_TIMES);
+      expect(santi[santi.length - 1]).toBe('13:30');
+      expect(fede[fede.length - 1]).toBe('15:30');
     });
 
     it('does not include times before 10:00 for Santi on Tuesday', () => {
@@ -122,6 +130,62 @@ describe('getAvailableTimesForBarber', () => {
       expect(result).not.toContain('09:00');
       expect(result).not.toContain('09:30');
       expect(result).toContain('10:00');
+    });
+  });
+
+  describe('Santi Ducca one-off date window — 2026-11-21 uses 10:00–15:30', () => {
+    // A date window replaces the weekly window for that exact date. Only the
+    // 2026-11-21 Saturday is extended, and the extension still obeys the file's
+    // rule: the service must FINISH inside the window.
+    const oneOffSaturday = new Date('2026-11-21T12:00:00');
+    const nextSaturday = new Date('2026-11-28T12:00:00');
+    const friday = new Date('2026-11-20T12:00:00');
+
+    it('offers the 14:30 and 15:00 turnos on 2026-11-21', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', oneOffSaturday, BASE_TIMES);
+      expect(result).toContain('14:30');
+      expect(result).toContain('15:00');
+    });
+
+    it('starts the last 30-min turno on 2026-11-21 at 15:00 (ends 15:30)', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', oneOffSaturday, BASE_TIMES, 30);
+      expect(result[result.length - 1]).toBe('15:00');
+      expect(result).not.toContain('15:30');
+    });
+
+    it('keeps the morning part of the window on 2026-11-21', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', oneOffSaturday, BASE_TIMES);
+      expect(result[0]).toBe('10:00');
+      expect(result).toContain('13:30');
+    });
+
+    it('opens 14:00 on 2026-11-21 as part of the 10:00–15:30 window', () => {
+      // A 30-min service at 14:00 ends 14:30, inside the extended window.
+      const result = getAvailableTimesForBarber('Santi Ducca', oneOffSaturday, BASE_TIMES);
+      expect(result).toContain('14:00');
+    });
+
+    it('only offers 14:30 to a 60-min service on 2026-11-21 (15:00 would end 16:00)', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', oneOffSaturday, BASE_TIMES, 60);
+      expect(result).toContain('14:30');
+      expect(result).not.toContain('15:00');
+    });
+
+    it('reverts to the regular Saturday window on 2026-11-28', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', nextSaturday, BASE_TIMES);
+      expect(result[result.length - 1]).toBe('13:30');
+      expect(result).not.toContain('14:30');
+      expect(result).not.toContain('15:00');
+    });
+
+    it('does not leak into another weekday (Friday 2026-11-20 closes 19:00)', () => {
+      const result = getAvailableTimesForBarber('Santi Ducca', friday, BASE_TIMES);
+      expect(result[result.length - 1]).toBe('18:30');
+    });
+
+    it('does not extend Fede Diaz on 2026-11-21', () => {
+      const fede = getAvailableTimesForBarber('Fede Diaz', oneOffSaturday, BASE_TIMES);
+      expect(fede[fede.length - 1]).toBe('15:30');
     });
   });
 

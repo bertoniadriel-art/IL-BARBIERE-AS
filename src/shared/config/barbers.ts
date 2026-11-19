@@ -23,6 +23,11 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
       // 0 = Sun — omitted means off
       // 1 = Mon — omitted means off
     },
+    // One-off date window: only Sat 2026-11-21 runs 10:00–15:30. The regular
+    // Saturday window stays 10:00–14:00 and applies again from 2026-11-28.
+    dateWindows: {
+      '2026-11-21': { from: '10:00', to: '15:30' },
+    },
     vacations: [],
   },
   'Fede Diaz': {
@@ -45,6 +50,13 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
   },
 };
 
+/** Local calendar date as "YYYY-MM-DD", matching the `dateWindows` keys. */
+function toDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /**
  * Returns the available time slots for a barber on a given date.
  * Filters baseTimes to the barber's schedule window for that day-of-week.
@@ -53,6 +65,10 @@ export const BARBERS_CONFIG: Record<string, Barber> = {
  * `window.to` is closing time, so a service must FINISH by then, not merely
  * start before it: at a 19:00 close the last 30-min slot is 18:30 and the last
  * 60-min slot is 18:00.
+ *
+ * A one-off `dateWindows` entry for the given date REPLACES the weekly window
+ * for that date and follows the same closing-time rule. This is the only entry
+ * point for slot generation, so callers never special-case a date themselves.
  *
  * @param barberName  - display name matching a key in BARBERS_CONFIG
  * @param date        - the date to check
@@ -81,7 +97,8 @@ export function getAvailableTimesForBarber(
   if (onVacation) return [];
 
   const dayKey = date.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  const window = cfg.schedule[dayKey];
+  // A one-off date window wins over the weekly schedule for that exact date.
+  const window = cfg.dateWindows?.[toDateKey(date)] ?? cfg.schedule[dayKey];
   if (!window) return []; // day off
 
   return baseTimes.filter((t) => t >= window.from && slotEnd(t, durationMin) <= window.to);
