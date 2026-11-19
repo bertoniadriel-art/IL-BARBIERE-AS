@@ -22,6 +22,13 @@ export interface Barber {
   whatsappPhone: string;
   schedule: WeeklySchedule;
   vacations: VacationBlock[];
+  /**
+   * One-off windows keyed by local date ("YYYY-MM-DD"). A date present here
+   * replaces the weekly window for that exact date, so a barber can work
+   * outside the regular schedule for a single day. Same rule as `schedule`:
+   * `to` is the closing time, so a service must FINISH by then.
+   */
+  dateWindows?: Record<string, DayWindow>;
 }
 
 export interface Service {
