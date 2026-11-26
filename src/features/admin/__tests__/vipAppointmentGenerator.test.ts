@@ -59,13 +59,27 @@ type MockConfig = {
 
 function setupSupabaseMock(config: MockConfig) {
   const insertCalls: Record<string, unknown>[] = [];
+  const vipQueryFilters: { column: string; value: unknown }[] = [];
 
   mocks.mockFrom.mockImplementation((table: string) => {
     if (table === 'vip_clients') {
       return {
-        select: () => ({
-          eq: () => Promise.resolve({ data: config.vipClients, error: null }),
-        }),
+        select: () =>
+          // Records and *applies* the PostgREST filters instead of ignoring
+          // them and returning the whole fixture: that way removing
+          // `.eq('active', true)` from the generator makes the inactive-row
+          // test (GitHub issue #49) fail instead of silently passing. Still a
+          // thenable, like the real query builder, so an unfiltered query
+          // resolves with the whole fixture.
+          Object.assign(Promise.resolve({ data: config.vipClients, error: null }), {
+            eq: (column: string, value: unknown) => {
+              vipQueryFilters.push({ column, value });
+              const filtered = config.vipClients.filter(
+                (row) => (row as unknown as Record<string, unknown>)[column] === value
+              );
+              return Promise.resolve({ data: filtered, error: null });
+            },
+          }),
       };
     }
 
@@ -97,7 +111,7 @@ function setupSupabaseMock(config: MockConfig) {
     throw new Error(`Unexpected table in test mock: ${table}`);
   });
 
-  return { insertCalls };
+  return { insertCalls, vipQueryFilters };
 }
 
 // Thursday 2026-07-02, matches vipRow's default day_of_week (4).
@@ -274,5 +288,68 @@ describe('generateVipAppointments (GitHub issue #15)', () => {
 
     vi.doUnmock('@/shared/lib/supabase-admin');
     vi.resetModules();
+  });
+});
+
+describe('generateVipAppointments (GitHub issue #49 — cliente dado de baja)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not materialize appointments for a vip_clients row with active=false (José Tucco: Thursday biweekly)', async () => {
+    const { insertCalls, vipQueryFilters } = setupSupabaseMock({
+      vipClients: [
+        vipRow({
+          client_name: 'José Tucco',
+          day_of_week: 4,
+          slot_time: '14:30',
+          frequency: 'biweekly',
+          discount_percent: 0,
+          active: false,
+        }),
+      ],
+      services: [{ id: 'service-1', price: 10000 }],
+    });
+
+    const summary = await generateVipAppointments(TODAY);
+
+    expect(summary).toEqual({
+      created: 0,
+      skippedExisting: 0,
+      skippedIncomplete: { count: 0, clientNames: [] },
+      errors: [],
+    });
+    expect(insertCalls).toEqual([]);
+    // The deactivation must be honored server-side by the query itself: a
+    // client-side filter would still ship inactive rows over the wire.
+    expect(vipQueryFilters).toEqual([{ column: 'active', value: true }]);
+  });
+
+  it('still materializes the active rows of the same batch when an inactive row is present', async () => {
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [
+        vipRow({
+          client_name: 'José Tucco',
+          day_of_week: 4,
+          slot_time: '14:30',
+          frequency: 'biweekly',
+          active: false,
+        }),
+        vipRow({
+          client_name: 'Cliente Activo',
+          id: 'vip-2',
+          barber_id: 'barber-2',
+          slot_time: '15:00',
+          frequency: 'biweekly',
+        }),
+      ],
+      services: [{ id: 'service-1', price: 10000 }],
+    });
+
+    const summary = await generateVipAppointments(TODAY);
+
+    expect(summary.created).toBe(1);
+    expect(insertCalls).toHaveLength(1);
+    expect(insertCalls[0].client_name).toBe('Cliente Activo');
   });
 });
