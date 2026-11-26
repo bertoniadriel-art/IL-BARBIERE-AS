@@ -8,6 +8,7 @@ interface BlockedSlotRow {
 
 interface VipClientRow {
   slot_time: string | null;
+  frequency: string | null;
   services: { duration_min: number } | null;
 }
 
@@ -59,7 +60,7 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
 
 /**
  * Fetches permanently blocked time slots for a barber on a given date's day-of-week.
- * Covers barber personal time and weekly/biweekly VIP reservations.
+ * Covers barber personal time and weekly VIP reservations.
  *
  * VIP-reserved slots are seeded 1:1 from `vip_clients` as a single `blocked_slots`
  * row (no duration stored on that table). For a VIP client with a combined service
@@ -67,6 +68,14 @@ export async function getBookedSlots(barberId: string, date: string): Promise<st
  * leaving the following slot open for another client to double-book. To fix this,
  * VIP-reserved slots are expanded using the duration of the matching vip_clients'
  * service, the same way getBookedSlots expands real appointments.
+ *
+ * The `blocked_slots` row carries no date window, so it applies to EVERY week of
+ * that weekday. That is only correct for `frequency = 'weekly'`: for a `biweekly`
+ * client it also blocked the off-week, leaving a slot that was neither bookable nor
+ * backed by an appointment (GitHub issue #50). The permanent VIP block therefore
+ * applies to weekly clients only; on a biweekly on-week the slot is occupied by the
+ * `VIP-*` appointment the cron already materialized, which getBookedSlots counts.
+ * Rows with an unknown/legacy cadence keep the weekly behavior (fail-safe).
  *
  * @param barberId - UUID of the barber
  * @param date     - date string in YYYY-MM-DD format
@@ -104,24 +113,32 @@ export async function getBlockedSlotsForDay(barberId: string, date: string): Pro
 
   const { data: vipData, error: vipError } = await supabase
     .from('vip_clients')
-    .select('slot_time, services(duration_min)')
+    .select('slot_time, frequency, services(duration_min)')
     .eq('barber_id', barberId)
     .eq('day_of_week', dayOfWeek);
 
   if (vipError) {
     console.error('getBlockedSlotsForDay vip lookup error', vipError);
-    return [...personalSlots, ...vipSlots];
+    // Cadence unknown: blocking every vip_reserved slot on an error would re-lock
+    // the biweekly off-week (the very bug of GitHub issue #50), so only the
+    // personal blocks stand. On a weekly on-week the `VIP-*` appointment still
+    // occupies the slot through getBookedSlots.
+    return personalSlots;
   }
 
-  const durationBySlot = new Map<string, number>();
+  const vipBySlot = new Map<string, VipClientRow>();
   for (const row of (vipData ?? []) as VipClientRow[]) {
     if (!row.slot_time) continue;
-    durationBySlot.set(row.slot_time.slice(0, 5), row.services?.duration_min ?? 30);
+    vipBySlot.set(row.slot_time.slice(0, 5), row);
   }
 
   const expandedVipSlots = new Set<string>();
   for (const slot of vipSlots) {
-    const duration = durationBySlot.get(slot) ?? 30;
+    const row = vipBySlot.get(slot);
+    // Biweekly: the appointment materialized for the on-week blocks it instead.
+    if (row?.frequency === 'biweekly') continue;
+
+    const duration = row?.services?.duration_min ?? 30;
     for (const expanded of expandSlots(`${slot}:00`, duration)) {
       expandedVipSlots.add(expanded);
     }
