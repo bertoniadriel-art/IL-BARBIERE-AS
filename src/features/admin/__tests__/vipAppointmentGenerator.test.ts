@@ -52,14 +52,30 @@ type MockConfig = {
     barber_id: string | null;
     appointment_date: string;
     appointment_time: string;
+    status?: string;
   }[];
+  // Rows the anchor query (`appointments` ⋈ `qr_hash like 'VIP-%'`) can return.
+  // `qr_hash` is optional: absent means a generator-materialized VIP row.
+  vipAppointments?: {
+    barber_id: string | null;
+    appointment_date: string;
+    appointment_time: string;
+    qr_hash?: string;
+  }[];
+  vipAppointmentsError?: { message: string };
   services?: { id: string; price: number }[];
   onInsert?: (payload: Record<string, unknown>) => { error: unknown } | undefined;
 };
 
+function matchesLike(value: unknown, pattern: string): boolean {
+  const text = typeof value === 'string' ? value : '';
+  return pattern.endsWith('%') ? text.startsWith(pattern.slice(0, -1)) : text === pattern;
+}
+
 function setupSupabaseMock(config: MockConfig) {
   const insertCalls: Record<string, unknown>[] = [];
   const vipQueryFilters: { column: string; value: unknown }[] = [];
+  const vipAppointmentFilters: { column: string; op: string; value: unknown }[] = [];
 
   mocks.mockFrom.mockImplementation((table: string) => {
     if (table === 'vip_clients') {
@@ -85,11 +101,43 @@ function setupSupabaseMock(config: MockConfig) {
 
     if (table === 'appointments') {
       return {
+        // Two query shapes hit `appointments`:
+        //  - window pre-check: select -> gte -> lt -> neq
+        //  - biweekly anchor:  select -> like('qr_hash', 'VIP-%') -> in('barber_id')
+        // Both *apply* their filters instead of ignoring them, so dropping a
+        // filter from the generator makes a test fail instead of passing
+        // silently.
         select: () => ({
-          gte: () => ({
-            lt: () => ({
-              neq: () => Promise.resolve({ data: config.existingAppointments ?? [], error: null }),
+          gte: (_column: string, from: string) => ({
+            lt: (_column2: string, to: string) => ({
+              neq: (_column3: string, status: unknown) =>
+                Promise.resolve({
+                  data: (config.existingAppointments ?? []).filter(
+                    (row) =>
+                      row.appointment_date >= from &&
+                      row.appointment_date < to &&
+                      row.status !== status
+                  ),
+                  error: null,
+                }),
             }),
+          }),
+          like: (column: string, pattern: string) => ({
+            in: (column2: string, values: unknown[]) => {
+              vipAppointmentFilters.push(
+                { column, op: 'like', value: pattern },
+                { column: column2, op: 'in', value: values }
+              );
+              if (config.vipAppointmentsError) {
+                return Promise.resolve({ data: null, error: config.vipAppointmentsError });
+              }
+              return Promise.resolve({
+                data: (config.vipAppointments ?? []).filter(
+                  (row) => matchesLike(row.qr_hash, pattern) && values.includes(row.barber_id)
+                ),
+                error: null,
+              });
+            },
           }),
         }),
         insert: (payload: Record<string, unknown>) => {
@@ -111,7 +159,7 @@ function setupSupabaseMock(config: MockConfig) {
     throw new Error(`Unexpected table in test mock: ${table}`);
   });
 
-  return { insertCalls, vipQueryFilters };
+  return { insertCalls, vipQueryFilters, vipAppointmentFilters };
 }
 
 // Thursday 2026-07-02, matches vipRow's default day_of_week (4).
@@ -351,5 +399,153 @@ describe('generateVipAppointments (GitHub issue #49 — cliente dado de baja)', 
     expect(summary.created).toBe(1);
     expect(insertCalls).toHaveLength(1);
     expect(insertCalls[0].client_name).toBe('Cliente Activo');
+  });
+});
+
+describe('generateVipAppointments (GitHub issue #50 — anclaje quincenal)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Criterio fijado por Adriel en el issue #50: el sábado 28/11 queda libre
+  // para Juli Bustos; su próximo VIP es el sábado 05/12 y de ahí cada 14 días.
+  const anchorBustos = { barber_id: 'barber-1', appointment_time: '11:30:00' };
+  const bustosRow = vipRow({
+    client_name: 'Juli Bustos',
+    day_of_week: 6, // Saturday
+    slot_time: '11:30',
+    frequency: 'biweekly',
+    discount_percent: 0,
+  });
+
+  it('anchors a biweekly client on its last materialized VIP appointment (Bustos: 21/11 → 05/12, NOT 28/11)', async () => {
+    // 2026-11-26 (Thursday) → window [2026-11-26, 2026-12-11).
+    const thursday = new Date(2026, 10, 26);
+    const { insertCalls, vipAppointmentFilters } = setupSupabaseMock({
+      vipClients: [bustosRow],
+      vipAppointments: [
+        { ...anchorBustos, appointment_date: '2026-10-31', qr_hash: 'VIP-1A2B3C4D' },
+        { ...anchorBustos, appointment_date: '2026-11-21', qr_hash: 'VIP-1A2B3C4D' },
+        // Same slot, but booked manually: not materialized by the VIP cron, so
+        // it must NOT become the anchor (otherwise the next date would be 12/12).
+        { ...anchorBustos, appointment_date: '2026-11-28', qr_hash: 'MANUAL-8CA1DE01' },
+        // Another client's VIP row (later date, same barber, other time): must
+        // not anchor this slot, or the next date would be 18/12.
+        {
+          barber_id: 'barber-1',
+          appointment_time: '10:30:00',
+          appointment_date: '2026-12-04',
+          qr_hash: 'VIP-48DB7711',
+        },
+      ],
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(thursday);
+
+    expect(summary.created).toBe(1);
+    expect(summary.skippedExisting).toBe(0);
+    expect(summary.errors).toEqual([]);
+    expect(insertCalls).toHaveLength(1);
+    expect(insertCalls[0].appointment_date).toBe('2026-12-05');
+    expect(insertCalls[0].appointment_time).toBe('11:30');
+    // The anchor must be resolved server-side on VIP rows only, for the barbers
+    // of the batch: a client-side filter would ship the whole history.
+    expect(vipAppointmentFilters).toEqual([
+      { column: 'qr_hash', op: 'like', value: 'VIP-%' },
+      { column: 'barber_id', op: 'in', value: ['barber-1'] },
+    ]);
+  });
+
+  it('keeps the current behavior for a biweekly client with no previous VIP appointment (first date of the window)', async () => {
+    const thursday = new Date(2026, 10, 26);
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [bustosRow],
+      vipAppointments: [],
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(thursday);
+
+    expect(summary.created).toBe(1);
+    expect(insertCalls[0].appointment_date).toBe('2026-11-28');
+  });
+
+  it('anchors on a recent VIP appointment even when that puts the next date past the first match of the window', async () => {
+    // 2026-12-01 (Tuesday) → window [2026-12-01, 2026-12-16). First Saturday is
+    // 05/12; anchoring on 28/11 (last VIP, 3 days ago) moves the next one to 12/12.
+    const tuesday = new Date(2026, 11, 1);
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [bustosRow],
+      vipAppointments: [
+        { ...anchorBustos, appointment_date: '2026-11-28', qr_hash: 'VIP-5E6F7A8B' },
+      ],
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(tuesday);
+
+    expect(summary.created).toBe(1);
+    expect(insertCalls.map((payload) => payload.appointment_date)).toEqual(['2026-12-12']);
+  });
+
+  it('generates nothing in the window when the next anchored date falls outside it', async () => {
+    // 05/12 was already materialized by a previous run: the next anchored date
+    // is 19/12, past the window end (2026-12-11). Nothing to create — and the
+    // free Saturday 28/11 must stay free.
+    const thursday = new Date(2026, 10, 26);
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [bustosRow],
+      vipAppointments: [
+        { ...anchorBustos, appointment_date: '2026-11-21', qr_hash: 'VIP-1A2B3C4D' },
+        { ...anchorBustos, appointment_date: '2026-12-05', qr_hash: 'VIP-1A2B3C4D' },
+      ],
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(thursday);
+
+    expect(summary).toEqual({
+      created: 0,
+      skippedExisting: 0,
+      skippedIncomplete: { count: 0, clientNames: [] },
+      errors: [],
+    });
+    expect(insertCalls).toEqual([]);
+  });
+
+  it('ignores VIP anchors for weekly clients (every matching date of the window is still generated)', async () => {
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [vipRow({ day_of_week: 4, slot_time: '10:00', frequency: 'weekly' })],
+      vipAppointments: [
+        { barber_id: 'barber-1', appointment_date: '2026-06-25', appointment_time: '10:00:00' },
+      ],
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(TODAY);
+
+    expect(summary.created).toBe(3);
+    expect(insertCalls.map((payload) => payload.appointment_date)).toEqual([
+      '2026-07-02',
+      '2026-07-09',
+      '2026-07-16',
+    ]);
+  });
+
+  it('falls back to the first date of the window when the anchor query fails, instead of dropping the client', async () => {
+    const thursday = new Date(2026, 10, 26);
+    const { insertCalls } = setupSupabaseMock({
+      vipClients: [bustosRow],
+      vipAppointments: [{ ...anchorBustos, appointment_date: '2026-11-21' }],
+      vipAppointmentsError: { message: 'anchor query failed' },
+      services: [{ id: 'service-1', price: 14000 }],
+    });
+
+    const summary = await generateVipAppointments(thursday);
+
+    expect(summary.created).toBe(1);
+    expect(summary.errors).toEqual([]);
+    expect(insertCalls[0].appointment_date).toBe('2026-11-28');
   });
 });

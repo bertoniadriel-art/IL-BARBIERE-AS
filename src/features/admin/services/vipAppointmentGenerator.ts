@@ -53,7 +53,18 @@ type ServiceRow = {
   price: number;
 };
 
+// A `qr_hash like 'VIP-%'` row: materialized by this generator (or a previous
+// run of it), on the VIP barber/weekday/slot it was created for.
+type VipAnchorRow = {
+  barber_id: string | null;
+  appointment_date: string;
+  appointment_time: string;
+};
+
 const WINDOW_DAYS = 15;
+// Cadence of a `'biweekly'` VIP slot anchored on its last materialized
+// appointment (GitHub issue #50).
+const BIWEEKLY_DAYS = 14;
 
 // Builds a YYYY-MM-DD string from the local calendar date. Deliberately NOT
 // using date.toISOString() here: that converts to UTC first, which can shift
@@ -91,6 +102,48 @@ export function computeFinalPrice(price: number, discountPercent: number): numbe
   return Math.round((price * (1 - discountPercent / 100)) / 100) * 100;
 }
 
+// Reads the calendar weekday of a YYYY-MM-DD string in local time. Deliberately
+// NOT `new Date('YYYY-MM-DD')` (parsed as UTC midnight, so in a UTC- timezone
+// getDay() would return the previous day) and not toIsoDate's inverse.
+function weekdayFromIsoDate(iso: string): number {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year, month - 1, day).getDay();
+}
+
+/**
+ * Identity of a VIP slot: barber + weekday + start time. Deliberately not the
+ * client name: `vip_clients.client_name` is free text, the same person shows up
+ * with variants in `appointments` (e.g. "Juli Bustos" vs "Juli bustos sabado
+ * fijo cada 15 dias"), and the slot is what the row actually owns. A row
+ * without barber is not anchored (null would collide across clients).
+ */
+function vipSlotKey(
+  barberId: string | null,
+  dayOfWeek: number | null,
+  time: string | null
+): string | null {
+  if (!barberId || dayOfWeek === null || !time) return null;
+  return `${barberId}|${dayOfWeek}|${normalizeTime(time)}`;
+}
+
+/**
+ * Every anchored date of a biweekly slot inside [windowStart, windowEnd):
+ * anchor + 14, anchor + 28, … (GitHub issue #50). The anchor is the last VIP
+ * appointment already materialized for that slot, so the cadence does not
+ * depend on where the 15-day window happens to start.
+ */
+function anchoredDates(anchorIso: string, windowStart: Date, windowEnd: Date): string[] {
+  const [year, month, day] = anchorIso.split('-').map(Number);
+  const anchor = new Date(year, month - 1, day);
+  anchor.setHours(0, 0, 0, 0);
+
+  const dates: string[] = [];
+  for (let d = addDays(anchor, BIWEEKLY_DAYS); d < windowEnd; d = addDays(d, BIWEEKLY_DAYS)) {
+    if (d >= windowStart) dates.push(toIsoDate(d));
+  }
+  return dates;
+}
+
 /**
  * Computes, for a single vip_clients row, every appointment_date that falls
  * inside the [windowStart, windowEnd) 15-day window and matches the row's
@@ -98,9 +151,23 @@ export function computeFinalPrice(price: number, discountPercent: number): numbe
  *
  * - 'weekly': every matching date in the window (can be 2, or even 3 when
  *   windowStart itself matches, occurrences in a 15-day window).
- * - 'biweekly': only the first matching date in the window.
+ * - 'biweekly': every date of the 14-day cadence anchored on the slot's last
+ *   materialized VIP appointment (GitHub issue #50). An anchored cadence whose
+ *   next date falls past the window yields nothing: the slot is already covered
+ *   up to the horizon.
+ * - 'biweekly' without any previous VIP appointment: only the first matching
+ *   date in the window (unchanged behavior).
  */
-function datesForRow(row: VipClientRow, windowStart: Date, windowEnd: Date): string[] {
+function datesForRow(
+  row: VipClientRow,
+  windowStart: Date,
+  windowEnd: Date,
+  lastVipDate: string | null
+): string[] {
+  if (row.frequency === 'biweekly' && lastVipDate) {
+    return anchoredDates(lastVipDate, windowStart, windowEnd);
+  }
+
   const dates: string[] = [];
   for (let d = new Date(windowStart); d < windowEnd; d = addDays(d, 1)) {
     if (d.getDay() === row.day_of_week) {
@@ -140,6 +207,45 @@ export async function generateVipAppointments(
 
   const vipClients = (vipClientsData ?? []) as VipClientRow[];
 
+  // Biweekly rows are anchored on their last materialized VIP appointment
+  // (GitHub issue #50): `max(appointment_date)` per barber+weekday+slot of the
+  // batch, over generator-created rows only. Weekly rows and the existing
+  // window pre-check below are unaffected.
+  const lastVipDateBySlot = new Map<string, string>();
+  const needsAnchor = vipClients.some((row) => row.frequency === 'biweekly');
+  const barberIds = Array.from(
+    new Set(
+      vipClients
+        .map((row) => row.barber_id)
+        .filter((barberId): barberId is string => barberId !== null)
+    )
+  );
+
+  if (needsAnchor && barberIds.length > 0) {
+    const { data: anchorData, error: anchorError } = await supabase
+      .from('appointments')
+      .select('barber_id, appointment_date, appointment_time')
+      .like('qr_hash', 'VIP-%')
+      .in('barber_id', barberIds);
+
+    // Fail safe: an anchor query failure must not drop the client (that would
+    // leave a VIP without a turn). Fall back to the unanchored window behavior.
+    if (!anchorError) {
+      for (const anchor of (anchorData ?? []) as VipAnchorRow[]) {
+        const key = vipSlotKey(
+          anchor.barber_id,
+          weekdayFromIsoDate(anchor.appointment_date),
+          anchor.appointment_time
+        );
+        if (!key) continue;
+        const previous = lastVipDateBySlot.get(key);
+        if (!previous || anchor.appointment_date > previous) {
+          lastVipDateBySlot.set(key, anchor.appointment_date);
+        }
+      }
+    }
+  }
+
   type Planned = { row: VipClientRow; date: string };
   const planned: Planned[] = [];
 
@@ -150,7 +256,10 @@ export async function generateVipAppointments(
       continue;
     }
 
-    const dates = datesForRow(row, windowStart, windowEnd);
+    const slot = vipSlotKey(row.barber_id, row.day_of_week, row.slot_time);
+    const lastVipDate = slot ? (lastVipDateBySlot.get(slot) ?? null) : null;
+
+    const dates = datesForRow(row, windowStart, windowEnd, lastVipDate);
     for (const date of dates) {
       planned.push({ row, date });
     }
